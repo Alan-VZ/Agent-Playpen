@@ -5,6 +5,7 @@ agent-playpen/
 |-- pyproject.toml                  # Build system and dependency groups
 |-- .env.example                    # All environment variables with comments
 |-- .gitignore                      # Git ignore patterns
+|-- Start Agent Playpen.cmd         # Windows batch launcher for web app
 |
 |-- core/                           # Core agent loop and orchestration
 |   |-- __init__.py
@@ -19,7 +20,8 @@ agent-playpen/
 |   |-- react_planner.py            # ReAct (Reason + Act) planner
 |   |-- cot_planner.py              # Chain-of-Thought planner
 |   |-- tree_planner.py             # Tree-of-Thought planner
-|   +-- plan_schema.py              # Pydantic Plan and Step schemas
+|   |-- plan_schema.py              # Pydantic Plan, Step, Thought schemas
+|   +-- ReAct vs. Chain-of-Thought — Comparison.md  # Strategy comparison
 |
 |-- backends/                       # LLM backend adapters
 |   |-- __init__.py
@@ -40,25 +42,33 @@ agent-playpen/
 |   |-- tool_executor.py            # Safe tool execution with timeout
 |   +-- packs/
 |       |-- web/
+|       |   |-- __init__.py
 |       |   |-- search_tool.py      # Web search (SerpAPI / Tavily / DDG)
 |       |   |-- fetch_tool.py       # URL fetch and HTML-to-markdown
 |       |   +-- scraper_tool.py     # CSS-selector scraping
 |       |-- filesystem/
+|       |   |-- __init__.py
 |       |   |-- read_file.py        # Read files from disk
 |       |   |-- write_file.py       # Write files to disk
 |       |   +-- list_dir.py         # Directory listing with sandboxing
 |       |-- code/
+|       |   |-- __init__.py
 |       |   |-- python_repl.py      # Subprocess-isolated Python REPL
 |       |   |-- shell_exec.py       # Sandboxed shell command runner
 |       |   +-- linter_tool.py      # Ruff / pyflakes code linter
 |       |-- data/
+|       |   |-- __init__.py
 |       |   |-- csv_tool.py         # CSV read, write, and query
 |       |   |-- json_tool.py        # JSON manipulation
 |       |   +-- sql_tool.py         # SQLite safe query execution
 |       |-- api/
+|       |   |-- __init__.py
 |       |   |-- http_tool.py        # Generic HTTP GET/POST/PUT/DELETE
-|       |   +-- graphql_tool.py     # GraphQL query tool
+|       |   |-- graphql_tool.py     # GraphQL query tool
+|       |   |-- weather_tool.py     # Weather API wrapper example
+|       |   +-- Writing a Custom Tool — Example WeatherTool.md
 |       +-- utils/
+|           |-- __init__.py
 |           |-- calculator_tool.py  # Safe math expression evaluator
 |           |-- datetime_tool.py    # Date and time utilities
 |           +-- summarize_tool.py   # Text summarization helper
@@ -72,7 +82,8 @@ agent-playpen/
 |   |-- episodic_memory.py          # Session-level episode tracking
 |   |-- semantic_memory.py          # Long-term fact store with retrieval
 |   |-- working_memory.py           # Short-term scratchpad
-|   +-- memory_manager.py           # Unified router across all stores
+|   |-- memory_manager.py           # Unified router across all stores
+|   +-- Memory Architecture Overview.md  # Memory system documentation
 |
 |-- debugging/                      # Debugging and observability tools
 |   |-- __init__.py
@@ -82,9 +93,12 @@ agent-playpen/
 |   |-- replay.py                   # Replay a saved trace file in terminal
 |   |-- cost_tracker.py             # Token counting and cost accounting
 |   |-- diff_viewer.py              # Context before/after diff viewer
+|   |-- Model Pricing Reference.md  # LLM pricing lookup table
+|   |-- Debug Dashboard.md          # Dashboard feature documentation
 |   +-- dashboard/
-|       |-- server.py               # FastAPI debug dashboard server
-|       +-- templates/              # Jinja2 HTML templates for dashboard
+|       |-- server.py               # FastAPI web interface and API endpoints
+|       |-- templates/
+|       |   +-- index.html          # Web dashboard UI with model/key management
 |
 |-- examples/                       # Ready-to-run example agents
 |   |-- basic_chat.py               # Minimal chat loop (40 lines)
@@ -92,10 +106,10 @@ agent-playpen/
 |   |-- file_agent.py               # File read/process/write (60 lines)
 |   |-- code_agent.py               # Code gen + REPL iteration (70 lines)
 |   |-- research_agent.py           # Multi-step research pipeline (100 lines)
-|   |-- multi_agent/
-|   |   |-- orchestrator.py         # Spawns and routes worker agents
-|   |   +-- worker_agent.py         # Specialized worker agent
-|   +-- memory_demo.py              # Demonstrates all memory types (60 lines)
+|   |-- memory_demo.py              # Demonstrates all memory types (60 lines)
+|   +-- multi_agent/
+|       |-- orchestrator.py         # Spawns and routes worker agents
+|       +-- worker_agent.py         # Specialized worker agent
 |
 |-- advanced/                       # Advanced and optional modules
 |   |-- __init__.py
@@ -114,9 +128,20 @@ agent-playpen/
 |-- config/                         # Configuration management
 |   |-- settings.py                 # Pydantic-settings config model
 |   |-- backends.yaml               # Backend presets (YAML)
-|   +-- tools.yaml                  # Tool pack enable/disable config
+|   |-- tools.yaml                  # Tool pack enable/disable config
+|   +-- web_agent_config.json       # Saved web dashboard configurations
 |
-+-- tests/                          # Test suite
-    |-- unit/
-    |-- integration/
-    +-- fixtures/
+|-- tests/                          # Test suite
+|   |-- unit/
+|   |-- integration/
+|   +-- fixtures/
+|
+|-- Cyberpunk goddess/              # Desktop shortcut icon assets
+|   |-- favicon.ico                 # Multi-resolution favicon for launcher
+|   +-- (other icon formats)
+|
++-- Documentation Files
+    |-- Installation and Quick-Start Guide.md  # Setup instructions
+    |-- Extension Guide.txt          # Custom tool development guide
+    +-- Full Folder Structure.md     # This file
+
