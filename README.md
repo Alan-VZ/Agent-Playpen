@@ -263,30 +263,39 @@ The CLI accepts:
 
 ## Web UI
 
-Agent Playpen also includes a browser-based wrapper for configuration and execution so you can manage the agent from a web page instead of the terminal.
+Agent Playpen includes a modern browser-based dashboard for configuration, execution, and observability—no CLI required.
 
 Start the UI with:
 
 ```bash
-python -m debugging.dashboard.server
+python -m debugging.dashboard.server --port 8765
 ```
 
-Then open:
+Or use the **desktop shortcut** (`Start Agent Playpen.cmd`) on Windows.
 
-```text
-http://localhost:8765
-```
+Then open `http://localhost:8765` in your browser.
 
-The web UI lets you:
+### Features
 
-- choose the backend and model
-- set provider credentials and endpoint details
-- pick the planner and tools
-- type the task directly into the page
-- save configuration as JSON or `.env` from the UI if you want a file created automatically
-- run the agent and inspect the result and trace path
+**Configuration & Execution:**
+- Choose backend (LM Studio, Ollama, OpenAI, Anthropic, Groq, Together, Azure)
+- **Live model discovery** — Load available models from your backend in real time
+- **API key storage** — Save keys to `.env` securely (no re-entry needed)
+- Pick planner (ReAct, CoT, Tree-of-Thought) and enable tools
+- Configure temperature, max iterations, and token limits
+- Save configurations as JSON for reuse
 
-This keeps the core implementation in Python while allowing configuration and orchestration to happen entirely in the browser.
+**Help System:**
+- Context-sensitive `?` help buttons on every field
+- Field descriptions with code examples and best practices
+- Quick-start guide for local model setup
+
+**Observability:**
+- Run the agent and view the final answer in real time
+- Inspect the execution trace with full thought/action/observation history
+- See which tools were called and what they returned
+
+This keeps the core implementation in Python while allowing non-technical users to configure and orchestrate agents entirely in the browser.
 
 ## Example usage
 
@@ -404,9 +413,25 @@ Because the project includes tools like filesystem access and Python execution, 
 
 - Local-first AI research assistant
 - Document analysis with file reading and summarization
-- Code assistant with REPL execution and file editing
-- Task automation with internet access and tool orchestration
-- Experiments in multi-step reasoning and autonomous actions
+## Recent improvements
+
+**Agent loop fixes (v2.0):**
+- ✅ **Fixed threading hangs** — `ThreadPoolExecutor.shutdown(wait=False)` prevents indefinite blocking on tool timeouts
+- ✅ **True ReAct feedback loop** — Planning now runs inside the iteration loop, not pre-computed; observations re-enter planning
+- ✅ **Recoverable tool errors** — Model typos in tool arguments (e.g., `querry=` instead of `query=`) now return error observations instead of crashing
+- ✅ **Memory integration** — Observations automatically stored in conversation memory for multi-turn context
+- ✅ **Observation capping** — Results truncated at 2000 chars to prevent context window overflow
+
+**Web UI enhancements:**
+- 🎯 **Live model discovery** — Load available models directly from LM Studio, Ollama, OpenAI, etc.
+- 🔐 **Persistent API keys** — Store keys securely in `.env`; the browser never sees them
+- ❓ **Comprehensive help** — Context-sensitive `?` buttons on every field with examples
+- 🎨 **Custom dropdown** — Functional model selector (replaces broken HTML5 datalist)
+
+**Developer experience:**
+- 📋 **Full folder structure documentation** — Accurately reflects all modules and features
+- 🚀 **Windows desktop launcher** — `Start Agent Playpen.cmd` auto-detects running servers and opens the browser
+- 📖 **Updated installation guide** — Clear steps for both web UI and CLI workflows
 
 ## Summary
 
