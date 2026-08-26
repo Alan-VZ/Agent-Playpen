@@ -444,7 +444,14 @@ def save_key(payload: KeyPayload):
 
 @app.post("/api/save-config")
 async def save_config(request: Request):
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": f"Invalid JSON payload: {exc}"},
+        )
+
     payload.pop("api_key", None)
     config_dir = ROOT / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
@@ -459,7 +466,14 @@ async def save_config(request: Request):
 
 @app.post("/api/save-env")
 async def save_env(request: Request):
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": f"Invalid JSON payload: {exc}"},
+        )
+
     updates: dict[str, str | None] = {
         "DEFAULT_BACKEND": str(payload.get("backend", "lm_studio")),
         "LM_STUDIO_URL": str(payload.get("base_url", "http://localhost:1234/v1")),

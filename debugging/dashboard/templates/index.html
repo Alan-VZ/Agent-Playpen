@@ -309,6 +309,52 @@
     .field-note.warn { color: var(--warning); }
     .field-note.bad { color: #ff7b72; }
 
+    .custom-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 4px;
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .dropdown-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dropdown-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(48, 54, 61, 0.3);
+      font-size: 0.9rem;
+      color: var(--text);
+      transition: background 0.15s ease;
+    }
+
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+
+    .dropdown-item:hover {
+      background: var(--panel-alt);
+      color: var(--accent);
+    }
+
+    .dropdown-item.hidden {
+      display: none;
+    }
+
+    .field {
+      position: relative;
+    }
+
     @media (max-width: 900px) {
       .layout { grid-template-columns: 1fr; }
     }
@@ -353,11 +399,13 @@
             <div class="field">
               <label for="model">Model</label>
               <div class="input-row">
-                <input id="model" name="model" value="local-model" list="model-options"
+                <input id="model" name="model" value="local-model"
                        autocomplete="off" placeholder="Type to search, or pick from the list" />
                 <button type="button" id="load-models" class="inline-btn">Load</button>
               </div>
-              <datalist id="model-options"></datalist>
+              <div id="model-dropdown" class="custom-dropdown" style="display: none;">
+                <div id="model-options" class="dropdown-list"></div>
+              </div>
               <div id="model-note" class="field-note"></div>
             </div>
 
@@ -914,9 +962,15 @@
         const data = await (await fetch('/api/models?' + params)).json();
         modelOptions.innerHTML = '';
         (data.models || []).forEach((name) => {
-          const option = document.createElement('option');
-          option.value = name;
-          modelOptions.appendChild(option);
+          const item = document.createElement('div');
+          item.className = 'dropdown-item';
+          item.textContent = name;
+          item.dataset.value = name;
+          item.addEventListener('click', () => {
+            modelInput.value = name;
+            document.getElementById('model-dropdown').style.display = 'none';
+          });
+          modelOptions.appendChild(item);
         });
 
         const count = (data.models || []).length;
@@ -935,6 +989,42 @@
     }
 
     function initModelAndKeys() {
+      const dropdown = document.getElementById('model-dropdown');
+      
+      // Show dropdown when model input is focused
+      modelInput.addEventListener('focus', () => {
+        if (modelOptions.children.length > 0) {
+          dropdown.style.display = 'block';
+          filterModelDropdown('');
+        }
+      });
+
+      // Filter dropdown as user types
+      modelInput.addEventListener('input', () => {
+        if (modelOptions.children.length > 0) {
+          dropdown.style.display = 'block';
+          filterModelDropdown(modelInput.value.toLowerCase());
+        }
+      });
+
+      // Hide dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!modelInput.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.style.display = 'none';
+        }
+      });
+
+      function filterModelDropdown(query) {
+        const items = modelOptions.querySelectorAll('.dropdown-item');
+        let hasVisible = false;
+        items.forEach(item => {
+          const match = item.textContent.toLowerCase().includes(query);
+          item.classList.toggle('hidden', !match);
+          if (match) hasVisible = true;
+        });
+        if (!hasVisible) dropdown.style.display = 'none';
+      }
+
       document.getElementById('load-models').addEventListener('click', () => loadModels(false));
       document.getElementById('save-key').addEventListener('click', () => saveKey(false));
       document.getElementById('clear-key').addEventListener('click', () => saveKey(true));
