@@ -12,6 +12,9 @@ import uuid
 class Agent:
     """Orchestrates the Think -> Act -> Observe reasoning loop."""
 
+    # Truncate observations to prevent context window blowout.
+    MAX_OBSERVATION_LENGTH = 2000
+
     def __init__(
         self,
         backend: BaseBackend,
@@ -37,12 +40,17 @@ class Agent:
         # Seed context with relevant memories from previous sessions
         ctx.memory_snapshots = self.memory.retrieve(task, top_k=5)
 
-        # Ask the planner to decompose the task into steps
+        # Plan initial steps
         plan = self.planner.plan(task, ctx)
 
-        for step in plan.steps:
-            if ctx.iteration >= self.max_iterations:
-                raise AgentMaxIterationsError(ctx.iteration)
+        # Main reasoning loop: re-plan dynamically based on observations
+        while ctx.iteration < self.max_iterations:
+            # Get the next step from the planner.
+            # For ReAct, this calls the planner to decide the next action
+            # based on accumulated observations.
+            step = self.planner.next_step(ctx)
+            if step is None:
+                break
 
             # THINK: call backend to produce a structured Thought
             thought = self._think(step, ctx)
@@ -63,10 +71,23 @@ class Agent:
             self.tracer.on_observe(observation)
             ctx.observation_history.append(observation)
 
+            # Store observation in memory for future retrieval
+            try:
+                self.memory.store(observation, memory_type="conversation")
+            except KeyError:
+                # Memory store not enabled, skip
+                pass
+
             ctx.iteration += 1
 
         # Fallback: return last observation if no terminal thought was reached
-        return ctx.observation_history[-1] if ctx.observation_history else ""
+        if ctx.observation_history:
+            # Strip the "Observation: " prefix before returning
+            last = ctx.observation_history[-1]
+            if last.startswith("Observation: "):
+                return last[len("Observation: ") :]
+            return last
+        return ""
 
     def _think(self, step, ctx):
         """Call the backend to produce a Thought."""
@@ -75,13 +96,21 @@ class Agent:
         return self.planner.parse_thought(raw)
 
     def _act(self, thought, ctx):
-        """Execute the tool named in the thought."""
+        """Execute the tool named in the thought.
+        
+        Errors are caught and returned as observations, allowing the agent
+        to retry if the model made a typo in tool arguments.
+        """
         try:
             return self.executor.run(thought.tool_name, thought.tool_args)
         except Exception as exc:
             self.tracer.on_error(exc)
-            raise AgentToolError(thought.tool_name, exc) from exc
+            # Return error as a recoverable observation, not a crash
+            return f"Error: {thought.tool_name} failed: {exc}"
 
     def _observe(self, action_result, ctx):
-        """Format the action result as an observation string."""
-        return f"Observation: {action_result}"
+        """Format the action result as an observation string, with length cap."""
+        obs = f"Observation: {action_result}"
+        if len(obs) > self.MAX_OBSERVATION_LENGTH:
+            obs = obs[: self.MAX_OBSERVATION_LENGTH] + "... (truncated)"
+        return obs

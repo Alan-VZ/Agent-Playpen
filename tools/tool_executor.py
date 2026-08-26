@@ -29,14 +29,19 @@ class ToolExecutor:
             KeyError: if the tool is not registered
         """
         tool = self.registry.get(name)
-        deadline = timeout or self.default_timeout
+        deadline = timeout if timeout is not None else self.default_timeout
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(tool.run, **args)
-            try:
-                return future.result(timeout=deadline)
-            except concurrent.futures.TimeoutError:
-                raise TimeoutError(
-                    f"Tool '{name}' exceeded {deadline}s timeout."
-                )
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(tool.run, **args)
+        try:
+            return future.result(timeout=deadline)
+        except concurrent.futures.TimeoutError:
+            raise TimeoutError(
+                f"Tool '{name}' exceeded {deadline}s timeout."
+            )
+        finally:
+            # Don't wait for the thread—return control immediately.
+            # This prevents hangs if the tool is stuck.
+            # Trade-off: a timed-out thread may keep running in the background.
+            executor.shutdown(wait=False)
                 
