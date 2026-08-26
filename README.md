@@ -448,4 +448,8 @@ It strikes a balance between accessibility and flexibility, making it well-suite
 
 ## License
 
-This project does not currently declare a license in the repository metadata. Check the project root for any additional licensing files or project-specific legal guidance before distributing or commercializing the code.
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+**Copyright © 2026 Alan Van Zandt**
+
+You are free to use, modify, and distribute this software in accordance with the terms of the MIT License.
