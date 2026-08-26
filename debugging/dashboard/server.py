@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import os
@@ -43,9 +43,14 @@ BACKEND_KEY_VAR = {
 SEARCH_KEY_VAR = {
     "tavily": "TAVILY_API_KEY",
     "serpapi": "SERPAPI_API_KEY",
+    "google": "GOOGLE_API_KEY",
 }
 
-MANAGED_KEYS = sorted(set(BACKEND_KEY_VAR.values()) | set(SEARCH_KEY_VAR.values()))
+SEARCH_EXTRA_VAR = {
+    "google": "GOOGLE_CSE_ID",
+}
+
+MANAGED_KEYS = sorted(set(BACKEND_KEY_VAR.values()) | set(SEARCH_KEY_VAR.values()) | set(SEARCH_EXTRA_VAR.values()))
 
 
 def _read_env_file() -> dict[str, str]:
@@ -189,7 +194,7 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
         key = _require_key(api_key or os.getenv(BACKEND_KEY_VAR[backend], ""), backend)
         response = requests.get(
             endpoints[backend],
-            headers={"Authorization": f"Bearer {key}"},
+            headers={"Authorization": "Bearer " + key},
             timeout=timeout,
         )
         response.raise_for_status()
@@ -222,7 +227,8 @@ class AgentConfig(BaseModel):
     task: str = ""
     max_iterations: int = 10
     allowed_dirs: str = "."
-    search_provider: str = "duckduckgo"
+    search_provider: str = "auto"
+    search_cse_id: str = ""
 
     model_config = {"extra": "ignore"}
 
@@ -233,7 +239,9 @@ def _tool_factory(name: str, config: AgentConfig):
     if name == "web_search":
         key_var = SEARCH_KEY_VAR.get(config.search_provider)
         search_key = (os.getenv(key_var, "") if key_var else "") or config.api_key
-        return WebSearchTool(provider=config.search_provider, api_key=search_key or None)
+        cse_var = SEARCH_EXTRA_VAR.get(config.search_provider)
+        search_cse_id = (os.getenv(cse_var, "") if cse_var else "") or config.search_cse_id
+        return WebSearchTool(provider=config.search_provider, api_key=search_key or None, cse_id=search_cse_id or None)
     if name == "fetch":
         return FetchTool()
     if name == "read_file":
@@ -320,7 +328,8 @@ def api_defaults():
         "temperature": 0.7,
         "max_tokens": 2048,
         "allowed_dirs": ".",
-        "search_provider": "duckduckgo",
+        "search_provider": "auto",
+        "search_cse_id": "",
     }
 
 
@@ -453,6 +462,7 @@ async def save_config(request: Request):
         )
 
     payload.pop("api_key", None)
+    payload.pop("search_cse_id", None)
     config_dir = ROOT / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
     output_path = config_dir / "web_agent_config.json"
@@ -481,7 +491,7 @@ async def save_env(request: Request):
         "LM_STUDIO_TEMPERATURE": str(payload.get("temperature", 0.7)),
         "LM_STUDIO_MAX_TOKENS": str(payload.get("max_tokens", 2048)),
         "TOOLS_ENABLED": ",".join(payload.get("tools", ["web_search", "fetch", "calculator"])),
-        "WEB_SEARCH_PROVIDER": str(payload.get("search_provider", "duckduckgo")),
+        "WEB_SEARCH_PROVIDER": str(payload.get("search_provider", "auto")),
         "ALLOWED_DIRS": str(payload.get("allowed_dirs", ".")),
         "MAX_ITERATIONS": str(payload.get("max_iterations", 10)),
     }
@@ -490,9 +500,21 @@ async def save_env(request: Request):
     if api_key:
         backend = str(payload.get("backend", ""))
         key_var = BACKEND_KEY_VAR.get(backend)
+        search_provider = str(payload.get("search_provider", ""))
+        search_key_var = SEARCH_KEY_VAR.get(search_provider)
         if key_var:
             updates[key_var] = api_key
             os.environ[key_var] = api_key
+        elif search_key_var:
+            updates[search_key_var] = api_key
+            os.environ[search_key_var] = api_key
+
+    search_cse_id = str(payload.get("search_cse_id") or "").strip()
+    search_provider = str(payload.get("search_provider", ""))
+    search_extra_var = SEARCH_EXTRA_VAR.get(search_provider)
+    if search_cse_id and search_extra_var:
+        updates[search_extra_var] = search_cse_id
+        os.environ[search_extra_var] = search_cse_id
 
     _write_env_file(updates)
     return {

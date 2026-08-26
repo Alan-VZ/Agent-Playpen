@@ -447,10 +447,22 @@
             <div class="field">
               <label for="search_provider">Web search provider</label>
               <select id="search_provider" name="search_provider">
+                <option value="auto">auto</option>
                 <option value="duckduckgo">duckduckgo</option>
                 <option value="serpapi">serpapi</option>
                 <option value="tavily">tavily</option>
+                <option value="google">google</option>
               </select>
+            </div>
+
+            <div class="field" id="google-cse-field" style="display:none;">
+              <label for="search_cse_id">Google CSE ID</label>
+              <div class="input-row">
+                <input id="search_cse_id" name="search_cse_id" type="text" placeholder="Required for Google search" autocomplete="off" />
+                <button type="button" id="save-cse" class="inline-btn">Save</button>
+                <button type="button" id="clear-cse" class="inline-btn">Clear</button>
+              </div>
+              <div id="cse-note" class="field-note"></div>
             </div>
 
             <div class="field">
@@ -503,7 +515,8 @@
       temperature: 0.7,
       max_tokens: 2048,
       allowed_dirs: '.',
-      search_provider: 'duckduckgo'
+      search_provider: 'auto',
+      search_cse_id: ''
     };
 
     const backendSelect = document.getElementById('backend');
@@ -546,6 +559,7 @@
       document.getElementById('planner').value = values.planner || defaultState.planner;
       document.getElementById('allowed_dirs').value = values.allowed_dirs || defaultState.allowed_dirs;
       document.getElementById('search_provider').value = values.search_provider || defaultState.search_provider;
+      document.getElementById('search_cse_id').value = values.search_cse_id || defaultState.search_cse_id;
       document.getElementById('max_iterations').value = values.max_iterations || defaultState.max_iterations;
       document.getElementById('temperature').value = values.temperature || defaultState.temperature;
       document.getElementById('max_tokens').value = values.max_tokens || defaultState.max_tokens;
@@ -580,6 +594,7 @@
         task: document.getElementById('task').value,
         allowed_dirs: document.getElementById('allowed_dirs').value,
         search_provider: document.getElementById('search_provider').value,
+        search_cse_id: document.getElementById('search_cse_id').value,
         max_iterations: Number(document.getElementById('max_iterations').value || 10),
         temperature: Number(document.getElementById('temperature').value || 0.7),
         max_tokens: Number(document.getElementById('max_tokens').value || 2048)
@@ -695,7 +710,7 @@
         <p>Credential for cloud providers. Not needed for <code>lm_studio</code> or <code>ollama</code>.</p>
         <p><strong>Keys are stored, so you only enter them once.</strong> Type the key and press <strong>Save</strong> — it is written to <code>.env</code> in the project root and reused automatically from then on. The box then stays empty on purpose, and the note underneath confirms which key is saved.</p>
         <p>The saved key is <strong>never sent back to your browser</strong>. Only a masked hint such as <code>sk-...abcd</code> is shown. <strong>Clear</strong> deletes it.</p>
-        <p>Which entry is written depends on context: the backend's own variable (<code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>GROQ_API_KEY</code>, <code>TOGETHER_API_KEY</code>, <code>AZURE_OPENAI_KEY</code>), or — on a local backend — the search key for <code>tavily</code> / <code>serpapi</code>.</p>
+        <p>Which entry is written depends on context: the backend's own variable (<code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>GROQ_API_KEY</code>, <code>TOGETHER_API_KEY</code>, <code>AZURE_OPENAI_KEY</code>), or — when a specific search provider is selected — the search key for <code>tavily</code>, <code>serpapi</code>, or <code>google</code>.</p>
         <p>Typing a key without saving still works for a one-off run; it just is not remembered.</p>
         <p class="warn">Security note: <code>.env</code> is plain text. This project lives in a OneDrive folder, so that file syncs to the cloud. Keep <code>.env</code> out of any repository and revoke keys you no longer use.</p>`,
 
@@ -747,11 +762,13 @@
       search_provider: `
         <p>The search engine behind the <code>web_search</code> tool. Irrelevant unless that tool is ticked.</p>
         <ul>
+          <li><code>auto</code> — tries saved Google, Tavily, and SerpAPI credentials first, then falls back to DuckDuckGo. Best default.</li>
           <li><code>duckduckgo</code> — <strong>no API key, no account, free.</strong> Best starting point.</li>
           <li><code>tavily</code> — built for AI agents and gives cleaner results. Requires a key in the <strong>API Key</strong> box (or <code>TAVILY_API_KEY</code>).</li>
           <li><code>serpapi</code> — Google results. Requires a key in the <strong>API Key</strong> box (or <code>SERPAPI_API_KEY</code>).</li>
+          <li><code>google</code> — Google Programmable Search. Requires <code>GOOGLE_API_KEY</code> plus the <strong>Google CSE ID</strong> field.</li>
         </ul>
-        <p class="warn">Choosing tavily or serpapi without a key returns an error instead of results.</p>`,
+        <p class="warn">Choosing tavily, serpapi, or google without the required credentials returns an error instead of results. Auto avoids that by falling back to the next provider.</p>`,
 
       max_iterations: `
         <p>The hard ceiling on reasoning cycles. One iteration is roughly: think once, optionally call one tool, look at the result. It is the brake that stops a confused agent looping forever.</p>
@@ -866,7 +883,12 @@
 
     const SEARCH_KEY_VAR = {
       tavily: 'TAVILY_API_KEY',
-      serpapi: 'SERPAPI_API_KEY'
+      serpapi: 'SERPAPI_API_KEY',
+      google: 'GOOGLE_API_KEY'
+    };
+
+    const SEARCH_EXTRA_VAR = {
+      google: 'GOOGLE_CSE_ID'
     };
 
     let keyState = {};
@@ -876,6 +898,9 @@
     const modelNote = document.getElementById('model-note');
     const apiKeyInput = document.getElementById('api_key');
     const keyNote = document.getElementById('key-note');
+    const searchCseField = document.getElementById('google-cse-field');
+    const searchCseInput = document.getElementById('search_cse_id');
+    const cseNote = document.getElementById('cse-note');
 
     function setNote(el, kind, message) {
       el.className = 'field-note' + (kind ? ' ' + kind : '');
@@ -886,6 +911,10 @@
       const backendKey = BACKEND_KEY_VAR[backendSelect.value];
       if (backendKey) return backendKey;
       return SEARCH_KEY_VAR[document.getElementById('search_provider').value] || null;
+    }
+
+    function targetSearchExtraVar() {
+      return SEARCH_EXTRA_VAR[document.getElementById('search_provider').value] || null;
     }
 
     async function refreshKeyStatus() {
@@ -899,10 +928,20 @@
 
     function renderKeyStatus() {
       const name = targetKeyVar();
+      const extraName = targetSearchExtraVar();
+      searchCseField.style.display = extraName ? 'block' : 'none';
+
+      if (document.getElementById('search_provider').value === 'auto') {
+        apiKeyInput.placeholder = 'Optional - auto uses saved search keys';
+        setNote(keyNote, '', 'Auto will use any saved search credentials, then fall back to DuckDuckGo.');
+        setNote(cseNote, '', '');
+        return;
+      }
 
       if (!name) {
         apiKeyInput.placeholder = 'Not needed for this backend';
         setNote(keyNote, '', 'This backend runs locally and needs no key.');
+        setNote(cseNote, '', extraName ? 'Google search also needs a CSE ID.' : '');
         return;
       }
 
@@ -913,6 +952,19 @@
       } else {
         apiKeyInput.placeholder = 'Enter key, then press Save';
         setNote(keyNote, 'warn', `${name} is not saved yet. Press Save to store it in .env.`);
+      }
+
+      if (extraName) {
+        const extraInfo = keyState[extraName];
+        if (extraInfo && extraInfo.set) {
+          searchCseInput.placeholder = 'Using saved CSE ID - leave blank';
+          setNote(cseNote, 'ok', `${extraName} is saved (${extraInfo.hint}). Leave blank to reuse it.`);
+        } else {
+          searchCseInput.placeholder = 'Enter CSE ID, then press Save';
+          setNote(cseNote, 'warn', `${extraName} is not saved yet. Press Save to store it in .env.`);
+        }
+      } else {
+        setNote(cseNote, '', '');
       }
     }
 
@@ -944,6 +996,37 @@
         if (!clear) setNote(keyNote, 'ok', data.message);
       } catch (err) {
         setNote(keyNote, 'bad', err.message || 'Could not save the key.');
+      }
+    }
+
+    async function saveSearchExtra(clear) {
+      const name = targetSearchExtraVar();
+      if (!name) {
+        setNote(cseNote, '', 'This provider does not need a CSE ID.');
+        return;
+      }
+
+      const value = clear ? '' : searchCseInput.value.trim();
+      if (!clear && !value) {
+        setNote(cseNote, 'bad', 'Enter a CSE ID before pressing Save.');
+        return;
+      }
+
+      setNote(cseNote, '', clear ? 'Removing...' : 'Saving...');
+      try {
+        const response = await fetch('/api/save-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, value: value })
+        });
+        const data = await response.json();
+        if (!response.ok || data.status === 'error') throw new Error(data.message || 'Save failed');
+
+        searchCseInput.value = '';
+        await refreshKeyStatus();
+        if (!clear) setNote(cseNote, 'ok', data.message);
+      } catch (err) {
+        setNote(cseNote, 'bad', err.message || 'Could not save the CSE ID.');
       }
     }
 
@@ -1028,13 +1111,17 @@
       document.getElementById('load-models').addEventListener('click', () => loadModels(false));
       document.getElementById('save-key').addEventListener('click', () => saveKey(false));
       document.getElementById('clear-key').addEventListener('click', () => saveKey(true));
+      document.getElementById('save-cse').addEventListener('click', () => saveSearchExtra(false));
+      document.getElementById('clear-cse').addEventListener('click', () => saveSearchExtra(true));
 
       backendSelect.addEventListener('change', () => {
         renderKeyStatus();
         loadModels(true);
       });
 
-      document.getElementById('search_provider').addEventListener('change', renderKeyStatus);
+      document.getElementById('search_provider').addEventListener('change', () => {
+        renderKeyStatus();
+      });
     }
 
     initHelp();

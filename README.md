@@ -281,6 +281,7 @@ Then open `http://localhost:8765` in your browser.
 - Choose backend (LM Studio, Ollama, OpenAI, Anthropic, Groq, Together, Azure)
 - **Live model discovery** — Load available models from your backend in real time
 - **API key storage** — Save keys to `.env` securely (no re-entry needed)
+- **Auto search provider** — `web_search` can fall back through saved Google, Tavily, SerpAPI, and DuckDuckGo sources
 - Pick planner (ReAct, CoT, Tree-of-Thought) and enable tools
 - Configure temperature, max iterations, and token limits
 - Save configurations as JSON for reuse
@@ -425,6 +426,7 @@ Because the project includes tools like filesystem access and Python execution, 
 **Web UI enhancements:**
 - 🎯 **Live model discovery** — Load available models directly from LM Studio, Ollama, OpenAI, etc.
 - 🔐 **Persistent API keys** — Store keys securely in `.env`; the browser never sees them
+- 🔎 **Auto search fallback** — `web_search` can automatically try saved Google, Tavily, and SerpAPI credentials, then DuckDuckGo
 - ❓ **Comprehensive help** — Context-sensitive `?` buttons on every field with examples
 - 🎨 **Custom dropdown** — Functional model selector (replaces broken HTML5 datalist)
 

@@ -43,7 +43,7 @@ def main():
     backend = LMStudioBackend()
 
     registry = ToolRegistry()
-    registry.register(WebSearchTool(provider="duckduckgo"))
+    registry.register(WebSearchTool(provider="auto"))
     registry.register(FetchTool(max_chars=5000))
     registry.register(SummarizeTool(backend=backend))
     registry.register(WriteFileTool(allowed_dirs=[".", "output"]))

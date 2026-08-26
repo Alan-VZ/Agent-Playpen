@@ -25,7 +25,7 @@ On Windows, use the provided desktop shortcut to launch the web app:
 
 ### Tool Management
 - Enable/disable individual tools (web search, file I/O, code execution, etc.)
-- Configure search provider (DuckDuckGo, Tavily, SerpAPI)
+- Configure search provider (Auto, DuckDuckGo, Tavily, SerpAPI, Google)
 - Set working directory sandbox for file operations
 
 ### Execution Controls
@@ -72,6 +72,15 @@ On Windows, use the provided desktop shortcut to launch the web app:
 - Body: `{ name: 'OPENAI_API_KEY', value: 'sk-...' }`
 - Returns: success message
 - Merges into `.env` without overwriting unrelated keys
+- Supports backend keys plus `TAVILY_API_KEY`, `SERPAPI_API_KEY`, `GOOGLE_API_KEY`, and `GOOGLE_CSE_ID`
+
+### Search Provider Behavior
+
+- **auto** — tries Google, Tavily, and SerpAPI when credentials are saved, then falls back to DuckDuckGo
+- **duckduckgo** — free, no key required
+- **tavily** — requires `TAVILY_API_KEY`
+- **serpapi** — requires `SERPAPI_API_KEY`
+- **google** — requires `GOOGLE_API_KEY` and `GOOGLE_CSE_ID`
 
 **POST /api/clear-key** — Remove an API key from `.env`
 - Body: `{ name: 'OPENAI_API_KEY' }`
@@ -103,4 +112,3 @@ The dashboard stores and displays:
 6. Enter your task
 7. Click **Run Agent**
 8. View results in the "Execution Result" panel
-

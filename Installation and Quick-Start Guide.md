@@ -59,7 +59,7 @@ Open `.env` in your editor and fill in:
 - **OPENAI_API_KEY** — if using OpenAI
 - **ANTHROPIC_API_KEY** — if using Anthropic
 - **GROQ_API_KEY** — if using Groq
-- **TAVILY_API_KEY** or **SERPAPI_API_KEY** — for web search (if enabled)
+- **TAVILY_API_KEY**, **SERPAPI_API_KEY**, or **GOOGLE_API_KEY** + **GOOGLE_CSE_ID** — for web search (if enabled)
 
 ## Start LM Studio for local inference (optional)
 
@@ -102,6 +102,7 @@ Open your browser to: `http://localhost:8765`
 - Contextual help on every field (click the `?` icon)
 - API keys stored securely in `.env` (never sent to browser)
 - Model discovery with live backend queries
+- Web search provider `auto` falls back through Google, Tavily, SerpAPI, then DuckDuckGo
 - Save configurations as JSON for reuse
 
 ## Option 2: CLI (For power users)
@@ -159,4 +160,3 @@ python core/runner.py \
 - **Check the tool packs** — Understand what tools are available and how to add custom ones
 - **Review debugging/** — Learn about tracing, cost tracking, and the dashboard
 - **Study the planner strategies** — Read `planner/ReAct vs. Chain-of-Thought — Comparison.md`
-

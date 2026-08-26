@@ -10,7 +10,7 @@
   "planner": "react",
   "base_url": "http://localhost:1234/v1",
   "allowed_dirs": ".",
-  "search_provider": "duckduckgo",
+  "search_provider": "auto",
   "max_iterations": 10,
   "temperature": 0.7,
   "max_tokens": 2048
