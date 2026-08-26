@@ -1,0 +1,38 @@
+# backends.yaml — Full Backend Presets
+backends:
+  lm_studio:
+    base_url: "http://localhost:1234/v1"
+    model: "local-model"
+    temperature: 0.7
+    max_tokens: 2048
+
+  ollama:
+    base_url: "http://localhost:11434/v1"
+    model: "mistral"
+    temperature: 0.7
+    max_tokens: 2048
+
+  openai:
+    model: "gpt-4o-mini"
+    temperature: 0.7
+    max_tokens: 4096
+
+  anthropic:
+    model: "claude-3-5-sonnet-20241022"
+    max_tokens: 4096
+
+  azure_openai:
+    api_version: "2024-05-01-preview"
+    max_tokens: 4096
+    temperature: 0.7
+
+  groq:
+    model: "llama-3.1-70b-versatile"
+    temperature: 0.7
+    max_tokens: 4096
+
+  together:
+    model: "meta-llama/Llama-3-70b-chat-hf"
+    temperature: 0.7
+    max_tokens: 4096
+    

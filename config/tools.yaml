@@ -1,0 +1,78 @@
+# tools.yaml — Full Tool Pack Configuration
+
+tools:
+  web_search:
+    enabled: true
+    provider: "duckduckgo"    # duckduckgo | serpapi | tavily
+    num_results: 5
+
+  fetch:
+    enabled: true
+    max_chars: 4000
+    timeout: 15
+
+  scraper:
+    enabled: true
+    timeout: 15
+
+  read_file:
+    enabled: true
+    allowed_dirs:
+      - "."
+      - "./data"
+
+  write_file:
+    enabled: true
+    allowed_dirs:
+      - "."
+      - "./output"
+
+  list_dir:
+    enabled: true
+    allowed_dirs:
+      - "."
+
+  python_repl:
+    enabled: true
+    timeout: 15
+    forbidden_imports:
+      - "os.system"
+      - "subprocess"
+      - "__import__"
+      - "socket"
+
+  shell_exec:
+    enabled: false
+    allowlist:
+      - "ls"
+      - "pwd"
+      - "echo"
+      - "date"
+
+  linter:
+    enabled: true
+
+  csv_tool:
+    enabled: true
+
+  json_tool:
+    enabled: true
+
+  sqlite_query:
+    enabled: true
+
+  http:
+    enabled: true
+    timeout: 20
+
+  graphql:
+    enabled: false
+
+  calculator:
+    enabled: true
+
+  datetime:
+    enabled: true
+
+  summarize:
+    enabled: true

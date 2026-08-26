@@ -1,0 +1,17 @@
+{
+  "backend": "lm_studio",
+  "model": "local-model",
+  "task": "hello world",
+  "tools": [
+    "web_search",
+    "fetch",
+    "calculator"
+  ],
+  "planner": "react",
+  "base_url": "http://localhost:1234/v1",
+  "allowed_dirs": ".",
+  "search_provider": "duckduckgo",
+  "max_iterations": 10,
+  "temperature": 0.7,
+  "max_tokens": 2048
+}

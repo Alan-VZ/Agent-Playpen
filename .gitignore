@@ -1,0 +1,13 @@
+﻿# Secrets - never commit
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Agent Playpen runtime output
+traces/
+chroma_data/

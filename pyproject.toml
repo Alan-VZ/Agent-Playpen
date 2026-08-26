@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-playpen"
+version = "1.0.0"
+description = "Modular AI agent scaffold for local and cloud LLMs"
+requires-python = ">=3.11"
+
+dependencies = [
+    "openai>=1.30.0",
+    "anthropic>=0.25.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.0",
+    "PyYAML>=6.0.2",
+    "structlog>=24.1.0",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+web-tools = [
+    "requests>=2.31.0",
+    "markdownify>=0.11.6",
+    "beautifulsoup4>=4.12.0",
+    "duckduckgo-search>=5.3.0",
+]
+code-tools = [
+    "ruff>=0.4.0",
+]
+vector-memory = [
+    "chromadb>=0.5.0",
+    "sentence-transformers>=3.0.0",
+    "tiktoken>=0.7.0",
+]
+faiss-memory = [
+    "faiss-cpu>=1.8.0",
+    "sentence-transformers>=3.0.0",
+]
+data-tools = [
+    "pandas>=2.2.0",
+]
+dashboard = [
+    "fastapi>=0.111.0",
+    "uvicorn>=0.29.0",
+    "jinja2>=3.1.0",
+]
+groq = [
+    "groq>=0.9.0",
+]
+together = [
+    "together>=1.2.0",
+]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -1,0 +1,105 @@
+14.1 Adding a New Backend
+
+1. Create backends/my_backend.py
+2. Import and subclass BaseBackend from backends.base_backend
+3. Implement __init__(self, **config), chat(self, messages) -> str, and optionally stream(self, messages)
+4. Register in BackendFactory.REGISTRY: "my_backend": MyBackend
+5. Add settings to config/settings.py and .env.example
+6. Add a preset block to config/backends.yaml
+7. Test the new backend:
+
+        python -c "
+        from backends.backend_factory import BackendFactory
+        b = BackendFactory.create('my_backend')
+        print(b.chat([{'role': 'user', 'content': 'hello'}]))
+        "
+
+Minimal template:
+
+        from backends.base_backend import BaseBackend
+
+
+        class MyBackend(BaseBackend):
+            """Minimal backend template — replace with real API calls."""
+
+            def __init__(self, api_key: str = "", model: str = "default-model"):
+                self.api_key = api_key
+                self.model = model
+
+            def chat(self, messages: list[dict]) -> str:
+                """Send messages to the API and return the assistant reply."""
+                # TODO: implement real API call here
+                raise NotImplementedError("Implement chat() for MyBackend")
+
+            def stream(self, messages: list[dict]):
+                """Yield tokens from the streaming API."""
+                # TODO: implement streaming if supported
+                yield self.chat(messages)
+
+
+14.2 Adding a New Tool
+1. Create tools/packs/my_pack/my_tool.py
+2. Subclass BaseTool; set name, description, and parameters (JSON Schema)
+3. Implement run(self, **kwargs) -> str
+4. Enable in tools.yaml: my_tool: enabled: true
+5. Register in runner.py: registry.register(MyTool())
+6. Test: registry.get("my_tool").run(param="value")
+
+Minimal template with JSON Schema parameters:
+
+        from tools.base_tool import BaseTool
+
+
+        class MyTool(BaseTool):
+            """Template for a new Agent Playpen tool."""
+
+            name = "my_tool"
+            description = "One-sentence description shown to the LLM."
+            parameters = {
+                "type": "object",
+                "properties": {
+                    "input_text": {
+                        "type": "string",
+                        "description": "The text to process",
+                    },
+                    "max_length": {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Maximum output length in characters",
+                    },
+                },
+                "required": ["input_text"],
+            }
+
+            def run(self, input_text: str, max_length: int = 100) -> str:
+                """Execute the tool logic and return a string result."""
+                # TODO: replace with real implementation
+                result = input_text[:max_length]
+                return result
+
+
+14.3 Adding a New Memory Type
+
+1. Create memory/my_memory.py and subclass BaseMemory
+2. Implement store(self, key: str, value: str) -> None and retrieve(self, query: str, top_k: int) -> list
+3. Add the new store to MemoryManager's __init__ under a new key in self.stores
+4. Add the store name to MEMORY_ENABLED_STORES in .env to activate it
+
+
+14.4 Adding a New Planner Strategy
+
+1. Create planner/my_planner.py and subclass BasePlanner
+2. Implement plan(self, task, ctx) -> Plan returning a valid Plan object
+3. Implement format_thought_prompt(self, step, ctx) -> list[dict]
+4. Implement parse_thought(self, raw: str) -> Thought
+5. Register in runner.py: add "my_planner": MyPlanner to the PLANNERS dict
+6. Select at runtime: python -m core.runner --task "..." --planner my_planner
+
+
+14.5 Adding Custom Guardrails
+
+1. Open advanced/guardrails.py
+3. For input guardrails: write a function check_my_rule(text: str) -> GuardrailResult
+3. Add it to the Guardrails.check_input() loop: for fn in [check_prompt_injection, check_pii, check_my_rule]
+4. For output guardrails: similarly add to Guardrails.check_output()
+5. Add any configurable thresholds or pattern lists to config/settings.py and .env.example

@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Playpen Web Wrapper</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel-alt: #1f2937;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --success: #2ea043;
+      --error: #f85149;
+      --warning: #d29922;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #0d1117 0%, #111827 100%);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    .header {
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      background: rgba(22, 27, 34, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1.1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel-alt);
+      color: var(--text);
+      padding: 10px 12px;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+      margin-top: 8px;
+    }
+
+    .tool-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+
+    .tool-item input {
+      width: auto;
+      margin: 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #03111d;
+    }
+
+    .secondary {
+      background: transparent;
+      color: var(--text);
+    }
+
+    .results {
+      min-height: 400px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      border: 1px solid transparent;
+      margin-bottom: 12px;
+    }
+
+    .status.success {
+      background: rgba(46, 160, 67, 0.15);
+      border-color: rgba(46, 160, 67, 0.4);
+      color: #7ee787;
+    }
+
+    .status.error {
+      background: rgba(248, 81, 73, 0.12);
+      border-color: rgba(248, 81, 73, 0.35);
+      color: #ff7b72;
+    }
+
+    .result-output {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(1,4,9,0.4);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      color: var(--text);
+      min-height: 220px;
+      line-height: 1.55;
+      overflow-x: auto;
+    }
+
+    .meta {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .help-toggle {
+      width: auto;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      background: transparent;
+      color: var(--accent);
+      border-color: var(--accent);
+      border-radius: 999px;
+    }
+
+    .label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .help-btn {
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--panel-alt);
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .help-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      transform: none;
+    }
+
+    .help-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #03111d;
+    }
+
+    .hint {
+      display: none;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: var(--muted);
+      background: rgba(88, 166, 255, 0.06);
+      border: 1px solid rgba(88, 166, 255, 0.22);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .hint.open { display: block; }
+    .hint p { margin: 0 0 8px; }
+    .hint p:last-child { margin-bottom: 0; }
+    .hint strong { color: var(--text); }
+
+    .hint code {
+      background: rgba(1, 4, 9, 0.55);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.78rem;
+      color: #7ee787;
+      word-break: break-all;
+    }
+
+    .hint ul, .hint ol { margin: 6px 0 8px; padding-left: 18px; }
+    .hint li { margin-bottom: 5px; }
+    .hint .warn { color: var(--warning); }
+    .hint .ex { display: block; margin-top: 4px; }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-row input { flex: 1; min-width: 0; }
+
+    .inline-btn {
+      width: auto;
+      flex: 0 0 auto;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      background: transparent;
+      color: var(--accent);
+      border-color: var(--border);
+      white-space: nowrap;
+    }
+
+    .inline-btn:hover { border-color: var(--accent); transform: none; }
+    .inline-btn:disabled { opacity: 0.5; cursor: default; }
+
+    .field-note {
+      font-size: 0.78rem;
+      color: var(--muted);
+      min-height: 1em;
+    }
+
+    .field-note.ok { color: #7ee787; }
+    .field-note.warn { color: var(--warning); }
+    .field-note.bad { color: #ff7b72; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="header-row">
+        <div>
+          <h1>Agent Playpen</h1>
+          <p>Web-based agent configuration and execution. No CLI setup required.</p>
+        </div>
+        <button type="button" id="help-toggle" class="help-toggle">Show all help</button>
+      </div>
+
+      <div id="quickstart" class="hint">
+        <p><strong>Quick start — running a local model</strong></p>
+        <ol>
+          <li>Open LM Studio, load a model, and start its local server.</li>
+          <li>Set <strong>Backend</strong> to <code>lm_studio</code> and <strong>Base URL</strong> to <code>http://localhost:1234/v1</code>.</li>
+          <li>Set <strong>Model</strong> to <code>local-model</code>, or the exact name LM Studio shows.</li>
+          <li>Leave <strong>Planner</strong> on <code>react</code> — it is the right default when tools are enabled.</li>
+          <li>Tick the <strong>Tools</strong> the agent is allowed to use.</li>
+          <li>Write a <strong>Task</strong>, then press <strong>Run Agent</strong>.</li>
+        </ol>
+        <p>Click the <strong>?</strong> beside any field for an explanation and worked examples.</p>
+      </div>
+    </div>
+
+    <div class="layout">
+      <section class="panel">
+        <h2>Agent Configuration</h2>
+
+        <form id="agent-form">
+          <div class="form-grid">
+            <div class="field">
+              <label for="backend">Backend</label>
+              <select id="backend" name="backend"></select>
+            </div>
+
+            <div class="field">
+              <label for="model">Model</label>
+              <div class="input-row">
+                <input id="model" name="model" value="local-model" list="model-options"
+                       autocomplete="off" placeholder="Type to search, or pick from the list" />
+                <button type="button" id="load-models" class="inline-btn">Load</button>
+              </div>
+              <datalist id="model-options"></datalist>
+              <div id="model-note" class="field-note"></div>
+            </div>
+
+            <div class="field">
+              <label for="base_url">Base URL</label>
+              <input id="base_url" name="base_url" value="http://localhost:1234/v1" />
+            </div>
+
+            <div class="field">
+              <label for="api_key">API Key (if needed)</label>
+              <div class="input-row">
+                <input id="api_key" name="api_key" type="password" placeholder="Optional" autocomplete="off" />
+                <button type="button" id="save-key" class="inline-btn">Save</button>
+                <button type="button" id="clear-key" class="inline-btn">Clear</button>
+              </div>
+              <div id="key-note" class="field-note"></div>
+            </div>
+
+            <div class="field">
+              <label for="planner">Planner</label>
+              <select id="planner" name="planner"></select>
+            </div>
+
+            <div class="field">
+              <label data-help="tools">Tools</label>
+              <div id="tool-list" class="tools"></div>
+            </div>
+
+            <div class="field">
+              <label for="task">Task</label>
+              <textarea id="task" name="task" placeholder="Describe the task to complete..."></textarea>
+            </div>
+
+            <div class="field">
+              <label for="allowed_dirs">Allowed directories</label>
+              <input id="allowed_dirs" name="allowed_dirs" value="." />
+            </div>
+
+            <div class="field">
+              <label for="search_provider">Web search provider</label>
+              <select id="search_provider" name="search_provider">
+                <option value="duckduckgo">duckduckgo</option>
+                <option value="serpapi">serpapi</option>
+                <option value="tavily">tavily</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="max_iterations">Max iterations</label>
+              <input id="max_iterations" name="max_iterations" type="number" min="1" max="50" value="10" />
+            </div>
+
+            <div class="field">
+              <label for="temperature">Temperature</label>
+              <input id="temperature" name="temperature" type="number" step="0.1" min="0" max="2" value="0.7" />
+            </div>
+
+            <div class="field">
+              <label for="max_tokens">Max tokens</label>
+              <input id="max_tokens" name="max_tokens" type="number" min="64" max="32768" value="2048" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label data-help="actions">Actions</label>
+              </div>
+              <div class="actions">
+                <button type="submit" class="primary">Run Agent</button>
+                <button type="button" id="save-config" class="secondary">Save Config</button>
+                <button type="button" id="save-env" class="secondary">Save .env</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel results">
+        <h2>Execution Result</h2>
+        <div id="status" class="status" style="display:none"></div>
+        <div id="result-output" class="result-output">Configure the form, then run the agent.</div>
+        <div class="meta" id="meta-output">No trace generated yet.</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const defaultState = {
+      backend: 'lm_studio',
+      model: 'local-model',
+      base_url: 'http://localhost:1234/v1',
+      planner: 'react',
+      tools: ['web_search', 'fetch', 'calculator'],
+      task: '',
+      max_iterations: 10,
+      temperature: 0.7,
+      max_tokens: 2048,
+      allowed_dirs: '.',
+      search_provider: 'duckduckgo'
+    };
+
+    const backendSelect = document.getElementById('backend');
+    const plannerSelect = document.getElementById('planner');
+    const toolList = document.getElementById('tool-list');
+    const statusBox = document.getElementById('status');
+    const resultOutput = document.getElementById('result-output');
+    const metaOutput = document.getElementById('meta-output');
+
+    async function loadDefaults() {
+      const res = await fetch('/api/defaults');
+      const data = await res.json();
+      Object.assign(defaultState, data);
+      applyDefaults(data);
+    }
+
+    function applyDefaults(values) {
+      backendSelect.innerHTML = '';
+      const backends = ['lm_studio', 'ollama', 'openai', 'anthropic', 'azure_openai', 'groq', 'together'];
+      backends.forEach((backend) => {
+        const option = document.createElement('option');
+        option.value = backend;
+        option.textContent = backend;
+        backendSelect.appendChild(option);
+      });
+      backendSelect.value = values.backend || defaultState.backend;
+
+      plannerSelect.innerHTML = '';
+      ['react', 'cot', 'tree'].forEach((planner) => {
+        const option = document.createElement('option');
+        option.value = planner;
+        option.textContent = planner;
+        if (planner === values.planner) option.selected = true;
+        plannerSelect.appendChild(option);
+      });
+
+      document.getElementById('backend').value = values.backend || defaultState.backend;
+      document.getElementById('model').value = values.model || defaultState.model;
+      document.getElementById('base_url').value = values.base_url || defaultState.base_url;
+      document.getElementById('planner').value = values.planner || defaultState.planner;
+      document.getElementById('allowed_dirs').value = values.allowed_dirs || defaultState.allowed_dirs;
+      document.getElementById('search_provider').value = values.search_provider || defaultState.search_provider;
+      document.getElementById('max_iterations').value = values.max_iterations || defaultState.max_iterations;
+      document.getElementById('temperature').value = values.temperature || defaultState.temperature;
+      document.getElementById('max_tokens').value = values.max_tokens || defaultState.max_tokens;
+
+      const toolNames = ['web_search', 'fetch', 'read_file', 'write_file', 'python_repl', 'calculator', 'datetime'];
+      toolList.innerHTML = '';
+      toolNames.forEach((name) => {
+        const wrapper = document.createElement('label');
+        wrapper.className = 'tool-item';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'tools';
+        checkbox.value = name;
+        checkbox.checked = (values.tools || defaultState.tools).includes(name);
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(document.createTextNode(name));
+        toolList.appendChild(wrapper);
+      });
+
+      applyToolTooltips();
+    }
+
+    function collectConfig() {
+      const selected = [...document.querySelectorAll('input[name="tools"]:checked')].map(item => item.value);
+      return {
+        backend: document.getElementById('backend').value,
+        model: document.getElementById('model').value,
+        base_url: document.getElementById('base_url').value,
+        api_key: document.getElementById('api_key').value,
+        planner: document.getElementById('planner').value,
+        tools: selected,
+        task: document.getElementById('task').value,
+        allowed_dirs: document.getElementById('allowed_dirs').value,
+        search_provider: document.getElementById('search_provider').value,
+        max_iterations: Number(document.getElementById('max_iterations').value || 10),
+        temperature: Number(document.getElementById('temperature').value || 0.7),
+        max_tokens: Number(document.getElementById('max_tokens').value || 2048)
+      };
+    }
+
+    function setStatus(kind, message) {
+      statusBox.style.display = 'inline-block';
+      statusBox.className = 'status ' + kind;
+      statusBox.textContent = message;
+    }
+
+    async function saveConfig() {
+      const payload = collectConfig();
+      const response = await fetch('/api/save-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      setStatus('success', data.message || 'Config saved.');
+      metaOutput.textContent = 'Saved configuration: ' + data.path;
+    }
+
+    async function saveEnv() {
+      const payload = collectConfig();
+      const response = await fetch('/api/save-env', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      setStatus('success', data.message || '.env saved.');
+      metaOutput.textContent = 'Generated environment file: ' + data.path;
+    }
+
+    document.getElementById('agent-form').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const payload = collectConfig();
+
+      if (!payload.task.trim()) {
+        setStatus('error', 'A task is required before running the agent.');
+        resultOutput.textContent = 'Please enter a task for the agent.';
+        return;
+      }
+
+      setStatus('success', 'Running agent...');
+      resultOutput.textContent = 'Working...';
+      metaOutput.textContent = 'Agent is executing with the selected configuration.';
+
+      try {
+        const response = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.status === 'error') {
+          throw new Error(data.message || 'Request failed');
+        }
+
+        setStatus('success', 'Execution complete');
+        resultOutput.textContent = data.result || 'No output received.';
+        metaOutput.textContent = 'Session: ' + data.session_id + ' | Trace: ' + data.trace_path;
+      } catch (error) {
+        setStatus('error', 'Execution failed');
+        resultOutput.textContent = error.message || 'Unknown error';
+        metaOutput.textContent = 'Check backend connectivity or the task configuration.';
+      }
+    });
+
+    document.getElementById('save-config').addEventListener('click', saveConfig);
+    document.getElementById('save-env').addEventListener('click', saveEnv);
+
+    const HELP = {
+      backend: `
+        <p>Which LLM provider runs your model. The connection is health-checked before the agent starts, so a wrong URL or missing key fails immediately with a clear message.</p>
+        <ul>
+          <li><code>lm_studio</code> — local. Uses <strong>Base URL</strong>. No API key.</li>
+          <li><code>ollama</code> — local. Uses <strong>Base URL</strong>. No API key.</li>
+          <li><code>openai</code>, <code>anthropic</code>, <code>groq</code>, <code>together</code> — cloud. Need an <strong>API Key</strong>. Base URL is ignored.</li>
+          <li><code>azure_openai</code> — cloud. Needs the key plus <code>AZURE_OPENAI_ENDPOINT</code>, <code>AZURE_OPENAI_DEPLOYMENT</code> and <code>AZURE_OPENAI_API_VERSION</code> set as environment variables. Those three cannot be set from this form.</li>
+        </ul>
+        <p><strong>Start here:</strong> <code>lm_studio</code> keeps everything on your machine and costs nothing.</p>`,
+
+      model: `
+        <p>The model identifier, exactly as your chosen backend expects it.</p>
+        <p>The list loads automatically when you pick a backend. <strong>Click the field to browse, or start typing to filter</strong> — and you can always type a name that is not listed. Press <strong>Load</strong> to refresh after loading a new model.</p>
+        <p>For local backends the list is read live from LM Studio or Ollama, so it shows exactly what you have installed. For cloud backends it is fetched with your saved key; without a key you get a short list of common names instead.</p>
+        <p><strong>Examples by backend</strong></p>
+        <ul>
+          <li>lm_studio — <code>local-model</code> (works as a catch-all), or the exact name shown in LM Studio</li>
+          <li>ollama — <code>llama3.1:8b</code>, <code>mistral</code></li>
+          <li>openai — <code>gpt-4o-mini</code>, <code>gpt-4o</code></li>
+          <li>anthropic — <code>claude-3-5-sonnet-20241022</code></li>
+          <li>groq — <code>llama-3.3-70b-versatile</code></li>
+          <li>together — <code>meta-llama/Llama-3-70b-chat-hf</code></li>
+        </ul>
+        <p class="warn">Azure OpenAI uses your own deployment name, so it cannot be listed — type it manually.</p>`,
+
+      base_url: `
+        <p>Address of a local model server. <strong>Only used by <code>lm_studio</code> and <code>ollama</code></strong> — cloud backends ignore this field entirely.</p>
+        <ul>
+          <li>LM Studio — <code>http://localhost:1234/v1</code> <span class="warn">(the <code>/v1</code> suffix is required)</span></li>
+          <li>Ollama — <code>http://localhost:11434</code> (no <code>/v1</code>)</li>
+          <li>Model on another PC — <code>http://192.168.1.50:1234/v1</code></li>
+        </ul>
+        <p class="warn">If the run fails with a connection error, check the server is actually started inside LM Studio or Ollama.</p>`,
+
+      api_key: `
+        <p>Credential for cloud providers. Not needed for <code>lm_studio</code> or <code>ollama</code>.</p>
+        <p><strong>Keys are stored, so you only enter them once.</strong> Type the key and press <strong>Save</strong> — it is written to <code>.env</code> in the project root and reused automatically from then on. The box then stays empty on purpose, and the note underneath confirms which key is saved.</p>
+        <p>The saved key is <strong>never sent back to your browser</strong>. Only a masked hint such as <code>sk-...abcd</code> is shown. <strong>Clear</strong> deletes it.</p>
+        <p>Which entry is written depends on context: the backend's own variable (<code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>GROQ_API_KEY</code>, <code>TOGETHER_API_KEY</code>, <code>AZURE_OPENAI_KEY</code>), or — on a local backend — the search key for <code>tavily</code> / <code>serpapi</code>.</p>
+        <p>Typing a key without saving still works for a one-off run; it just is not remembered.</p>
+        <p class="warn">Security note: <code>.env</code> is plain text. This project lives in a OneDrive folder, so that file syncs to the cloud. Keep <code>.env</code> out of any repository and revoke keys you no longer use.</p>`,
+
+      planner: `
+        <p>The reasoning strategy that decides how the agent thinks between steps.</p>
+        <ul>
+          <li><code>react</code> — Reason, Act, Observe in a loop. <strong>The right choice whenever tools are enabled</strong>, because it can call a tool, read the result, then decide the next move. Best default.</li>
+          <li><code>cot</code> — Chain of Thought. Reasons step by step in one pass. Cheapest and fastest. Good for pure reasoning, writing and explanation where no tool is needed.</li>
+          <li><code>tree</code> — Tree of Thought. Explores several competing lines of reasoning and picks the strongest. Noticeably slower and uses far more tokens. Save it for genuinely hard problems.</li>
+        </ul>
+        <p><span class="ex"><strong>Rule of thumb:</strong> tools enabled → <code>react</code>. Plain writing or analysis → <code>cot</code>.</span></p>`,
+
+      tools: `
+        <p>Capabilities the agent may call during a run. Tick only what the task truly needs — every extra tool adds tokens and more ways to go wrong.</p>
+        <ul>
+          <li><code>web_search</code> — searches the web using the provider chosen below.</li>
+          <li><code>fetch</code> — downloads the contents of a specific URL.</li>
+          <li><code>read_file</code> — reads files, limited to <strong>Allowed directories</strong>.</li>
+          <li><code>write_file</code> — creates and overwrites files, limited to <strong>Allowed directories</strong>. <span class="warn">Can overwrite existing files.</span></li>
+          <li><code>python_repl</code> — executes Python code. <span class="warn">Powerful and risky: it runs real code on this machine. Enable only for trusted tasks.</span></li>
+          <li><code>calculator</code> — reliable arithmetic. Worth enabling for anything numeric, since models do mental maths badly.</li>
+          <li><code>datetime</code> — current date and time. Enable when the task involves "today", "now" or date maths.</li>
+        </ul>
+        <p><span class="ex"><strong>Research task:</strong> web_search + fetch</span>
+        <span class="ex"><strong>Data or maths task:</strong> calculator + python_repl</span>
+        <span class="ex"><strong>Working with local files:</strong> read_file + write_file</span></p>`,
+
+      task: `
+        <p><strong>Required.</strong> The instruction the agent will carry out. Specific, bounded requests work far better than vague ones.</p>
+        <p><strong>Good examples</strong></p>
+        <ul>
+          <li><code>Search for the three most recent papers on retrieval-augmented generation and summarise each in two sentences.</code></li>
+          <li><code>Read README.md and produce a bullet list of every supported backend.</code></li>
+          <li><code>Calculate the monthly repayment on a 25-year loan of 250000 at 5.5% annual interest, and show your working.</code></li>
+        </ul>
+        <p class="warn">Weak prompt: <code>tell me about AI</code> — no goal, no finish line, so the agent burns iterations without converging.</p>
+        <p>State the output you want ("a bullet list", "a table", "two sentences") and the agent will hit it more reliably.</p>`,
+
+      allowed_dirs: `
+        <p>A safety sandbox: a comma-separated list of folders that <code>read_file</code> and <code>write_file</code> are confined to. Anything outside is refused. It has no effect on the other tools.</p>
+        <ul>
+          <li><code>.</code> — the Agent Playpen project folder only. This is the default and the safest option.</li>
+          <li><code>.,C:\\Users\\alanv\\Documents\\notes</code> — project folder plus one extra folder.</li>
+          <li><code>C:\\Temp\\agent-output</code> — restrict writes to a scratch folder.</li>
+        </ul>
+        <p class="warn">Avoid <code>C:\\</code> or a whole user profile. A broad path lets the agent overwrite files you care about.</p>
+        <p>If left empty it falls back to <code>.</code>.</p>`,
+
+      search_provider: `
+        <p>The search engine behind the <code>web_search</code> tool. Irrelevant unless that tool is ticked.</p>
+        <ul>
+          <li><code>duckduckgo</code> — <strong>no API key, no account, free.</strong> Best starting point.</li>
+          <li><code>tavily</code> — built for AI agents and gives cleaner results. Requires a key in the <strong>API Key</strong> box (or <code>TAVILY_API_KEY</code>).</li>
+          <li><code>serpapi</code> — Google results. Requires a key in the <strong>API Key</strong> box (or <code>SERPAPI_API_KEY</code>).</li>
+        </ul>
+        <p class="warn">Choosing tavily or serpapi without a key returns an error instead of results.</p>`,
+
+      max_iterations: `
+        <p>The hard ceiling on reasoning cycles. One iteration is roughly: think once, optionally call one tool, look at the result. It is the brake that stops a confused agent looping forever.</p>
+        <ul>
+          <li><code>3</code>–<code>5</code> — simple single-step questions</li>
+          <li><code>10</code> — sensible default for most work</li>
+          <li><code>15</code>–<code>25</code> — multi-step research needing several searches</li>
+        </ul>
+        <p>Too low and the agent stops before it finishes. Too high and a stuck agent wastes time and tokens. Range 1–50.</p>`,
+
+      temperature: `
+        <p>Controls randomness. Low values make the model consistent and literal; high values make it varied and inventive.</p>
+        <ul>
+          <li><code>0.0</code>–<code>0.3</code> — factual answers, data extraction, and <strong>anything using tools</strong>, where reliable formatting matters</li>
+          <li><code>0.7</code> — balanced general-purpose default</li>
+          <li><code>1.0</code>–<code>2.0</code> — brainstorming and creative writing</li>
+        </ul>
+        <p class="warn">High temperature with tools enabled is a common cause of failed runs: the model garbles the tool call format. Keep it at or below 0.3 for tool-heavy tasks.</p>`,
+
+      max_tokens: `
+        <p>The longest reply the model may produce in a single step. This is the <strong>output</strong> limit — it is not the context window and not a budget for the whole run.</p>
+        <ul>
+          <li><code>512</code> — short answers</li>
+          <li><code>2048</code> — default, fine for most tasks</li>
+          <li><code>4096</code>+ — long reports, or generating substantial code</li>
+        </ul>
+        <p class="warn">If answers keep stopping mid-sentence, this value is too low.</p>
+        <p>On paid backends this is the main lever on cost per step.</p>`,
+
+      actions: `
+        <p><strong>Run Agent</strong> — executes the task with the settings above. Requires a <strong>Task</strong>. The answer appears on the right, along with a session id and the path to a saved trace file recording every step.</p>
+        <p><strong>Save Config</strong> — writes the current form to <code>config/web_agent_config.json</code> so you can reuse it later. API keys are deliberately excluded; they live in <code>.env</code> instead.</p>
+        <p><strong>Save .env</strong> — writes backend settings to <code>.env</code> for the CLI to pick up. Existing entries are merged, so keys and comments already in the file are preserved.</p>
+        <p>To store an API key, use the <strong>Save</strong> button beside the API Key field rather than this one.</p>`
+    };
+
+    const TOOL_HELP = {
+      web_search: 'Search the web using the provider selected below.',
+      fetch: 'Download the contents of a specific URL.',
+      read_file: 'Read files, restricted to the Allowed directories.',
+      write_file: 'Create or overwrite files, restricted to the Allowed directories.',
+      python_repl: 'Execute Python code on this machine. Enable only for trusted tasks.',
+      calculator: 'Accurate arithmetic. Recommended for any numeric task.',
+      datetime: 'Current date and time. Enable for anything involving "today" or "now".'
+    };
+
+    function initHelp() {
+      document.querySelectorAll('.field').forEach((field) => {
+        const label = field.querySelector('label');
+        if (!label) return;
+
+        const key = label.getAttribute('for') || label.dataset.help;
+        const content = HELP[key];
+        if (!content || field.querySelector('.hint')) return;
+
+        let row = label.closest('.label-row');
+        if (!row) {
+          row = document.createElement('div');
+          row.className = 'label-row';
+          label.parentNode.insertBefore(row, label);
+          row.appendChild(label);
+        }
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'help-btn';
+        button.textContent = '?';
+        button.setAttribute('aria-label', 'Help for ' + key);
+        button.setAttribute('aria-expanded', 'false');
+        row.appendChild(button);
+
+        const hint = document.createElement('div');
+        hint.className = 'hint';
+        hint.innerHTML = content;
+        field.appendChild(hint);
+
+        button.addEventListener('click', () => {
+          const open = hint.classList.toggle('open');
+          button.classList.toggle('active', open);
+          button.setAttribute('aria-expanded', String(open));
+        });
+      });
+    }
+
+    function applyToolTooltips() {
+      document.querySelectorAll('#tool-list .tool-item').forEach((item) => {
+        const box = item.querySelector('input[name="tools"]');
+        if (box && TOOL_HELP[box.value]) item.title = TOOL_HELP[box.value];
+      });
+    }
+
+    function initHelpToggle() {
+      const toggle = document.getElementById('help-toggle');
+      toggle.addEventListener('click', () => {
+        const open = toggle.textContent === 'Show all help';
+        document.querySelectorAll('.hint').forEach(h => h.classList.toggle('open', open));
+        document.querySelectorAll('.help-btn').forEach((b) => {
+          b.classList.toggle('active', open);
+          b.setAttribute('aria-expanded', String(open));
+        });
+        toggle.textContent = open ? 'Hide all help' : 'Show all help';
+      });
+    }
+
+    const BACKEND_KEY_VAR = {
+      openai: 'OPENAI_API_KEY',
+      anthropic: 'ANTHROPIC_API_KEY',
+      groq: 'GROQ_API_KEY',
+      together: 'TOGETHER_API_KEY',
+      azure_openai: 'AZURE_OPENAI_KEY'
+    };
+
+    const SEARCH_KEY_VAR = {
+      tavily: 'TAVILY_API_KEY',
+      serpapi: 'SERPAPI_API_KEY'
+    };
+
+    let keyState = {};
+
+    const modelInput = document.getElementById('model');
+    const modelOptions = document.getElementById('model-options');
+    const modelNote = document.getElementById('model-note');
+    const apiKeyInput = document.getElementById('api_key');
+    const keyNote = document.getElementById('key-note');
+
+    function setNote(el, kind, message) {
+      el.className = 'field-note' + (kind ? ' ' + kind : '');
+      el.textContent = message;
+    }
+
+    function targetKeyVar() {
+      const backendKey = BACKEND_KEY_VAR[backendSelect.value];
+      if (backendKey) return backendKey;
+      return SEARCH_KEY_VAR[document.getElementById('search_provider').value] || null;
+    }
+
+    async function refreshKeyStatus() {
+      try {
+        keyState = await (await fetch('/api/keys')).json();
+      } catch (err) {
+        return;
+      }
+      renderKeyStatus();
+    }
+
+    function renderKeyStatus() {
+      const name = targetKeyVar();
+
+      if (!name) {
+        apiKeyInput.placeholder = 'Not needed for this backend';
+        setNote(keyNote, '', 'This backend runs locally and needs no key.');
+        return;
+      }
+
+      const info = keyState[name];
+      if (info && info.set) {
+        apiKeyInput.placeholder = 'Using saved key - leave blank';
+        setNote(keyNote, 'ok', `${name} is saved (${info.hint}). Leave blank to reuse it.`);
+      } else {
+        apiKeyInput.placeholder = 'Enter key, then press Save';
+        setNote(keyNote, 'warn', `${name} is not saved yet. Press Save to store it in .env.`);
+      }
+    }
+
+    async function saveKey(clear) {
+      const name = targetKeyVar();
+      if (!name) {
+        setNote(keyNote, '', 'This backend needs no key.');
+        return;
+      }
+
+      const value = clear ? '' : apiKeyInput.value.trim();
+      if (!clear && !value) {
+        setNote(keyNote, 'bad', 'Enter a key before pressing Save.');
+        return;
+      }
+
+      setNote(keyNote, '', clear ? 'Removing...' : 'Saving...');
+      try {
+        const response = await fetch('/api/save-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, value: value })
+        });
+        const data = await response.json();
+        if (!response.ok || data.status === 'error') throw new Error(data.message || 'Save failed');
+
+        apiKeyInput.value = '';
+        await refreshKeyStatus();
+        if (!clear) setNote(keyNote, 'ok', data.message);
+      } catch (err) {
+        setNote(keyNote, 'bad', err.message || 'Could not save the key.');
+      }
+    }
+
+    async function loadModels(silent) {
+      const button = document.getElementById('load-models');
+      const params = new URLSearchParams({
+        backend: backendSelect.value,
+        base_url: document.getElementById('base_url').value,
+        api_key: apiKeyInput.value
+      });
+
+      button.disabled = true;
+      if (!silent) setNote(modelNote, '', 'Loading models...');
+
+      try {
+        const data = await (await fetch('/api/models?' + params)).json();
+        modelOptions.innerHTML = '';
+        (data.models || []).forEach((name) => {
+          const option = document.createElement('option');
+          option.value = name;
+          modelOptions.appendChild(option);
+        });
+
+        const count = (data.models || []).length;
+        if (data.source === 'live') {
+          setNote(modelNote, 'ok', `${count} model(s) available - click the field or type to filter.`);
+        } else if (count) {
+          setNote(modelNote, 'warn', `${data.message} Showing ${count} known name(s).`);
+        } else {
+          setNote(modelNote, 'warn', data.message || 'No models found. Type the name manually.');
+        }
+      } catch (err) {
+        setNote(modelNote, 'bad', 'Could not load models. Type the model name manually.');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function initModelAndKeys() {
+      document.getElementById('load-models').addEventListener('click', () => loadModels(false));
+      document.getElementById('save-key').addEventListener('click', () => saveKey(false));
+      document.getElementById('clear-key').addEventListener('click', () => saveKey(true));
+
+      backendSelect.addEventListener('change', () => {
+        renderKeyStatus();
+        loadModels(true);
+      });
+
+      document.getElementById('search_provider').addEventListener('change', renderKeyStatus);
+    }
+
+    initHelp();
+    initHelpToggle();
+    initModelAndKeys();
+    loadDefaults().then(() => {
+      refreshKeyStatus();
+      loadModels(true);
+    });
+  </script>
+</body>
+</html>
