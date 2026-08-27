@@ -1,4 +1,4 @@
-﻿# Secrets - never commit
+# Secrets - never commit
 .env
 .env.*
 !.env.example
@@ -7,7 +7,14 @@
 __pycache__/
 *.py[cod]
 .venv/
+venv/
 
 # Agent Playpen runtime output
 traces/
 chroma_data/
+config/web_agent_config.json
+
+# Common editor and OS noise
+.DS_Store
+Thumbs.db
+

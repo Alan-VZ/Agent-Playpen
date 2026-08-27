@@ -18,14 +18,21 @@ class Settings(BaseSettings):
     LM_STUDIO_TEMPERATURE: float = 0.7
     LM_STUDIO_MAX_TOKENS: int = 2048
 
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.1:8b"
+
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o-mini"
     OPENAI_ORG_ID: Optional[str] = None
+
+    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_MODEL: str = "openai/gpt-4o-mini"
 
     ANTHROPIC_API_KEY: Optional[str] = None
     ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"
 
     GROQ_API_KEY: Optional[str] = None
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     TOGETHER_API_KEY: Optional[str] = None
     TOGETHER_MODEL: str = "meta-llama/Llama-3-70b-chat-hf"

@@ -34,6 +34,7 @@ ENV_PATH = ROOT / ".env"
 
 BACKEND_KEY_VAR = {
     "openai": "OPENAI_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
     "groq": "GROQ_API_KEY",
     "together": "TOGETHER_API_KEY",
@@ -138,6 +139,12 @@ FALLBACK_MODELS = {
         "gpt-4-turbo",
         "gpt-3.5-turbo",
     ],
+    "openrouter": [
+        "openai/gpt-4o-mini",
+        "openai/gpt-4o",
+        "anthropic/claude-3.5-sonnet",
+        "meta-llama/llama-3.1-8b-instruct",
+    ],
     "anthropic": [
         "claude-3-5-sonnet-20241022",
         "claude-3-5-haiku-20241022",
@@ -180,14 +187,27 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
         return sorted(m["id"] for m in response.json().get("data", []))
 
     if backend == "ollama":
-        url = (base_url or "http://localhost:11434").rstrip("/") + "/api/tags"
-        response = requests.get(url, timeout=timeout)
+        root = (base_url or "http://localhost:11434").rstrip("/")
+        if root.endswith("/v1"):
+            root = root[: -len("/v1")]
+        response = requests.get(f"{root}/api/tags", timeout=timeout)
         response.raise_for_status()
-        return sorted(m["name"] for m in response.json().get("models", []))
+        payload = response.json()
+        models = payload.get("models", []) if isinstance(payload, dict) else []
+        names: list[str] = []
+        for item in models:
+            if isinstance(item, dict):
+                name = item.get("name") or item.get("model")
+                if name:
+                    names.append(name)
+            elif isinstance(item, str) and item.strip():
+                names.append(item.strip())
+        return sorted(set(names))
 
-    if backend in {"openai", "groq", "together"}:
+    if backend in {"openai", "groq", "together", "openrouter"}:
         endpoints = {
             "openai": "https://api.openai.com/v1/models",
+            "openrouter": "https://openrouter.ai/api/v1/models",
             "groq": "https://api.groq.com/openai/v1/models",
             "together": "https://api.together.xyz/v1/models",
         }
@@ -271,6 +291,10 @@ def _build_backend(config: AgentConfig):
         kwargs["api_key"] = config.api_key or os.getenv("OPENAI_API_KEY", "")
         kwargs["org_id"] = os.getenv("OPENAI_ORG_ID")
         backend = BackendFactory.create("openai", **kwargs)
+    elif config.backend == "openrouter":
+        kwargs["api_key"] = config.api_key or os.getenv("OPENROUTER_API_KEY", "")
+        kwargs["base_url"] = config.base_url or os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        backend = BackendFactory.create("openrouter", **kwargs)
     elif config.backend == "anthropic":
         kwargs["api_key"] = config.api_key or os.getenv("ANTHROPIC_API_KEY", "")
         backend = BackendFactory.create("anthropic", **kwargs)
@@ -488,6 +512,12 @@ async def save_env(request: Request):
         "DEFAULT_BACKEND": str(payload.get("backend", "lm_studio")),
         "LM_STUDIO_URL": str(payload.get("base_url", "http://localhost:1234/v1")),
         "LM_STUDIO_MODEL": str(payload.get("model", "local-model")),
+        "OLLAMA_BASE_URL": str(payload.get("base_url", "http://localhost:11434") if payload.get("backend") == "ollama" else "http://localhost:11434"),
+        "OLLAMA_MODEL": str(payload.get("model", "llama3.1:8b")),
+        "OPENAI_MODEL": str(payload.get("model", "gpt-4o-mini")),
+        "ANTHROPIC_MODEL": str(payload.get("model", "claude-3-5-sonnet-20241022")),
+        "GROQ_MODEL": str(payload.get("model", "llama-3.3-70b-versatile")),
+        "TOGETHER_MODEL": str(payload.get("model", "meta-llama/Llama-3-70b-chat-hf")),
         "LM_STUDIO_TEMPERATURE": str(payload.get("temperature", 0.7)),
         "LM_STUDIO_MAX_TOKENS": str(payload.get("max_tokens", 2048)),
         "TOOLS_ENABLED": ",".join(payload.get("tools", ["web_search", "fetch", "calculator"])),

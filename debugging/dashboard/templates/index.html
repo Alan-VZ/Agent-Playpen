@@ -519,6 +519,17 @@
       search_cse_id: ''
     };
 
+    const BACKEND_DEFAULTS = {
+      lm_studio: { base_url: 'http://localhost:1234/v1', model: 'local-model' },
+      ollama: { base_url: 'http://localhost:11434', model: 'llama3.1:8b' },
+      openai: { base_url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+      openrouter: { base_url: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini' },
+      anthropic: { base_url: 'https://api.anthropic.com', model: 'claude-3-5-sonnet-20241022' },
+      azure_openai: { base_url: 'https://<your-resource>.openai.azure.com', model: 'gpt-4o' },
+      groq: { base_url: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
+      together: { base_url: 'https://api.together.xyz/v1', model: 'meta-llama/Llama-3-70b-chat-hf' },
+    };
+
     const backendSelect = document.getElementById('backend');
     const plannerSelect = document.getElementById('planner');
     const toolList = document.getElementById('tool-list');
@@ -533,6 +544,32 @@
       applyDefaults(data);
     }
 
+    function syncBackendDefaults() {
+      const backend = backendSelect.value;
+      const defaults = BACKEND_DEFAULTS[backend] || BACKEND_DEFAULTS.lm_studio;
+      const previous = backendSelect.dataset.previousBackend;
+      const baseUrlInput = document.getElementById('base_url');
+      const modelInput = document.getElementById('model');
+
+      if (previous !== backend) {
+        const previousDefaults = previous ? BACKEND_DEFAULTS[previous] : null;
+        const previousBase = previousDefaults ? previousDefaults.base_url : '';
+        const previousModel = previousDefaults ? previousDefaults.model : '';
+        const baseValue = baseUrlInput.value.trim();
+        const modelValue = modelInput.value.trim();
+
+        if (!baseValue || baseValue === previousBase || baseValue === 'http://localhost:1234/v1' || baseValue === 'http://localhost:11434' || baseValue === 'https://api.openai.com/v1' || baseValue === 'https://api.anthropic.com' || baseValue === 'https://api.groq.com/openai/v1' || baseValue === 'https://api.together.xyz/v1') {
+          baseUrlInput.value = defaults.base_url;
+        }
+
+        if (!modelValue || modelValue === previousModel || modelValue === 'local-model' || modelValue === 'llama3.1:8b' || modelValue === 'gpt-4o-mini' || modelValue === 'claude-3-5-sonnet-20241022' || modelValue === 'llama-3.3-70b-versatile' || modelValue === 'meta-llama/Llama-3-70b-chat-hf') {
+          modelInput.value = defaults.model;
+        }
+
+        backendSelect.dataset.previousBackend = backend;
+      }
+    }
+
     function applyDefaults(values) {
       backendSelect.innerHTML = '';
       const backends = ['lm_studio', 'ollama', 'openai', 'anthropic', 'azure_openai', 'groq', 'together'];
@@ -543,6 +580,7 @@
         backendSelect.appendChild(option);
       });
       backendSelect.value = values.backend || defaultState.backend;
+      backendSelect.dataset.previousBackend = backendSelect.value;
 
       plannerSelect.innerHTML = '';
       ['react', 'cot', 'tree'].forEach((planner) => {
@@ -579,6 +617,7 @@
         toolList.appendChild(wrapper);
       });
 
+      syncBackendDefaults();
       applyToolTooltips();
     }
 
@@ -676,7 +715,7 @@
         <p>Which LLM provider runs your model. The connection is health-checked before the agent starts, so a wrong URL or missing key fails immediately with a clear message.</p>
         <ul>
           <li><code>lm_studio</code> — local. Uses <strong>Base URL</strong>. No API key.</li>
-          <li><code>ollama</code> — local. Uses <strong>Base URL</strong>. No API key.</li>
+          <li><code>ollama</code> — local. Uses <strong>Base URL</strong>. No API key, but you must have a model pulled and running via <code>ollama serve</code> and <code>ollama pull &lt;model&gt;</code>.</li>
           <li><code>openai</code>, <code>anthropic</code>, <code>groq</code>, <code>together</code> — cloud. Need an <strong>API Key</strong>. Base URL is ignored.</li>
           <li><code>azure_openai</code> — cloud. Needs the key plus <code>AZURE_OPENAI_ENDPOINT</code>, <code>AZURE_OPENAI_DEPLOYMENT</code> and <code>AZURE_OPENAI_API_VERSION</code> set as environment variables. Those three cannot be set from this form.</li>
         </ul>
@@ -686,6 +725,7 @@
         <p>The model identifier, exactly as your chosen backend expects it.</p>
         <p>The list loads automatically when you pick a backend. <strong>Click the field to browse, or start typing to filter</strong> — and you can always type a name that is not listed. Press <strong>Load</strong> to refresh after loading a new model.</p>
         <p>For local backends the list is read live from LM Studio or Ollama, so it shows exactly what you have installed. For cloud backends it is fetched with your saved key; without a key you get a short list of common names instead.</p>
+        <p class="warn">For Ollama, run <code>ollama pull &lt;model-name&gt;</code> first so the model appears in the dropdown. For LM Studio, load a model in the app and then refresh the list.</p>
         <p><strong>Examples by backend</strong></p>
         <ul>
           <li>lm_studio — <code>local-model</code> (works as a catch-all), or the exact name shown in LM Studio</li>
@@ -1115,6 +1155,7 @@
       document.getElementById('clear-cse').addEventListener('click', () => saveSearchExtra(true));
 
       backendSelect.addEventListener('change', () => {
+        syncBackendDefaults();
         renderKeyStatus();
         loadModels(true);
       });

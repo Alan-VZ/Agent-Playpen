@@ -1,16 +1,17 @@
 {
   "backend": "lm_studio",
-  "model": "local-model",
-  "task": "hello world",
+  "model": "llama-3.2-8x3b-moe-dark-champion-instruct-uncensored-abliterated-18.4b",
+  "base_url": "http://localhost:1234/v1",
+  "planner": "react",
   "tools": [
     "web_search",
     "fetch",
     "calculator"
   ],
-  "planner": "react",
-  "base_url": "http://localhost:1234/v1",
-  "allowed_dirs": ".",
-  "search_provider": "auto",
+  "task": "Search for the three most recent papers on retrieval-augmented generation and summarize each in two sentences.",
+  "allowed_dirs": "C:\\Temp\\agent-output",
+  "search_provider": "duckduckgo",
+  "search_cse_id": "",
   "max_iterations": 10,
   "temperature": 0.7,
   "max_tokens": 2048

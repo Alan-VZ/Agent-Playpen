@@ -1,16 +1,22 @@
 # Agent Playpen
 
+<p align="center">
+  <img src="assets/Cyberpunk%20goddess.png" alt="Agent Playpen banner" width="900" />
+</p>
+
 Agent Playpen is a lightweight, modular Python framework for building and running AI agents with local or cloud LLM backends, planner strategies, tool execution, memory, and observability.
 
 The project is designed for experimentation and learning: you can run a local LM Studio model, give an agent tools like web search and file I/O, and let it reason through tasks using a ReAct-style or other planning loop.
 
 This repo is intentionally extensible. You can:
 
-- switch between LLM providers such as LM Studio, OpenAI, Anthropic, Groq, Together, and Azure OpenAI
+- switch between LLM providers such as LM Studio, OpenAI, Ollama, OpenRouter, Anthropic, Groq, Together, and Azure OpenAI
 - choose a planning strategy such as ReAct, CoT, or Tree-of-Thought
 - register custom tools that the agent can call
 - add memory layers for conversation history or vector retrieval
 - trace execution and track estimated token cost
+
+To add a new provider, create a backend class in the `backends/` package and register it in `backends/backend_factory.py` under `BackendFactory.REGISTRY`. The common pattern is to add provider-specific settings to `config/settings.py`, add example variables to `.env.example`, and then read them from the environment or the local `.env` file.
 
 ## Why this project exists
 
@@ -29,6 +35,56 @@ This makes it useful for:
 - research assistants that can browse the web and read files
 - task-based agents that use memory and iterative reasoning
 
+## Recommended GitHub metadata
+
+If you publish the project publicly, the short repository description and topics should communicate the core idea quickly.
+
+Suggested description:
+
+```text
+Lightweight Python framework for experimenting with AI agents, tool calling, memory, and local/cloud LLM backends.
+```
+
+Suggested topics:
+
+```text
+ai-agents
+agent-framework
+llm
+lm-studio
+python
+tool-calling
+openai
+anthropic
+ollama
+```
+
+## Screenshots
+
+The repo includes generated art and branding assets in the `assets/` folder. These can be embedded directly in the README to make the project feel immediate and more approachable to new users.
+
+```md
+![Agent Playpen dashboard](assets/Cyberpunk%20goddess.png)
+```
+
+## Design Philosophy
+
+Agent Playpen was built to explore agent architectures without hiding the important parts behind layers of framework abstraction. The goal is to keep the execution loop understandable, debuggable, and easy to modify.
+
+This is intentionally not a "magic" framework. If you want to know why the agent chose a tool, what the model was asked to do, and what happened next, the code is meant to make that visible rather than bury it in a giant dependency graph.
+
+## Why not LangChain? Why not AutoGen? Why not CrewAI?
+
+Because Agent Playpen was designed to be readable by the person who built it. The project favors a small set of clear abstractions over a large, opinionated ecosystem. This keeps the loop easy to understand, the tool contracts explicit, and the runtime easier to debug when something goes wrong.
+
+In plain terms: the project prioritizes transparency, editability, and local experimentation over framework ceremony.
+
+## Current Status
+
+Agent Playpen is an experimental framework intended for learning, prototyping, and local AI experimentation.
+
+It is not currently positioned as a production-grade agent platform for mission-critical workloads. It is best used when you want to understand how reasoning, tool use, memory, and backend routing fit together in one codebase.
+
 ## High-level architecture
 
 The project is organized around a few core concepts:
@@ -42,14 +98,18 @@ The project is organized around a few core concepts:
 
 At runtime, the flow looks like this:
 
-```text
-Task
-  -> Agent
-      -> Planner
-      -> Backend.chat(...)
-      -> ToolExecutor.run(...)
-      -> Memory + Tracer + Cost tracking
-      -> next iteration / final answer
+```mermaid
+flowchart TD
+    A[Task] --> B[Agent]
+    B --> C[Planner]
+    C --> D[Backend.chat]
+    D --> E{Need tool call?}
+    E -- Yes --> F[ToolExecutor]
+    F --> G[Tool result]
+    G --> B
+    E -- No --> H[Final answer]
+    B --> I[Memory + Tracer + Cost tracking]
+    I --> C
 ```
 
 ## Supported backends
@@ -126,48 +186,132 @@ These help inspect the reasoning loop, log actions, and estimate usage cost duri
 
 ```text
 Agent Playpen/
+├── .env.example
+├── .gitignore
+├── CHANGELOG.md
+├── Extension Guide.txt
+├── Full Folder Structure.md
+├── Installation and Quick-Start Guide.md
+├── LICENSE
+├── README.md
+├── Start Agent Playpen.cmd
 ├── advanced/
+│   ├── __init__.py
+│   ├── evaluator.py
+│   ├── guardrails.py
+│   ├── prompt_optimizer.py
+│   ├── rate_limiter.py
+│   ├── self_critique.py
+│   ├── multi_agent/
+│   │   ├── manager.py
+│   │   └── message_bus.py
+│   └── streaming/
+│       ├── stream_handler.py
+│       └── token_streamer.py
+├── assets/
+│   ├── Cyberpunk goddess/
+│   │   ├── favicon.ico
+│   │   └── icon-256x256.ico
+│   ├── Cyberpunk goddess.png
+│   ├── Cyberpunk goddess_2.png
+│   ├── Cyberpunk goddess_3.png
+│   ├── icons.zip
+│   ├── icons (1).zip
+│   └── icons (2).zip
 ├── backends/
-│   ├── base_backend.py
+│   ├── __init__.py
+│   ├── anthropic_backend.py
+│   ├── azure_openai.py
 │   ├── backend_factory.py
+│   ├── base_backend.py
+│   ├── groq_backend.py
 │   ├── lm_studio.py
 │   ├── ollama.py
 │   ├── openai_backend.py
-│   ├── anthropic_backend.py
-│   ├── azure_openai.py
-│   ├── groq_backend.py
 │   └── together_backend.py
 ├── config/
+│   ├── settings.py
+│   └── web_agent_config.json
 ├── core/
+│   ├── __init__.py
 │   ├── agent.py
 │   ├── context.py
-│   ├── runner.py
-│   └── ...
+│   ├── exceptions.py
+│   └── runner.py
 ├── debugging/
+│   ├── __init__.py
+│   ├── cost_tracker.py
+│   ├── dashboard/
+│   │   ├── server.py
+│   │   └── templates/
+│   │       └── index.html
+│   ├── diff_viewer.py
+│   ├── inspector.py
+│   ├── logger.py
+│   ├── replay.py
+│   └── tracer.py
 ├── examples/
 │   ├── basic_chat.py
+│   ├── code_agent.py
+│   ├── file_agent.py
+│   ├── memory_demo.py
 │   ├── react_agent.py
 │   ├── research_agent.py
-│   ├── file_agent.py
-│   ├── code_agent.py
 │   └── multi_agent/
+│       ├── orchestrator.py
+│       └── worker_agent.py
 ├── memory/
+│   ├── __init__.py
+│   ├── base_memory.py
+│   ├── conversation_buffer.py
+│   ├── episodic_memory.py
+│   ├── in_memory.py
+│   ├── memory_manager.py
+│   ├── semantic_memory.py
+│   ├── vector_store.py
+│   └── working_memory.py
 ├── planner/
+│   ├── __init__.py
 │   ├── base_planner.py
-│   ├── react_planner.py
 │   ├── cot_planner.py
-│   ├── tree_planner.py
-│   └── ...
+│   ├── plan_schema.py
+│   ├── react_planner.py
+│   └── tree_planner.py
+├── pyproject.toml
 ├── tests/
 ├── tools/
+│   ├── __init__.py
 │   ├── base_tool.py
-│   ├── tool_registry.py
+│   ├── packs/
+│   │   ├── api/
+│   │   │   ├── graphql_tool.py
+│   │   │   ├── http_tool.py
+│   │   │   ├── weather_tool.py
+│   │   │   └── "Writing a Custom Tool — Example WeatherTool.md"
+│   │   ├── code/
+│   │   │   ├── linter_tool.py
+│   │   │   ├── python_repl.py
+│   │   │   └── shell_exec.py
+│   │   ├── data/
+│   │   │   ├── csv_tool.py
+│   │   │   ├── json_tool.py
+│   │   │   └── sql_tool.py
+│   │   ├── filesystem/
+│   │   │   ├── list_dir.py
+│   │   │   ├── read_file.py
+│   │   │   └── write_file.py
+│   │   ├── utils/
+│   │   │   ├── calculator_tool.py
+│   │   │   ├── datetime_tool.py
+│   │   │   └── summarize_tool.py
+│   │   └── web/
+│   │       ├── fetch_tool.py
+│   │       ├── scraper_tool.py
+│   │       └── search_tool.py
 │   ├── tool_executor.py
-│   └── packs/
-├── .env.example
-├── pyproject.toml
-├── README.md
-└── ...
+│   └── tool_registry.py
+├── traces/
+└── .venv/
 ```
 
 ## Prerequisites
@@ -278,6 +422,7 @@ Then open `http://localhost:8765` in your browser.
 ### Features
 
 **Configuration & Execution:**
+
 - Choose backend (LM Studio, Ollama, OpenAI, Anthropic, Groq, Together, Azure)
 - **Live model discovery** — Load available models from your backend in real time
 - **API key storage** — Save keys to `.env` securely (no re-entry needed)
@@ -287,11 +432,13 @@ Then open `http://localhost:8765` in your browser.
 - Save configurations as JSON for reuse
 
 **Help System:**
+
 - Context-sensitive `?` help buttons on every field
 - Field descriptions with code examples and best practices
 - Quick-start guide for local model setup
 
 **Observability:**
+
 - Run the agent and view the final answer in real time
 - Inspect the execution trace with full thought/action/observation history
 - See which tools were called and what they returned
@@ -414,9 +561,11 @@ Because the project includes tools like filesystem access and Python execution, 
 
 - Local-first AI research assistant
 - Document analysis with file reading and summarization
+
 ## Recent improvements
 
 **Agent loop fixes (v2.0):**
+
 - ✅ **Fixed threading hangs** — `ThreadPoolExecutor.shutdown(wait=False)` prevents indefinite blocking on tool timeouts
 - ✅ **True ReAct feedback loop** — Planning now runs inside the iteration loop, not pre-computed; observations re-enter planning
 - ✅ **Recoverable tool errors** — Model typos in tool arguments (e.g., `querry=` instead of `query=`) now return error observations instead of crashing
@@ -424,6 +573,7 @@ Because the project includes tools like filesystem access and Python execution, 
 - ✅ **Observation capping** — Results truncated at 2000 chars to prevent context window overflow
 
 **Web UI enhancements:**
+
 - 🎯 **Live model discovery** — Load available models directly from LM Studio, Ollama, OpenAI, etc.
 - 🔐 **Persistent API keys** — Store keys securely in `.env`; the browser never sees them
 - 🔎 **Auto search fallback** — `web_search` can automatically try saved Google, Tavily, and SerpAPI credentials, then DuckDuckGo
@@ -431,6 +581,7 @@ Because the project includes tools like filesystem access and Python execution, 
 - 🎨 **Custom dropdown** — Functional model selector (replaces broken HTML5 datalist)
 
 **Developer experience:**
+
 - 📋 **Full folder structure documentation** — Accurately reflects all modules and features
 - 🚀 **Windows desktop launcher** — `Start Agent Playpen.cmd` auto-detects running servers and opens the browser
 - 📖 **Updated installation guide** — Clear steps for both web UI and CLI workflows
@@ -452,6 +603,6 @@ It strikes a balance between accessibility and flexibility, making it well-suite
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
-**Copyright © 2026 Alan Van Zandt**
+Copyright © 2026 Alan Van Zandt
 
 You are free to use, modify, and distribute this software in accordance with the terms of the MIT License.
