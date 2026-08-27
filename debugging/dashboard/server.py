@@ -508,16 +508,22 @@ async def save_env(request: Request):
             content={"status": "error", "message": f"Invalid JSON payload: {exc}"},
         )
 
+    backend = str(payload.get("backend", "lm_studio"))
+    base_url = str(payload.get("base_url", "http://localhost:1234/v1"))
+    model_name = str(payload.get("model", "local-model"))
+
     updates: dict[str, str | None] = {
-        "DEFAULT_BACKEND": str(payload.get("backend", "lm_studio")),
-        "LM_STUDIO_URL": str(payload.get("base_url", "http://localhost:1234/v1")),
-        "LM_STUDIO_MODEL": str(payload.get("model", "local-model")),
-        "OLLAMA_BASE_URL": str(payload.get("base_url", "http://localhost:11434") if payload.get("backend") == "ollama" else "http://localhost:11434"),
-        "OLLAMA_MODEL": str(payload.get("model", "llama3.1:8b")),
-        "OPENAI_MODEL": str(payload.get("model", "gpt-4o-mini")),
-        "ANTHROPIC_MODEL": str(payload.get("model", "claude-3-5-sonnet-20241022")),
-        "GROQ_MODEL": str(payload.get("model", "llama-3.3-70b-versatile")),
-        "TOGETHER_MODEL": str(payload.get("model", "meta-llama/Llama-3-70b-chat-hf")),
+        "DEFAULT_BACKEND": backend,
+        "LM_STUDIO_URL": base_url if backend == "lm_studio" else "http://localhost:1234/v1",
+        "LM_STUDIO_MODEL": model_name if backend == "lm_studio" else "local-model",
+        "OLLAMA_BASE_URL": base_url if backend == "ollama" else "http://localhost:11434",
+        "OLLAMA_MODEL": model_name if backend == "ollama" else "llama3.1:8b",
+        "OPENAI_MODEL": model_name if backend == "openai" else "gpt-4o-mini",
+        "OPENROUTER_BASE_URL": base_url if backend == "openrouter" else "https://openrouter.ai/api/v1",
+        "OPENROUTER_MODEL": model_name if backend == "openrouter" else "openai/gpt-4o-mini",
+        "ANTHROPIC_MODEL": model_name if backend == "anthropic" else "claude-3-5-sonnet-20241022",
+        "GROQ_MODEL": model_name if backend == "groq" else "llama-3.3-70b-versatile",
+        "TOGETHER_MODEL": model_name if backend == "together" else "meta-llama/Llama-3-70b-chat-hf",
         "LM_STUDIO_TEMPERATURE": str(payload.get("temperature", 0.7)),
         "LM_STUDIO_MAX_TOKENS": str(payload.get("max_tokens", 2048)),
         "TOOLS_ENABLED": ",".join(payload.get("tools", ["web_search", "fetch", "calculator"])),
@@ -538,6 +544,9 @@ async def save_env(request: Request):
         elif search_key_var:
             updates[search_key_var] = api_key
             os.environ[search_key_var] = api_key
+        if backend == "openrouter":
+            updates["OPENROUTER_API_KEY"] = api_key
+            os.environ["OPENROUTER_API_KEY"] = api_key
 
     search_cse_id = str(payload.get("search_cse_id") or "").strip()
     search_provider = str(payload.get("search_provider", ""))

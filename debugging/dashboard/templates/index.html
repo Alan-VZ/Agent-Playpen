@@ -572,7 +572,7 @@
 
     function applyDefaults(values) {
       backendSelect.innerHTML = '';
-      const backends = ['lm_studio', 'ollama', 'openai', 'anthropic', 'azure_openai', 'groq', 'together'];
+      const backends = ['lm_studio', 'ollama', 'openai', 'openrouter', 'anthropic', 'azure_openai', 'groq', 'together'];
       backends.forEach((backend) => {
         const option = document.createElement('option');
         option.value = backend;
@@ -716,7 +716,7 @@
         <ul>
           <li><code>lm_studio</code> — local. Uses <strong>Base URL</strong>. No API key.</li>
           <li><code>ollama</code> — local. Uses <strong>Base URL</strong>. No API key, but you must have a model pulled and running via <code>ollama serve</code> and <code>ollama pull &lt;model&gt;</code>.</li>
-          <li><code>openai</code>, <code>anthropic</code>, <code>groq</code>, <code>together</code> — cloud. Need an <strong>API Key</strong>. Base URL is ignored.</li>
+          <li><code>openai</code>, <code>openrouter</code>, <code>anthropic</code>, <code>groq</code>, <code>together</code> — cloud. Need an <strong>API Key</strong>. Base URL is ignored unless the provider specifically uses an API-compatible endpoint.</li>
           <li><code>azure_openai</code> — cloud. Needs the key plus <code>AZURE_OPENAI_ENDPOINT</code>, <code>AZURE_OPENAI_DEPLOYMENT</code> and <code>AZURE_OPENAI_API_VERSION</code> set as environment variables. Those three cannot be set from this form.</li>
         </ul>
         <p><strong>Start here:</strong> <code>lm_studio</code> keeps everything on your machine and costs nothing.</p>`,
@@ -915,6 +915,7 @@
 
     const BACKEND_KEY_VAR = {
       openai: 'OPENAI_API_KEY',
+      openrouter: 'OPENROUTER_API_KEY',
       anthropic: 'ANTHROPIC_API_KEY',
       groq: 'GROQ_API_KEY',
       together: 'TOGETHER_API_KEY',

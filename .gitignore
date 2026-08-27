@@ -18,3 +18,6 @@ config/web_agent_config.json
 .DS_Store
 Thumbs.db
 
+# Local helper script for quick save/commit flow
+save-and-commit.ps1
+
