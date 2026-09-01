@@ -1,7 +1,8 @@
 # Agent Playpen
+<!-- cSpell:ignore Ollama, Groq -->
 
 <p align="center">
-  <img src="assets/Cyberpunk%20goddess.png" alt="Agent Playpen banner" width="900" />
+  <img src="assets/Cyberpunk%20goddess2.png" alt="Agent Playpen banner" width="900" />
 </p>
 
 Agent Playpen is a lightweight, modular Python framework for building and running AI agents with local or cloud LLM backends, planner strategies, tool execution, memory, and observability.
@@ -96,21 +97,18 @@ The project is organized around a few core concepts:
 - Memory Manager: keeps conversation or retrieval memory
 - Agent: orchestrates the reasoning loop
 
-At runtime, the flow looks like this:
+At runtime, the workbench drives an explicit Think-Act-Observe loop across
+planners, model backends, tools, memory, and execution traces:
 
-```mermaid
-flowchart TD
-    A[Task] --> B[Agent]
-    B --> C[Planner]
-    C --> D[Backend.chat]
-    D --> E{Need tool call?}
-    E -- Yes --> F[ToolExecutor]
-    F --> G[Tool result]
-    G --> B
-    E -- No --> H[Final answer]
-    B --> I[Memory + Tracer + Cost tracking]
-    I --> C
-```
+<p align="center">
+  <a href="assets/agent-playpen-architecture.html">
+    <img src="assets/agent-playpen-architecture.svg" alt="Agent Playpen architecture showing the workbench, agent runtime, planners, model backends, tools, memory, and execution traces" width="1200" />
+  </a>
+</p>
+
+<p align="center">
+  <sub><a href="assets/agent-playpen-architecture.html">Open the full architecture diagram</a></sub>
+</p>
 
 ## Supported backends
 

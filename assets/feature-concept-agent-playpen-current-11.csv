@@ -1,0 +1,12 @@
+﻿Feature / Concept,Agent Playpen (Current),LangGraph,CrewAI,AutoGen,Hermes Agent,Gemini CLI
+Local-first,Yes,Partial,No,No,Yes,Yes
+Transparent traces,Yes (files),Strong,Medium,Medium,Strong,Medium
+Workflow builder,Planned,Strong,Medium,Medium,Weak,Weak
+Tooling architecture,Good,Strong,Strong,Strong,Medium,Medium
+Setup wizard,Missing,No,No,No,No,No
+Health diagnostics,Missing,Weak,Weak,Weak,Medium,Medium
+Agent presets,Missing,No,Yes,Yes,Yes,Yes
+Knowledge surface,Missing,Strong,Medium,Medium,Weak,Weak
+UI workspace,Basic,None,None,None,Terminal,Terminal
+Operational controls,Missing,Medium,Weak,Weak,Medium,Medium
+Positioning,Local agent lab,Graph orchestrator,Role-based teams,Multi-agent runtime,Persistent agent,Terminal-native agent
