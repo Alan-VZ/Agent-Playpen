@@ -2,7 +2,7 @@
 <!-- cSpell:ignore Ollama, Groq -->
 
 <p align="center">
-  <img src="assets/Cyberpunk%20goddess2.png" alt="Agent Playpen banner" width="900" />
+  <img src="assets/Cyberpunk%20goddess_2.png" alt="Agent Playpen banner" width="900" />
 </p>
 
 Agent Playpen is a lightweight, modular Python framework for building and running AI agents with local or cloud LLM backends, planner strategies, tool execution, memory, and observability.
