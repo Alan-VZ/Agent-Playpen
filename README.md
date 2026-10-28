@@ -532,6 +532,15 @@ This enables a consistent pattern for dynamically registered functions. To add a
 
 This design makes it easy to extend the agent with domain-specific actions.
 
+## Proposed multi-agent consensus
+
+The [Bayesian aggregation concept](docs/bayesian-agent-consensus.md) describes a
+possible coordinator for three or four agents: collect independent proposals,
+combine explicit probability assessments, verify decision-relevant disagreements,
+and preserve a correct minority through reproducible evidence. It covers shared
+evidence, reliability calibration, bounded review, and evaluation against voting
+baselines. This is a design proposal; the consensus engine is not implemented.
+
 ## Development workflow
 
 Run static checks and tests if available:
