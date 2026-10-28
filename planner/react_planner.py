@@ -80,6 +80,9 @@ class ReActPlanner(BasePlanner):
         """
         import json
 
+        if not re.search(r"^Action:\s*", raw, re.MULTILINE):
+            return Thought(reasoning=raw, is_terminal=True, answer=raw.strip())
+
         thought_match = re.search(r"Thought:\s*(.+?)(?=Action:|$)", raw, re.DOTALL)
         action_match = re.search(r"Action:\s*(.+?)(?=Action Input:|$)", raw, re.DOTALL)
         input_match = re.search(r"Action Input:\s*(.+?)$", raw, re.DOTALL)

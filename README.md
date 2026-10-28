@@ -544,6 +544,9 @@ baselines. This is a design proposal; the consensus engine is not implemented.
 
 ## Development workflow
 
+See the [testing guide](docs/testing.md) for dependency setup, coverage, package
+build checks, and the scope of offline versus live integration testing.
+
 Run static checks and tests if available:
 
 ```bash

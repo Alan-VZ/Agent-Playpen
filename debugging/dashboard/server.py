@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import os
@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 
 import requests
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -241,11 +241,11 @@ class AgentConfig(BaseModel):
     base_url: str = "http://localhost:1234/v1"
     api_key: str = ""
     temperature: float = 0.7
-    max_tokens: int = 2048
+    max_tokens: int = Field(default=2048, ge=1)
     planner: str = "react"
     tools: list[str] = Field(default_factory=lambda: ["web_search", "fetch", "calculator"])
     task: str = ""
-    max_iterations: int = 10
+    max_iterations: int = Field(default=10, ge=1)
     allowed_dirs: str = "."
     search_provider: str = "auto"
     search_cse_id: str = ""
@@ -296,13 +296,15 @@ def _build_backend(config: AgentConfig):
         kwargs["base_url"] = config.base_url or os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         backend = BackendFactory.create("openrouter", **kwargs)
     elif config.backend == "anthropic":
+        kwargs.pop("temperature")
         kwargs["api_key"] = config.api_key or os.getenv("ANTHROPIC_API_KEY", "")
         backend = BackendFactory.create("anthropic", **kwargs)
     elif config.backend == "azure_openai":
+        kwargs.pop("model")
         kwargs["api_key"] = config.api_key or os.getenv("AZURE_OPENAI_KEY", "")
-        kwargs["endpoint"] = os.getenv("AZURE_OPENAI_ENDPOINT", "")
-        kwargs["deployment"] = os.getenv("AZURE_OPENAI_DEPLOYMENT", "")
-        kwargs["api_version"] = os.getenv("AZURE_OPENAI_API_VERSION", "")
+        kwargs["azure_endpoint"] = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+        kwargs["deployment_name"] = os.getenv("AZURE_OPENAI_DEPLOYMENT", "")
+        kwargs["api_version"] = os.getenv("AZURE_OPENAI_API_VERSION") or "2024-05-01-preview"
         backend = BackendFactory.create("azure_openai", **kwargs)
     elif config.backend == "groq":
         kwargs["api_key"] = config.api_key or os.getenv("GROQ_API_KEY", "")
@@ -360,7 +362,9 @@ def api_defaults():
 @app.post("/api/run")
 def run_agent(config: AgentConfig):
     if not config.task.strip():
-        raise ValueError("Task is required.")
+        raise HTTPException(status_code=400, detail="Task is required.")
+    if config.planner not in PLANNER_MAP:
+        raise HTTPException(status_code=400, detail="Unsupported planner.")
 
     try:
         backend = _build_backend(config)
@@ -485,6 +489,8 @@ async def save_config(request: Request):
             content={"status": "error", "message": f"Invalid JSON payload: {exc}"},
         )
 
+    if not isinstance(payload, dict):
+        return JSONResponse(status_code=400, content={"message": "Expected a JSON object."})
     payload.pop("api_key", None)
     payload.pop("search_cse_id", None)
     config_dir = ROOT / "config"
@@ -508,6 +514,8 @@ async def save_env(request: Request):
             content={"status": "error", "message": f"Invalid JSON payload: {exc}"},
         )
 
+    if not isinstance(payload, dict):
+        return JSONResponse(status_code=400, content={"message": "Expected a JSON object."})
     backend = str(payload.get("backend", "lm_studio"))
     base_url = str(payload.get("base_url", "http://localhost:1234/v1"))
     model_name = str(payload.get("model", "local-model"))

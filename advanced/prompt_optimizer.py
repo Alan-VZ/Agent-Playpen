@@ -1,5 +1,4 @@
 # Prompt Optimizer (prompt_optimizer.py)
-import random
 from dataclasses import dataclass, field
 from advanced.evaluator import Evaluator
 
@@ -59,4 +58,3 @@ class PromptOptimizer:
         )
         prompt = IMPROVE_PROMPT.format(variants=summary)
         return self.backend.chat([{"role": "user", "content": prompt}])
-    

@@ -1,5 +1,4 @@
 from core.context import AgentContext
-from core.exceptions import AgentMaxIterationsError, AgentToolError
 from backends.base_backend import BaseBackend
 from planner.base_planner import BasePlanner
 from tools.tool_executor import ToolExecutor
@@ -24,6 +23,8 @@ class Agent:
         tracer: Tracer,
         max_iterations: int = 10,
     ):
+        if max_iterations < 1:
+            raise ValueError("max_iterations must be at least 1")
         self.backend = backend
         self.planner = planner
         self.executor = ToolExecutor(tool_registry)
@@ -41,7 +42,12 @@ class Agent:
         ctx.memory_snapshots = self.memory.retrieve(task, top_k=5)
 
         # Plan initial steps
-        plan = self.planner.plan(task, ctx)
+        self.planner.plan(task, ctx)
+
+        # Expose registered tool contracts for every entry point, including CLI.
+        self.planner.tool_descriptions = "\n".join(
+            str(schema["function"]) for schema in self.executor.registry.to_openai_schemas()
+        ) or "No tools available."
 
         # Main reasoning loop: re-plan dynamically based on observations
         while ctx.iteration < self.max_iterations:
@@ -97,7 +103,7 @@ class Agent:
 
     def _act(self, thought, ctx):
         """Execute the tool named in the thought.
-        
+
         Errors are caught and returned as observations, allowing the agent
         to retry if the model made a typo in tool arguments.
         """

@@ -1,7 +1,6 @@
 # Execution Tracer (tracer.py)
 import json
 import datetime
-import os
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
@@ -12,7 +11,7 @@ class TraceEvent:
     type: str          # think | act | observe | error
     content: str
     timestamp: str = field(
-        default_factory=lambda: datetime.datetime.utcnow().isoformat()
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
     )
     iteration: int = 0
     tool_name: str = ""
@@ -88,4 +87,4 @@ class Tracer:
         data = [asdict(e) for e in self.events]
         path.write_text(json.dumps(data, indent=2), encoding="utf-8")
         return str(path)
-    
+

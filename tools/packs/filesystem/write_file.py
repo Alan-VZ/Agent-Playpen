@@ -42,6 +42,8 @@ class WriteFileTool(BaseTool):
         path = kwargs["path"]
         content = kwargs["content"]
         mode = kwargs.get("mode", "w")
+        if mode not in {"w", "a"}:
+            raise ValueError("mode must be 'w' or 'a'")
         p = Path(path)
         self._check_allowed(p)
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -51,4 +53,4 @@ class WriteFileTool(BaseTool):
             with open(p, "a", encoding="utf-8") as f:
                 f.write(content)
         return f"Written {len(content)} characters to {path}"
-    
+

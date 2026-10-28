@@ -1,6 +1,5 @@
 #  settings.py — Full Pydantic-Settings Class
 from pydantic_settings import BaseSettings
-from pydantic import Field
 from typing import Optional
 
 
@@ -81,4 +80,3 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
-        
