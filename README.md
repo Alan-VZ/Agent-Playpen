@@ -535,10 +535,11 @@ This design makes it easy to extend the agent with domain-specific actions.
 ## Proposed multi-agent consensus
 
 The [Bayesian aggregation concept](docs/bayesian-agent-consensus.md) describes a
-possible coordinator for three or four agents: collect independent proposals,
+possible coordinator for configurable groups, initially evaluated with 2–10 agents: collect independent proposals,
 combine explicit probability assessments, verify decision-relevant disagreements,
 and preserve a correct minority through reproducible evidence. It covers shared
-evidence, reliability calibration, bounded review, and evaluation against voting
+evidence, reliability calibration, structured evidence reports with freedom of approach,
+bounded peer review, and evaluation against voting
 baselines. This is a design proposal; the consensus engine is not implemented.
 
 ## Development workflow

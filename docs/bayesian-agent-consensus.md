@@ -4,7 +4,7 @@ Status: proposed design; no consensus engine, configuration keys, or APIs descri
 
 ## Purpose
 
-For tasks with three or four agents, combine independently produced proposals, identify the disagreement that matters, and spend the next tool call or review on resolving it. The objective is a verified solution within a budget. Unanimity is optional; an unresolved result is valid.
+For tasks with a configurable number of agents, initially evaluate groups of 2 through 10 agents. Combine independently produced proposals, identify the disagreement that matters, and spend the next tool call or review on resolving it. The aggregation formulas do not impose a four-agent limit; 10 is an initial evaluation target, not a demonstrated capacity or mathematical ceiling. The objective is a verified solution within a budget. Unanimity is optional; an unresolved result is valid.
 
 Bayesian aggregation combines information through explicit probabilistic assumptions. It can represent uncertainty and incorporate evidence as it arrives. It does not make a majority correct, turn self-reported confidence into reliability, or guarantee fewer tokens or rounds.
 
@@ -49,6 +49,48 @@ This illustrative JSON describes one agent's complete distribution over a shared
 ```
 
 Validate finite probabilities in [0, 1], a sum of one within tolerance, unique message IDs, known candidates, and matching versions. An abstention supplies no probability distribution. Malformed or missing output is missing information, not a neutral vote. Persist evidence with its source, exact artifact version, retrieval or execution time, relevant excerpt or test result, and verification status. A changed patch requires fresh checks.
+
+### Structured evidence with freedom of approach
+
+Standardize the handoff between agents, while leaving research, tools, decomposition, and solution generation open. "Show your work" means a concise, auditable justification and reproducible evidence; it does not require a full internal reasoning transcript or a prescribed sequence of thoughts. A polished explanation remains a claim until checked.
+
+Use two layers: a small required envelope for routing and comparison, plus task-specific evidence and optional free-form notes. Candidate probabilities are optional when an agent cannot provide a meaningful forecast; an evidence-only report must not be converted into a fabricated probability or counted as a vote.
+
+| Field | Purpose |
+| --- | --- |
+| Report ID, task ID, agent ID, round | Identify and deduplicate reports |
+| Claim ID and candidate/artifact version | Establish exactly what is being assessed |
+| Position: support, oppose, or abstain | Distinguish disagreement from missing information |
+| Concise justification | Explain the connection between evidence and claim |
+| Evidence references | Link sources, calculations, test artifacts, and observations |
+| Assumptions and limitations | Expose conditions that could invalidate the conclusion |
+| Verification request | Specify a useful check or what would change the assessment |
+| Dependencies and superseded report IDs | Track inherited information and revisions |
+| Optional forecast and free-form notes | Preserve uncertainty estimates and ideas outside the standard fields |
+
+The earlier proposal JSON illustrates forecasts over candidates; a claim report is a complementary proposed message type. A verification response should reference the claim, evidence, and version checked; give a result of confirmed, contradicted, or inconclusive; and link the resulting artifact. An LLM review and an executed test should retain distinct verifier types and limitations. Confirmation establishes the scope of that check, not universal correctness.
+
+Do not require a URL for mathematical reasoning: an explicit derivation or counterexample can be checkable evidence. Do not require all agents to use the same method or provide the same amount of detail. Permit agents to add a new candidate, challenge the task framing, or report that none of the current candidates fits. Version the candidate set and refresh affected assessments before pooling across it.
+
+Keep required fields short, provide examples, and allow a bounded format-repair attempt. Preserve invalid submissions and useful artifacts, mark them unparsed, and exclude them from numerical aggregation until validated. Report schema failures separately from task errors. Long forms can consume context, encourage invented evidence, or exclude unusual solutions; require only fields needed for the current task. Comparison should operate on claims and checks rather than writing style.
+
+## Scaling coordination to 10 agents
+
+Separate the number of registered participants from the number running at once. A future coordinator should configure group size, concurrency, reviewer assignments, per-agent timeouts, and total budgets independently. The existing manager's broadcast is sequential; parallel execution would be a separate implementation change with backend rate-limit and resource handling.
+
+For N reports over K common candidates, a linear opinion pool takes O(NK) arithmetic. Review traffic and context are more likely bottlenecks: every agent reviewing every other agent produces N(N-1) directed review assignments per round, or 90 at N=10. More agents do not necessarily improve accuracy or reduce latency, especially when they share errors.
+
+Proposed scheduling policy:
+
+1. Collect independent first-round reports into a shared evidence ledger. Missing or timed-out agents remain missing, not negative votes; record the participating set and check any required specialist coverage before accepting a result.
+2. Group reports by candidate and disputed claim for navigation. Preserve minority evidence and distinct counterexamples even when summarizing duplicate reports.
+3. Assign targeted reviews by relevant expertise and provenance. A baseline of at most two peer reviewers per proposal creates at most 2N initial assignments (20 for 10 agents), rather than 90. This assignment budget is not an accuracy guarantee; material unresolved objections may require extra checks or an unresolved result.
+4. Route reviewers the necessary claim, artifact, assumptions, and evidence references instead of replaying every conversation. Use a reproducible tool check where feasible and retain access to original evidence behind summaries.
+5. Recompute the aggregate after new verified evidence. Avoid broadcasting another full round when one targeted check can resolve the decision.
+
+For example, a 10-agent roster could contain four proposal generators, three domain reviewers, two verification workers, and one coordinator. Roles may rotate. A worker executing a test contributes a check, not an extra independent opinion about its own result. A coordinator without a substantive independent assessment does not cast a vote. Ten agents therefore need not mean ten probability distributions; normalize pooling weights over eligible forecasts and record their actual coverage.
+
+If review is hierarchical, preserve source dependencies through every level. A subgroup summary and its underlying reports are not separate evidence. Shared sources or models should not gain confidence merely because additional agents repeat them. Acceptance remains tied to task criteria, checked evidence, and declared risk thresholds rather than a universal vote count.
 
 ## Two distinct aggregation mechanisms
 
@@ -100,7 +142,7 @@ Never define success as agreement with the final group answer, or failure as slo
 1. Define the task's acceptance criteria, shared candidates or claims, independent first-round prompts, and token/tool/time budgets.
 2. Collect initial proposals without exposing peers' answers. Validate their structure and capture provenance.
 3. Separate candidate preference from verified evidence. Apply each new observation once and calculate the declared pool or posterior.
-4. Identify decision-relevant conflicts, especially a counterexample to a leading candidate. With only three or four agents, IQR or MAD thresholds are unstable and do not establish who is correct. Text and categorical proposals need claim comparison, not numeric outlier arithmetic.
+4. Identify decision-relevant conflicts, especially a counterexample to a leading candidate. With small groups, IQR or MAD thresholds are unstable; increasing to 10 agents still does not make statistical distance establish who is correct. Text and categorical proposals need claim comparison, not numeric outlier arithmetic.
 5. Request the cheapest useful discriminating check: reproduce a test, inspect a primary source, check a constraint, or ask a reviewer to examine a specific counterexample. Selection by expected information gain or value of information is a later extension requiring estimated check costs and outcomes.
 6. Update using the new evidence and retain proposal dependencies. Revised opinions based on the same observation are not additional independent observations.
 7. Accept only when task criteria and the chosen decision policy are satisfied. Otherwise continue within budget, or return `unresolved` with remaining conflicts and the next useful check. Reaching the budget bounds execution; it does not guarantee consensus or correctness.
@@ -140,6 +182,8 @@ A future implementation would add a schema validator, evidence ledger, aggregati
 The current evaluator's malformed-JSON fallback returns scores of 5. A future adapter must flag that assessment as invalid rather than count it as evidence. LLM judge scores require external calibration; the average of format, relevance, completeness, and accuracy is not a probability of correctness. Log concise rationales and reproducible evidence rather than requiring private reasoning traces.
 
 Compare majority vote, equal-weight pooling, calibrated pooling, and the proposed evidence-checking loop on tasks with known outcomes. Include numerical questions, factual claims, and executable code cases. Hold calibration data apart from evaluation data. Include shared-source errors, a correct minority, unanimous wrong answers, agent abstentions, invalid JSON, duplicated evidence, stale patch checks, ties, and budget exhaustion.
+
+Evaluate group sizes 2, 4, 6, 8, and 10, including a single correct dissenter among nine incorrect reports. Compare compact structured reports, free-form reports, and structured reports with optional notes using matched models, tools, tasks, and independent repeated runs. Count any extraction or format-repair calls in cost and latency. Compare both a fixed total task budget and a fixed per-agent budget: otherwise apparent gains may simply come from more compute. Record report validity, verification success, candidate diversity, participating-agent coverage, review assignments, and correct-minority recovery alongside task accuracy. Keep scoring independent of report format so a neat schema is not rewarded as correctness. The hybrid reporting format is a proposed default to test, not a proven improvement.
 
 Measure final correctness, false acceptance, Brier score or log loss where applicable, calibration, correct-minority recovery, unresolved rate and coverage, latency, token use, and tool cost. Report accuracy and cost together. Claims of 30-50% token savings, convergence in two or three rounds, or guaranteed truth require evidence and are not promises of this design.
 
