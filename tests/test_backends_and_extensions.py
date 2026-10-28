@@ -19,7 +19,7 @@ from tools.packs.utils.datetime_tool import DatetimeTool
     ("ollama", "OllamaBackend", {}, "OpenAI"),
     ("openai_backend", "OpenAIBackend", {"api_key": "fake"}, "OpenAI"),
     ("openrouter", "OpenRouterBackend", {"api_key": "fake"}, "OpenAI"),
-    ("azure_openai", "AzureOpenAIBackend", {"api_key": "fake", "azure_endpoint": "https://example.invalid", "deployment_name": "test"}, "AzureOpenAI"),
+    ("azure_openai", "AzureOpenAIBackend", {"api_key": "fake", "azure_endpoint": "https://unit.openai.azure.com", "deployment_name": "test"}, "AzureOpenAI"),
 ])
 def test_openai_compatible_backend_chat_and_stream(monkeypatch, module_name, class_name, kwargs, client_name):
     module = importlib.import_module(f"backends.{module_name}")
@@ -46,7 +46,7 @@ def test_anthropic_backend_dashboard_constructor(monkeypatch):
 def test_azure_dashboard_constructor(monkeypatch):
     module = importlib.import_module("backends.azure_openai")
     monkeypatch.setattr(module.openai, "AzureOpenAI", Mock())
-    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://example.invalid")
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://unit.openai.azure.com")
     monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT", "test")
     backend = server._build_backend(server.AgentConfig(backend="azure_openai", api_key="fake"))
     assert backend.deployment_name == "test"

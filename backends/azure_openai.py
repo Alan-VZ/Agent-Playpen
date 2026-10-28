@@ -1,3 +1,5 @@
+from config.security import azure_endpoint as validate_azure_endpoint
+from config.credentials import require_credential
 import os
 import openai
 from backends.base_backend import BaseBackend
@@ -19,9 +21,10 @@ class AzureOpenAIBackend(BaseBackend):
         temperature: float = 0.7,
     ):
         self.client = openai.AzureOpenAI(
-            azure_endpoint=azure_endpoint or os.environ["AZURE_OPENAI_ENDPOINT"],
+            http_client=openai.DefaultHttpxClient(follow_redirects=False),
+            azure_endpoint=validate_azure_endpoint(azure_endpoint or os.environ["AZURE_OPENAI_ENDPOINT"]),
             api_version=api_version or os.environ["AZURE_OPENAI_API_VERSION"],
-            api_key=api_key or os.environ["AZURE_OPENAI_KEY"],
+            api_key=require_credential("AZURE_OPENAI_KEY", api_key or ""),
         )
         self.deployment_name = (
             deployment_name or os.environ["AZURE_OPENAI_DEPLOYMENT"]
@@ -50,4 +53,3 @@ class AzureOpenAIBackend(BaseBackend):
             delta = chunk.choices[0].delta
             if delta.content:
                 yield delta.content
-                

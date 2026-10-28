@@ -1,4 +1,5 @@
 from core.context import AgentContext
+from config.credentials import redact
 from backends.base_backend import BaseBackend
 from planner.base_planner import BasePlanner
 from tools.tool_executor import ToolExecutor
@@ -65,7 +66,7 @@ class Agent:
 
             # If the planner considers this terminal, return the answer
             if thought.is_terminal:
-                return thought.answer
+                return redact(thought.answer)
 
             # ACT: execute the tool named in the Thought
             action_result = self._act(thought, ctx)
@@ -112,11 +113,11 @@ class Agent:
         except Exception as exc:
             self.tracer.on_error(exc)
             # Return error as a recoverable observation, not a crash
-            return f"Error: {thought.tool_name} failed: {exc}"
+            return redact(f"Error: {thought.tool_name} failed: {exc}")
 
     def _observe(self, action_result, ctx):
         """Format the action result as an observation string, with length cap."""
-        obs = f"Observation: {action_result}"
+        obs = redact(f"Observation: {action_result}")
         if len(obs) > self.MAX_OBSERVATION_LENGTH:
             obs = obs[: self.MAX_OBSERVATION_LENGTH] + "... (truncated)"
         return obs

@@ -46,8 +46,11 @@ agent-playpen/
 │   ├── lm_studio.py
 │   ├── ollama.py
 │   ├── openai_backend.py
+│   ├── openrouter.py
 │   └── together_backend.py
 ├── config/
+│   ├── credentials.py
+│   ├── security.py
 │   ├── settings.py
 │   └── web_agent_config.json
 ├── core/
@@ -134,3 +137,7 @@ agent-playpen/
 ```
 
 Note: `.venv` and `.git` are local environment metadata and are not usually shown in public project trees, but they are present in this working copy.
+
+Latest additions: `docs/testing.md`, `docs/credentials-and-openrouter.md`, and the
+offline runtime/dashboard/credential-security tests under `tests/`. Encrypted
+credentials are held in native OS storage and are not repository files.

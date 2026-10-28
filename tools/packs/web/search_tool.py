@@ -1,5 +1,6 @@
 # search_tool.py
 import os
+from config.credentials import get_credential
 from typing import Callable
 
 from tools.base_tool import BaseTool
@@ -85,13 +86,13 @@ class WebSearchTool(BaseTool):
             "tavily": "TAVILY_API_KEY",
             "serpapi": "SERPAPI_API_KEY",
         }
-        env_key = os.getenv(env_map[provider], "")
+        env_key = get_credential(env_map[provider])
         if self.provider == "auto":
             return env_key
         return self.api_key or env_key
 
     def _search_cse_id(self) -> str:
-        env_value = os.getenv("GOOGLE_CSE_ID", "")
+        env_value = get_credential("GOOGLE_CSE_ID")
         if self.provider == "auto":
             return env_value
         return self.cse_id or env_value

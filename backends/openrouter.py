@@ -1,4 +1,5 @@
-import os
+from config.security import openrouter_endpoint
+from config.credentials import require_credential
 
 import openai
 
@@ -17,8 +18,9 @@ class OpenRouterBackend(BaseBackend):
         base_url: str = "https://openrouter.ai/api/v1",
     ):
         self.client = openai.OpenAI(
-            api_key=api_key or os.environ["OPENROUTER_API_KEY"],
-            base_url=base_url,
+            http_client=openai.DefaultHttpxClient(follow_redirects=False),
+            api_key=require_credential("OPENROUTER_API_KEY", api_key or ""),
+            base_url=openrouter_endpoint(base_url),
         )
         self.model = model
         self.temperature = temperature

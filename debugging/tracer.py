@@ -1,5 +1,6 @@
 # Execution Tracer (tracer.py)
 import json
+from config.credentials import redact
 import datetime
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
@@ -39,6 +40,8 @@ class Tracer:
             self._rich = False
 
     def _record(self, event: TraceEvent) -> None:
+        event.content = redact(event.content)
+        event.tool_name = redact(event.tool_name)
         self.events.append(event)
         self._print(event)
 
@@ -54,7 +57,7 @@ class Tracer:
     def on_think(self, thought) -> None:
         self._record(TraceEvent(
             type="think",
-            content=str(thought.reasoning)[:500],
+            content=redact(str(thought.reasoning))[:500],
             iteration=self._iteration,
         ))
 
@@ -70,7 +73,7 @@ class Tracer:
         self._iteration += 1
         self._record(TraceEvent(
             type="observe",
-            content=observation[:500],
+            content=redact(observation)[:500],
             iteration=self._iteration,
         ))
 

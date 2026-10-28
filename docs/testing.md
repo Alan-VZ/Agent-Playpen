@@ -35,3 +35,11 @@ optional Chroma/FAISS embedding integrations require separate integration runs
 with their dependencies and services. Passing offline tests does not certify
 those paths. The documented Bayesian consensus coordinator remains a proposal;
 the ten-agent routing test verifies the existing manager, not that future engine.
+
+Credential tests use a fresh in-memory keyring per test; they do not create or
+read real saved keys. Dashboard tests send a local session token and include
+cross-origin/host checks, plaintext-fallback refusal, legacy migration,
+credential-path denial, redaction, export allowlists, and provider endpoint
+restrictions. Native Windows/macOS/Linux credential persistence still requires
+an integration check in the user's desktop session. OpenRouter chat/stream tests
+use mocked clients; the provider is not charged during tests.

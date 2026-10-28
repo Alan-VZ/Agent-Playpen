@@ -1,12 +1,32 @@
 import socket
 
 import pytest
+from config import credentials
+
+
+class MemoryKeyring:
+    def __init__(self):
+        self.values = {}
+
+    def get_password(self, service, name):
+        return self.values.get((service, name))
+
+    def set_password(self, service, name, value):
+        self.values[service, name] = value
+
+    def delete_password(self, service, name):
+        self.values.pop((service, name), None)
 
 
 @pytest.fixture(autouse=True)
 def isolated_runtime(monkeypatch, tmp_path):
     """Never use saved credentials, live services, or project runtime files."""
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(credentials, "store", credentials.CredentialStore(MemoryKeyring()))
+    monkeypatch.setattr(credentials, "LEGACY_ENV_PATH", tmp_path / ".env")
+    monkeypatch.setattr(credentials, "_known_secrets", set())
+    for name in credentials.MANAGED_KEYS:
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("MEMORY_ENABLED_STORES", "working,conversation")
 
     original_connect = socket.socket.connect

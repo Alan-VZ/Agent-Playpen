@@ -1,5 +1,6 @@
 # shell_exec.py
 import subprocess
+from config.credentials import subprocess_environment
 from tools.base_tool import BaseTool
 
 # Only commands on this allowlist may be executed
@@ -29,11 +30,12 @@ class ShellExecTool(BaseTool):
             return f"[BLOCKED] Command '{cmd_name}' is not in the allowlist."
         try:
             result = subprocess.run(
-                command, shell=True, capture_output=True, text=True, timeout=15
+                command, shell=True, capture_output=True, text=True, timeout=15,
+                env=subprocess_environment(),
             )
             return result.stdout or result.stderr or "(no output)"
         except subprocess.TimeoutExpired:
             return "[TIMEOUT] Command exceeded 15 seconds."
         except Exception as e:
             return f"[ERROR] {e}"
-        
+

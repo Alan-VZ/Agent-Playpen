@@ -1,3 +1,4 @@
+from config.credentials import require_credential
 import os
 import openai
 from backends.base_backend import BaseBackend
@@ -18,7 +19,9 @@ class OpenAIBackend(BaseBackend):
         org_id: str = None,
     ):
         self.client = openai.OpenAI(
-            api_key=api_key or os.environ["OPENAI_API_KEY"],
+            http_client=openai.DefaultHttpxClient(follow_redirects=False),
+            base_url="https://api.openai.com/v1",
+            api_key=require_credential("OPENAI_API_KEY", api_key or ""),
             organization=org_id or os.getenv("OPENAI_ORG_ID"),
         )
         self.model = model
@@ -46,4 +49,4 @@ class OpenAIBackend(BaseBackend):
             delta = chunk.choices[0].delta
             if delta.content:
                 yield delta.content
-                
+

@@ -1,4 +1,4 @@
-import os
+from config.credentials import require_credential
 import openai
 from backends.base_backend import BaseBackend
 
@@ -20,8 +20,9 @@ class TogetherBackend(BaseBackend):
         max_tokens: int = 4096,
     ):
         self.client = openai.OpenAI(
+            http_client=openai.DefaultHttpxClient(follow_redirects=False),
             base_url=self.TOGETHER_BASE_URL,
-            api_key=api_key or os.environ["TOGETHER_API_KEY"],
+            api_key=require_credential("TOGETHER_API_KEY", api_key or ""),
         )
         self.model = model
         self.temperature = temperature
@@ -48,4 +49,3 @@ class TogetherBackend(BaseBackend):
             delta = chunk.choices[0].delta
             if delta.content:
                 yield delta.content
-                

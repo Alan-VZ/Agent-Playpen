@@ -17,7 +17,7 @@ This repo is intentionally extensible. You can:
 - add memory layers for conversation history or vector retrieval
 - trace execution and track estimated token cost
 
-To add a new provider, create a backend class in the `backends/` package and register it in `backends/backend_factory.py` under `BackendFactory.REGISTRY`. The common pattern is to add provider-specific settings to `config/settings.py`, add example variables to `.env.example`, and then read them from the environment or the local `.env` file.
+To add a new provider, create a backend class in the `backends/` package and register it in `backends/backend_factory.py` under `BackendFactory.REGISTRY`. The common pattern is to add provider-specific settings to `config/settings.py`, add example variables to `.env.example`, and resolve secrets through `config/credentials.py`. See the [credential and OpenRouter guide](docs/credentials-and-openrouter.md).
 
 ## Why this project exists
 
@@ -118,6 +118,7 @@ Current built-in backends:
 
 - `lm_studio` — local OpenAI-compatible API served by LM Studio
 - `ollama` — local Ollama models
+- `openrouter` — OpenRouter through its official OpenAI-compatible endpoint
 - `openai` — OpenAI API
 - `anthropic` — Anthropic Claude API
 - `azure_openai` — Azure OpenAI
@@ -226,8 +227,11 @@ Agent Playpen/
 │   ├── lm_studio.py
 │   ├── ollama.py
 │   ├── openai_backend.py
+│   ├── openrouter.py
 │   └── together_backend.py
 ├── config/
+│   ├── credentials.py
+│   ├── security.py
 │   ├── settings.py
 │   └── web_agent_config.json
 ├── core/
@@ -357,17 +361,17 @@ Copy it to `.env` and customize as needed:
 cp .env.example .env
 ```
 
-Example settings include:
+Keep `.env` for non-secret settings such as model IDs, local URLs, tool choices,
+and Azure deployment information. New credentials belong in encrypted OS storage:
 
-- `LM_STUDIO_URL`
-- `LM_STUDIO_MODEL`
-- `OPENAI_API_KEY`
-- `ANTHROPIC_API_KEY`
-- `GROQ_API_KEY`
-- `TOGETHER_API_KEY`
-- `TOOLS_ENABLED`
-- `TOOL_TIMEOUT_SECONDS`
-- `MAX_CONVERSATION_TOKENS`
+```bash
+python -m config.credentials set OPENROUTER_API_KEY
+```
+
+Alternatively use the dashboard's **Credential manager** and **Save** controls for
+all cloud and search providers. Use **Migrate Legacy Keys** for existing plaintext
+`.env` entries. See [OpenRouter and encrypted credentials](docs/credentials-and-openrouter.md)
+for provider names, migration, export protections, and security limits.
 
 ## Quick start with LM Studio
 
@@ -410,7 +414,7 @@ Agent Playpen includes a modern browser-based dashboard for configuration, execu
 Start the UI with:
 
 ```bash
-python -m debugging.dashboard.server --port 8765
+python -m debugging.dashboard.server
 ```
 
 Or use the **desktop shortcut** (`Start Agent Playpen.cmd`) on Windows.
@@ -421,9 +425,9 @@ Then open `http://localhost:8765` in your browser.
 
 **Configuration & Execution:**
 
-- Choose backend (LM Studio, Ollama, OpenAI, Anthropic, Groq, Together, Azure)
+- Choose backend (LM Studio, Ollama, OpenRouter, OpenAI, Anthropic, Groq, Together, Azure)
 - **Live model discovery** — Load available models from your backend in real time
-- **API key storage** — Save keys to `.env` securely (no re-entry needed)
+- **API key storage** — Enter/save/clear keys in native encrypted OS storage; no key-export endpoint
 - **Auto search provider** — `web_search` can fall back through saved Google, Tavily, SerpAPI, and DuckDuckGo sources
 - Pick planner (ReAct, CoT, Tree-of-Thought) and enable tools
 - Configure temperature, max iterations, and token limits
@@ -561,6 +565,10 @@ ruff check .
 
 ## Security and safety notes
 
+Read the [credential security guide](docs/credentials-and-openrouter.md). The
+dashboard disables unrestricted Python execution and binds to loopback. Encryption
+protects stored keys but does not isolate malicious code running as your OS user.
+
 Because the project includes tools like filesystem access and Python execution, use this repository carefully:
 
 - restrict filesystem access using allowed directories
@@ -586,7 +594,7 @@ Because the project includes tools like filesystem access and Python execution, 
 **Web UI enhancements:**
 
 - 🎯 **Live model discovery** — Load available models directly from LM Studio, Ollama, OpenAI, etc.
-- 🔐 **Persistent API keys** — Store keys securely in `.env`; the browser never sees them
+- 🔐 **Encrypted API keys** — Native OS credential storage, legacy migration, protected local API, and filtered exports
 - 🔎 **Auto search fallback** — `web_search` can automatically try saved Google, Tavily, and SerpAPI credentials, then DuckDuckGo
 - ❓ **Comprehensive help** — Context-sensitive `?` buttons on every field with examples
 - 🎨 **Custom dropdown** — Functional model selector (replaces broken HTML5 datalist)

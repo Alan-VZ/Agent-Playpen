@@ -13,7 +13,7 @@ def client(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "ENV_PATH", tmp_path / ".env")
     for key in server.MANAGED_KEYS:
         monkeypatch.delenv(key, raising=False)
-    return TestClient(server.app, raise_server_exceptions=False)
+    return TestClient(server.app, base_url="http://127.0.0.1", headers={"X-Playpen-Token": server.API_TOKEN}, raise_server_exceptions=False)
 
 
 @pytest.mark.parametrize("path", ["/", "/api/defaults", "/api/keys", "/openapi.json"])
@@ -49,7 +49,7 @@ def test_backend_failure_is_reported(client, monkeypatch):
     monkeypatch.setattr(server, "_build_backend", fail)
     response = client.post("/api/run", json={"task": "task"})
     assert response.status_code == 500
-    assert "Backend unavailable" in response.json()["message"]
+    assert "execution failed" in response.json()["message"]
 
 
 def test_config_does_not_save_credentials(client):
@@ -68,7 +68,8 @@ def test_save_routes_reject_non_objects(client, route, payload):
 def test_env_merge_preserves_comments_and_removes_key(client):
     server.ENV_PATH.write_text("# settings\nKEEP=yes\nTEST_KEY=old\n")
     server._write_env_file({"TEST_KEY": None, "NEW": "value"})
-    assert server.ENV_PATH.read_text() == "# settings\nKEEP=yes\nNEW=value\n"
+    assert server._read_env_file() == {"KEEP": "yes", "NEW": "value"}
+    assert "# settings" in server.ENV_PATH.read_text()
 
 
 def test_models_offline_fallback(client, monkeypatch):

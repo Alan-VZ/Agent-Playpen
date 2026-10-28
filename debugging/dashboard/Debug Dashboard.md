@@ -1,114 +1,57 @@
-# Debug Dashboard (Web Interface)
+# Agent Playpen dashboard
 
-The debug dashboard is a FastAPI + Jinja2 web application that provides a browser-based interface for agent configuration, execution, and observability. Launch with:
+Start with `python -m debugging.dashboard.server` or the Windows launcher, then
+open `http://127.0.0.1:8765`. The server is a local development application.
 
-```bash
-python -m debugging.dashboard.server --port 8765
-```
+## Backends and credentials
 
-Then open `http://localhost:8765` in your browser.
+Choose LM Studio, Ollama, OpenRouter, OpenAI, Anthropic, Azure OpenAI, Groq, or
+Together AI. Use the Credential manager selector to save or clear each cloud or
+search key independently. New values go to native encrypted OS storage; the input
+clears after Save. Status reports presence without revealing a prefix or suffix.
+Use Migrate Legacy Keys to move existing `.env` entries and remove their plaintext
+assignments. Save Settings writes non-secret settings only; Save Config exports
+an allowlisted configuration without credentials or task text.
 
-## Desktop Launcher
+See [OpenRouter and encrypted credentials](../../docs/credentials-and-openrouter.md)
+for setup, migration, endpoint restrictions, storage availability, and limitations.
+OpenRouter uses `https://openrouter.ai/api/v1`; its workspaces/files page is not an
+inference endpoint. Load retrieves available model IDs, with fallback suggestions
+when providers are unreachable. The public OpenRouter catalog needs no key.
 
-On Windows, use the provided desktop shortcut to launch the web app:
+## Local API
 
-**Start Agent Playpen.cmd** — Detects if the server is already running, starts uvicorn if needed, and auto-opens the browser.
+All `/api/*` requests require `X-Playpen-Token` from the locally served page.
+The browser adds it automatically. Cross-origin access and untrusted hosts are
+rejected. Never put credentials in query strings. Responses disable caching;
+errors omit raw exception tracebacks and request input values.
 
-## Features
+| Route | Behavior |
+| --- | --- |
+| `GET /api/defaults` | Non-secret defaults |
+| `GET /api/models` | Model discovery; accepts backend/base_url, never API keys |
+| `GET /api/keys` | Presence, encrypted/legacy state, storage availability only |
+| `POST /api/save-key` | `{name, value}` saves in encrypted OS storage; empty value deletes |
+| `POST /api/migrate-keys` | Moves legacy `.env` credentials into encrypted storage |
+| `POST /api/save-config` | Saves allowlisted non-secret configuration |
+| `POST /api/save-env` | Saves non-secret settings to `.env`; ignores credential fields |
+| `POST /api/run` | Executes with saved credentials; validates task/planner/budgets |
 
-### Configuration Management
-- **Backend Selection** — Choose from LM Studio, Ollama, OpenAI, Anthropic, Groq, Together, or Azure OpenAI
-- **Model Discovery** — Live model listing from your selected backend (supports LM Studio, Ollama, and cloud APIs)
-- **API Key Storage** — Securely save API keys to `.env` so you don't have to re-enter them
-- **Base URL Configuration** — Set custom LLM endpoints
-- **Planner Strategy** — Select ReAct, CoT, or Tree-of-Thought reasoning
+There is no key-retrieval/export endpoint. No `/api/clear-key` endpoint is needed;
+use an empty value with `/api/save-key`. API documentation endpoints are disabled;
+`/openapi.json` contains schema metadata only.
 
-### Tool Management
-- Enable/disable individual tools (web search, file I/O, code execution, etc.)
-- Configure search provider (Auto, DuckDuckGo, Tavily, SerpAPI, Google)
-- Set working directory sandbox for file operations
+## Agent tools and results
 
-### Execution Controls
-- Specify the task to complete
-- Configure max iterations, temperature, and max output tokens
-- Run the agent and view results in real-time
-- Save configurations as JSON for reuse
+The dashboard offers web search, fetch, read/write file, calculator, and datetime.
+File tools deny credential paths even inside allowed directories. Dashboard writes
+are limited to text, Markdown, CSV, and JSON artifacts. Unrestricted
+Python execution is disabled here because same-user code can access the native
+credential store. CLI/library users may still enable it for trusted workloads.
+Results and saved traces redact known credential values; encoded or transformed
+secrets are not comprehensively detected. This is not an OS sandbox.
 
-### Help System
-- Contextual `?` help buttons on every form field
-- Field-level explanations with examples
-- Quick-start guide for local model workflow
-
-## API Endpoints
-
-### Configuration & Execution
-
-**POST /api/run** — Execute an agent with the provided config
-- Body: form data from the web UI
-- Returns: session ID, trace file path, and final answer
-
-**POST /api/save-config** — Save current form as JSON
-- Body: form data
-- Returns: success message
-
-**POST /api/save-env** — Merge form settings into `.env` file
-- Body: form data
-- Returns: success message, preserves existing keys and comments
-
-### Model Discovery
-
-**GET /api/models** — Discover available models from the backend
-- Query params: `backend`, `base_url`, `api_key` (optional)
-- Returns: `{ status, source: 'live'|'fallback', models: [list], message }`
-- Queries all configured backends with automatic fallback if backend is offline
-
-### API Key Management
-
-**GET /api/keys** — Get status of stored API keys
-- Returns: `{ KEY_NAME: { set: bool, hint: 'sk-...abcd' }, ... }`
-- Keys are never returned to the browser; only a masked hint is shown
-
-**POST /api/save-key** — Securely save an API key to `.env`
-- Body: `{ name: 'OPENAI_API_KEY', value: 'sk-...' }`
-- Returns: success message
-- Merges into `.env` without overwriting unrelated keys
-- Supports backend keys plus `TAVILY_API_KEY`, `SERPAPI_API_KEY`, `GOOGLE_API_KEY`, and `GOOGLE_CSE_ID`
-
-### Search Provider Behavior
-
-- **auto** — tries Google, Tavily, and SerpAPI when credentials are saved, then falls back to DuckDuckGo
-- **duckduckgo** — free, no key required
-- **tavily** — requires `TAVILY_API_KEY`
-- **serpapi** — requires `SERPAPI_API_KEY`
-- **google** — requires `GOOGLE_API_KEY` and `GOOGLE_CSE_ID`
-
-**POST /api/clear-key** — Remove an API key from `.env`
-- Body: `{ name: 'OPENAI_API_KEY' }`
-- Returns: success message
-
-## Observability
-
-The dashboard stores and displays:
-
-- **Execution Traces** — Captured in `traces/` directory as JSON files
-- **Session ID** — Unique identifier for each run
-- **Thought History** — Full chain of reasoning steps
-- **Action History** — Tools called and their arguments
-- **Observation History** — Results from each tool call (truncated at 2000 chars)
-
-## Configuration Persistence
-
-- **Config Files** — Saved configurations live in `config/web_agent_config.json`
-- **Environment Variables** — API keys stored in `.env` using merge logic (preserves comments and unrelated variables)
-- **Backend Selection** — Automatically detects available backends (LM Studio at localhost:1234, etc.)
-
-## Example Usage
-
-1. Open `http://localhost:8765` in your browser
-2. Select "lm_studio" as the backend
-3. Click **Load** to fetch available models
-4. Pick a model from the dropdown
-5. Enable **web_search** and **calculator** tools
-6. Enter your task
-7. Click **Run Agent**
-8. View results in the "Execution Result" panel
+The prior regression fixes preserve planner steps, tool observation feedback,
+and working-memory entries, validate malformed requests, and repair backend
+construction and evaluator parsing. See [the testing guide](../../docs/testing.md)
+for offline coverage and the remaining live-integration checks.
