@@ -68,3 +68,12 @@ Search providers now include `ddgs` (explicit free-engine fallback) and `crossre
 when earlier providers fail. PDFs are extracted as text. Finished runs with tool
 warnings receive a warning label; they do not certify research success. See
 [search reliability](../../docs/search-reliability.md).
+
+## Additional search services
+
+The Web search provider selector also includes Serper, Brave Search API, Exa,
+Firecrawl Search, and OpenWeb Ninja. **Set search API key** selects the correct
+credential in the existing encrypted manager. Model keys and search keys are
+separate. Auto mode can try multiple configured APIs and consume their credits;
+select an explicit provider to compare services. These connections use direct
+APIs. See [Search APIs and MCP](../../docs/search-providers.md) for full details.

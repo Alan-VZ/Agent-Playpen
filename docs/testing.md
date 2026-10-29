@@ -65,3 +65,10 @@ Search-reliability tests cover explicit free-engine fallback, conservative
 query-term screening, Crossref metadata, PDF extraction, duplicate-read loop
 prevention, and unwrapping simple final-answer JSON envelopes. Free web engines
 are best effort; offline passing tests do not establish search availability.
+## Search API integration coverage
+
+`tests/test_search_apis.py` validates the five added APIs with isolated credentials
+and mocked HTTP: provider-specific request/response contracts, bounded output,
+missing keys, quota/authentication failures, disabled redirects, and fallback.
+The dashboard DOM smoke also checks selecting and saving each search key.
+These tests make no paid API calls and do not measure live retrieval quality.

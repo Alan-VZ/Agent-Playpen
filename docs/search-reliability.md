@@ -6,7 +6,9 @@ The live feed distinguishes model responses, tool results, and retrieval errors.
 
 ## Search providers
 
-- `auto`: tries configured Google/Tavily/SerpAPI services, then DDGS free engines.
+- `auto`: tries configured Google/Tavily/SerpAPI and the additional search APIs,
+  then DDGS free engines. See [API providers and setup](search-providers.md) for
+  the complete order and per-provider credentials.
   Queries containing paper/journal/DOI/research-related words may subsequently
   fall back to Crossref metadata.
 - `ddgs`: explicitly tries DuckDuckGo, Yahoo, then Brave. The successful engine is
@@ -17,6 +19,9 @@ The live feed distinguishes model responses, tool results, and retrieval errors.
   publications; it does not read or verify their full text.
 - `google`, `tavily`, `serpapi`: the corresponding service with its separately
   saved credentials. Availability depends on that account and provider.
+- `serper`, `brave`, `exa`, `firecrawl`, `openwebninja`: direct authenticated API
+  adapters with source-linked results, bounded snippets, and explicit errors.
+  They use the same encrypted credential manager. These are not MCP connections.
 
 The deprecated `duckduckgo_search` adapter could force queries through Bing while
 appearing to use DuckDuckGo. It is replaced with the pinned `ddgs==9.16.1` package

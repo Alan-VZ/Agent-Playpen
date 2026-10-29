@@ -50,12 +50,19 @@ All cloud backends and search credentials share the same manager:
 | Together AI | `TOGETHER_API_KEY` |
 | Tavily | `TAVILY_API_KEY` |
 | SerpAPI | `SERPAPI_API_KEY` |
+| Serper | `SERPER_API_KEY` |
+| Brave Search API | `BRAVE_API_KEY` |
+| Exa | `EXA_API_KEY` |
+| Firecrawl Search | `FIRECRAWL_API_KEY` |
+| OpenWeb Ninja (direct API) | `OPENWEBNINJA_API_KEY` |
 | Google search | `GOOGLE_API_KEY`, plus `GOOGLE_CSE_ID` |
 | DDGS / Crossref | No API key required; Crossref supplies scholarly metadata |
 | LM Studio / Ollama | No API key required by these local adapters |
 
 Select an explicit credential name to manage search keys independently of the
-chosen model backend. The Google CSE ID has its own Save/Clear controls. The CLI
+chosen model backend, or choose a search provider and click **Set search API key**.
+See [search provider setup](search-providers.md) for account distinctions and
+automatic fallback costs. The Google CSE ID has its own Save/Clear controls. The CLI
 accepts the same names. There is no application command or endpoint to export
 or reveal saved values.
 

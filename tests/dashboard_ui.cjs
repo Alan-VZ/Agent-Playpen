@@ -11,6 +11,7 @@ const jsErrors = [];
 const console = new VirtualConsole();
 console.on('jsdomError', error => jsErrors.push(error));
 const requests = [];
+const savedSearchKeys = [];
 
 async function mockFetch(resource, options = {}) {
   const url = new URL(resource, 'http://127.0.0.1:8765');
@@ -20,6 +21,10 @@ async function mockFetch(resource, options = {}) {
   const json = data => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
   if (url.pathname === '/api/defaults') return json({ backend: 'lm_studio', model: 'demo', tools: ['calculator'] });
   if (url.pathname === '/api/keys') return json({});
+  if (url.pathname === '/api/save-key') {
+    savedSearchKeys.push(JSON.parse(options.body));
+    return json({ status: 'saved', message: 'Credential saved in encrypted OS storage.' });
+  }
   if (url.pathname === '/api/models') return json({ models: ['demo'], source: 'live' });
   assert.equal(url.pathname, '/api/run/stream');
   const task = JSON.parse(options.body).task;
@@ -93,6 +98,26 @@ function submit(task) {
 (async () => {
   try {
     await waitFor(() => document.getElementById('backend').options.length > 0);
+    await waitFor(() => requests.includes('/api/keys'));
+    const searchSelect = document.getElementById('search_provider');
+    for (const [provider, key] of Object.entries({ serper: 'SERPER_API_KEY', brave: 'BRAVE_API_KEY', exa: 'EXA_API_KEY', firecrawl: 'FIRECRAWL_API_KEY', openwebninja: 'OPENWEBNINJA_API_KEY' })) {
+      searchSelect.value = provider;
+      searchSelect.dispatchEvent(new dom.window.Event('change'));
+      assert.equal(document.getElementById('manage-search-key').disabled, false);
+      document.getElementById('api_key').value = 'unsaved-other-provider-key';
+      document.getElementById('manage-search-key').click();
+      assert.equal(document.getElementById('credential_name').value, key);
+      assert.equal(document.getElementById('api_key').value, '');
+      document.getElementById('api_key').value = 'fake-search-key';
+      document.getElementById('save-key').click();
+      await waitFor(() => savedSearchKeys.some(item => item.name === key));
+      await waitFor(() => document.getElementById('api_key').value === '');
+      assert.equal(savedSearchKeys.at(-1).value, 'fake-search-key');
+    }
+    searchSelect.value = 'crossref';
+    searchSelect.dispatchEvent(new dom.window.Event('change'));
+    assert.equal(document.getElementById('manage-search-key').disabled, true);
+    document.getElementById('credential_name').value = '';
     submit('success');
     await waitFor(() => document.getElementById('activity-log').children.length >= 2);
     assert.equal(document.getElementById('run-agent').disabled, true);

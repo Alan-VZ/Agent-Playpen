@@ -14,7 +14,11 @@ BACKEND_KEYS = {
     "anthropic": "ANTHROPIC_API_KEY", "groq": "GROQ_API_KEY",
     "together": "TOGETHER_API_KEY", "azure_openai": "AZURE_OPENAI_KEY",
 }
-SEARCH_KEYS = {"tavily": "TAVILY_API_KEY", "serpapi": "SERPAPI_API_KEY", "google": "GOOGLE_API_KEY"}
+SEARCH_KEYS = {
+    "tavily": "TAVILY_API_KEY", "serpapi": "SERPAPI_API_KEY", "google": "GOOGLE_API_KEY",
+    "serper": "SERPER_API_KEY", "brave": "BRAVE_API_KEY", "exa": "EXA_API_KEY",
+    "firecrawl": "FIRECRAWL_API_KEY", "openwebninja": "OPENWEBNINJA_API_KEY",
+}
 MANAGED_KEYS = frozenset([*BACKEND_KEYS.values(), *SEARCH_KEYS.values(), "GOOGLE_CSE_ID"])
 LEGACY_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 _known_secrets: set[str] = set()

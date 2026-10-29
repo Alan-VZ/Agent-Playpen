@@ -53,11 +53,7 @@ BACKEND_KEY_VAR = {
     "azure_openai": "AZURE_OPENAI_KEY",
 }
 
-SEARCH_KEY_VAR = {
-    "tavily": "TAVILY_API_KEY",
-    "serpapi": "SERPAPI_API_KEY",
-    "google": "GOOGLE_API_KEY",
-}
+SEARCH_KEY_VAR = credentials.SEARCH_KEYS
 
 SEARCH_EXTRA_VAR = {
     "google": "GOOGLE_CSE_ID",

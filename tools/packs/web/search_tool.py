@@ -1,16 +1,17 @@
 # search_tool.py
 import os
 import re
-from config.credentials import get_credential
+from config.credentials import get_credential, SEARCH_KEYS, redact
 from typing import Callable
 
 from tools.base_tool import BaseTool
+from tools.packs.web.api_search import API_PROVIDERS, search_api
 
 
 class WebSearchTool(BaseTool):
     """
     Web search tool with pluggable providers.
-    Supported providers: auto, ddgs, crossref, google, serpapi, tavily, duckduckgo.
+    Supports free engines, Crossref, and the APIs listed in config.credentials.SEARCH_KEYS.
     Set WEB_SEARCH_PROVIDER in .env to select.
     """
 
@@ -42,6 +43,8 @@ class WebSearchTool(BaseTool):
 
         if self.provider == "auto":
             return self._auto(query, num_results)
+        if self.provider in API_PROVIDERS:
+            return self._api_search(self.provider, query, num_results)
         if self.provider == "duckduckgo":
             return self._duckduckgo(query, num_results)
         if self.provider == "ddgs":
@@ -65,6 +68,9 @@ class WebSearchTool(BaseTool):
             attempts.append(("tavily", self._tavily))
         if self._has_serpapi_credentials():
             attempts.append(("serpapi", self._serpapi))
+        for provider in API_PROVIDERS:
+            if self._search_key(provider):
+                attempts.append((provider, lambda q, n, name=provider: self._api_search(name, q, n)))
         attempts.append(("ddgs", self._ddgs))
         if re.search(r"\b(paper|journal|doi|scholarly|preprint|article|research)\b", query, re.IGNORECASE):
             attempts.append(("crossref", self._crossref))
@@ -74,7 +80,7 @@ class WebSearchTool(BaseTool):
             try:
                 result = fn(query, n)
             except Exception as exc:
-                failures.append(f"{name}: {exc}")
+                failures.append(redact(f"{name}: {exc}"))
                 continue
 
             if self._has_results(result) and self._matches_query(query, result):
@@ -101,15 +107,13 @@ class WebSearchTool(BaseTool):
         return bool(terms & words)
 
     def _search_key(self, provider: str) -> str:
-        env_map = {
-            "google": "GOOGLE_API_KEY",
-            "tavily": "TAVILY_API_KEY",
-            "serpapi": "SERPAPI_API_KEY",
-        }
-        env_key = get_credential(env_map[provider])
+        env_key = get_credential(SEARCH_KEYS[provider])
         if self.provider == "auto":
             return env_key
         return self.api_key or env_key
+
+    def _api_search(self, provider: str, query: str, n: int) -> str:
+        return search_api(provider, query, n, self._search_key(provider))
 
     def _search_cse_id(self) -> str:
         env_value = get_credential("GOOGLE_CSE_ID")

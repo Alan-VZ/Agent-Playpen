@@ -26,6 +26,9 @@
 
 ## Unreleased
 
+- Added Serper, Brave Search API, Exa, Firecrawl Search, and OpenWeb Ninja direct
+  API adapters, encrypted credential support, automatic fallback, and a dedicated
+  dashboard search-key shortcut. Documented API versus MCP integration scope.
 - Replaced the deprecated search wrapper with pinned DDGS engines, conservative
   unrelated-batch screening, and free Crossref fallback for scholarly queries.
 - Added PDF text/font extraction, duplicate search/fetch loop prevention, readable

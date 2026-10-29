@@ -428,7 +428,7 @@ Then open `http://localhost:8765` in your browser.
 - Choose backend (LM Studio, Ollama, OpenRouter, OpenAI, Anthropic, Groq, Together, Azure)
 - **Live model discovery** — Load available models from your backend in real time
 - **API key storage** — Enter/save/clear keys in native encrypted OS storage; no key-export endpoint
-- **Auto search provider** — `web_search` can fall back through saved Google, Tavily, SerpAPI, DDGS free engines, and scholarly Crossref metadata
+- **Auto search provider** — `web_search` can fall back through configured search APIs, DDGS free engines, and scholarly Crossref metadata; see [provider setup](docs/search-providers.md)
 - Pick planner (ReAct, CoT, Tree-of-Thought) and enable tools
 - Configure temperature, max iterations, and token limits
 - Save configurations as JSON for reuse
@@ -609,7 +609,7 @@ Because the project includes tools like filesystem access and Python execution, 
 
 - 🎯 **Live model discovery** — Load available models directly from LM Studio, Ollama, OpenAI, etc.
 - 🔐 **Encrypted API keys** — Native OS credential storage, legacy migration, protected local API, and filtered exports
-- 🔎 **Auto search fallback** — `web_search` can automatically try saved Google, Tavily, and SerpAPI credentials, then the DDGS free-engine fallback
+- 🔎 **Auto search fallback** — `web_search` can automatically try configured search APIs, then the DDGS free-engine fallback; see [all providers](docs/search-providers.md)
 - ❓ **Comprehensive help** — Context-sensitive `?` buttons on every field with examples
 - 🎨 **Custom dropdown** — Functional model selector (replaces broken HTML5 datalist)
 
@@ -639,3 +639,12 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 Copyright © 2026 Alan Van Zandt
 
 You are free to use, modify, and distribute this software in accordance with the terms of the MIT License.
+
+### Additional search APIs
+
+The dashboard supports Serper, Brave Search API, Exa, Firecrawl Search, and OpenWeb
+Ninja alongside Tavily and SerpAPI. Choose a provider and click **Set search API
+key** to save its separate credential in native encrypted OS storage. These are
+direct API adapters; a generic MCP client is not included. See the
+[search API and MCP guide](docs/search-providers.md) for setup, provider contracts,
+automatic fallback costs, and the distinction between search and source reading.

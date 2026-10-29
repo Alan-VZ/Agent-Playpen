@@ -437,6 +437,9 @@
                 <option>ANTHROPIC_API_KEY</option><option>AZURE_OPENAI_KEY</option>
                 <option>GROQ_API_KEY</option><option>TOGETHER_API_KEY</option>
                 <option>TAVILY_API_KEY</option><option>SERPAPI_API_KEY</option>
+                <option>SERPER_API_KEY</option><option>BRAVE_API_KEY</option>
+                <option>EXA_API_KEY</option><option>FIRECRAWL_API_KEY</option>
+                <option>OPENWEBNINJA_API_KEY</option>
                 <option>GOOGLE_API_KEY</option>
               </select>
               <label for="api_key">New API key (save before running)</label>
@@ -477,8 +480,15 @@
                 <option value="duckduckgo">duckduckgo</option>
                 <option value="serpapi">serpapi</option>
                 <option value="tavily">tavily</option>
+                <option value="serper">Serper (Google results)</option>
+                <option value="brave">Brave Search API</option>
+                <option value="exa">Exa (search + highlights)</option>
+                <option value="firecrawl">Firecrawl Search</option>
+                <option value="openwebninja">OpenWeb Ninja</option>
                 <option value="google">google</option>
               </select>
+              <button type="button" id="manage-search-key" class="inline-btn">Set search API key</button>
+              <div id="search-key-note" class="field-note"></div>
             </div>
 
             <div class="field" id="google-cse-field" style="display:none;">
@@ -938,17 +948,21 @@
         <p>If left empty it falls back to <code>.</code>.</p>`,
 
       search_provider: `
-        <p>The search engine behind the <code>web_search</code> tool. Irrelevant unless that tool is ticked.</p>
+        <p>The service behind <code>web_search</code>. Enable that tool to use it.</p>
         <ul>
-          <li><code>auto</code> â€” tries saved Google, Tavily, and SerpAPI credentials first, then uses DDGS free engines. Scholarly queries can fall back to Crossref metadata.</li>
-          <li><code>ddgs</code> — free explicit engine fallback (DuckDuckGo, Yahoo, Brave).</li>
-          <li><code>crossref</code> — free scholarly metadata/DOI search, not full text.</li>
-          <li><code>duckduckgo</code> â€” <strong>no API key, no account, free.</strong> Best starting point.</li>
-          <li><code>tavily</code> â€” built for AI agents and gives cleaner results. Requires a key in the <strong>API Key</strong> box (or <code>TAVILY_API_KEY</code>).</li>
-          <li><code>serpapi</code> â€” Google results. Requires a key in the <strong>API Key</strong> box (or <code>SERPAPI_API_KEY</code>).</li>
-          <li><code>google</code> â€” Google Programmable Search. Requires <code>GOOGLE_API_KEY</code> plus the <strong>Google CSE ID</strong> field.</li>
+          <li><code>auto</code> tries configured Google, Tavily, SerpAPI, Serper, Brave, Exa, Firecrawl, and OpenWeb Ninja APIs, then DDGS. Scholarly queries may fall back to Crossref.</li>
+          <li><code>serper</code> and <code>serpapi</code> provide Google results through separate accounts and keys.</li>
+          <li><code>brave</code> uses the Brave Search API.</li>
+          <li><code>exa</code> returns search results with source highlights.</li>
+          <li><code>firecrawl</code> searches the web; this adapter does not automatically crawl or scrape pages.</li>
+          <li><code>openwebninja</code> uses a direct OpenWeb Ninja key, not a RapidAPI key.</li>
+          <li><code>tavily</code> uses the Tavily Search API.</li>
+          <li><code>google</code> uses Programmable Search and requires a Google key plus CSE ID.</li>
+          <li><code>ddgs</code> tries public DuckDuckGo, Yahoo, and Brave engines without a key. <code>duckduckgo</code> tries only that engine.</li>
+          <li><code>crossref</code> provides free scholarly metadata and DOIs.</li>
         </ul>
-        <p class="warn">Choosing tavily, serpapi, or google without the required credentials returns an error instead of results. Auto avoids that by falling back to the next provider.</p>`,
+        <p>Choose a provider, click <strong>Set search API key</strong>, and save its key separately from the model key. These integrations use direct APIs.</p>
+        <p class="warn">Auto can consume credits from multiple configured services. Select one provider to control which account is used. Missing keys, exhausted quotas, and provider errors appear in the live activity feed.</p>`,
 
       max_iterations: `
         <p>The hard ceiling on reasoning cycles. One iteration is roughly: think once, optionally call one tool, look at the result. It is the brake that stops a confused agent looping forever.</p>
@@ -1063,6 +1077,11 @@
     };
 
     const SEARCH_KEY_VAR = {
+      serper: 'SERPER_API_KEY',
+      brave: 'BRAVE_API_KEY',
+      exa: 'EXA_API_KEY',
+      firecrawl: 'FIRECRAWL_API_KEY',
+      openwebninja: 'OPENWEBNINJA_API_KEY',
       tavily: 'TAVILY_API_KEY',
       serpapi: 'SERPAPI_API_KEY',
       google: 'GOOGLE_API_KEY'
@@ -1110,6 +1129,13 @@
     }
 
     function renderKeyStatus() {
+      const provider = document.getElementById('search_provider').value;
+      const searchKey = SEARCH_KEY_VAR[provider];
+      document.getElementById('manage-search-key').disabled = !searchKey;
+      const searchInfo = searchKey && keyState[searchKey];
+      setNote(document.getElementById('search-key-note'), searchKey && !searchInfo?.set ? 'warn' : '',
+        searchKey ? `${searchKey}: ${searchInfo?.set ? 'saved' : 'not saved'}. Search credentials are separate from model credentials.` :
+        provider === 'auto' ? 'Auto tries configured APIs, then free search. Multiple API attempts may consume credits.' : 'No search API key required.');
       const name = targetKeyVar();
       const extraName = targetSearchExtraVar();
       searchCseField.style.display = extraName ? 'block' : 'none';
@@ -1305,6 +1331,14 @@
 
       document.getElementById('search_provider').addEventListener('change', () => {
         renderKeyStatus();
+      });
+      document.getElementById('manage-search-key').addEventListener('click', () => {
+        const name = SEARCH_KEY_VAR[document.getElementById('search_provider').value];
+        if (!name) return;
+        document.getElementById('credential_name').value = name;
+        apiKeyInput.value = '';
+        renderKeyStatus();
+        apiKeyInput.focus();
       });
     }
 
