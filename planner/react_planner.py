@@ -15,6 +15,10 @@ Rules:
 - Never skip the Thought / Action / Action Input structure.
 - Use FINISH as the Action when you have the final answer.
 - Action Input must be valid JSON.
+- Do not repeat identical unsuccessful searches or fetches. Change the query,
+  use a known source URL, or finish with the limitation clearly stated.
+- Search snippets can be irrelevant. Check title, URL, and source content.
+- A failed search does not prove that a document does not exist.
 """
 
 REACT_USER_TEMPLATE = """Task: {task}
@@ -80,8 +84,21 @@ class ReActPlanner(BasePlanner):
         """
         import json
 
+        def final_answer(text):
+            cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=re.IGNORECASE)
+            try:
+                decoded = json.loads(cleaned)
+                if isinstance(decoded, str):
+                    return decoded
+                if isinstance(decoded, dict) and set(decoded) == {"answer"} and isinstance(decoded["answer"], str):
+                    return decoded["answer"]
+            except json.JSONDecodeError:
+                pass
+            return text.strip()
+
+
         if not re.search(r"^\s*Action:\s*", raw, re.MULTILINE):
-            return Thought(reasoning=raw, is_terminal=True, answer=raw.strip())
+            return Thought(reasoning=raw, is_terminal=True, answer=final_answer(raw))
 
         thought_match = re.search(r"Thought:\s*(.+?)(?=Action:|$)", raw, re.DOTALL)
         action_match = re.search(r"^\s*Action:\s*([^\r\n]+)", raw, re.MULTILINE)
@@ -95,7 +112,7 @@ class ReActPlanner(BasePlanner):
             return Thought(
                 reasoning=reasoning,
                 is_terminal=True,
-                answer=raw_input,
+                answer=final_answer(raw_input),
             )
 
         try:

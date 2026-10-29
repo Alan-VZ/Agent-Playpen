@@ -26,6 +26,11 @@
 
 ## Unreleased
 
+- Replaced the deprecated search wrapper with pinned DDGS engines, conservative
+  unrelated-batch screening, and free Crossref fallback for scholarly queries.
+- Added PDF text/font extraction, duplicate search/fetch loop prevention, readable
+  final-answer envelopes, and explicit finished-with-tool-warnings UI state.
+
 - Live dashboard activity stream, elapsed timer, Stop Run, retained failed traces,
   redacted actionable errors, and explicit incomplete outcomes.
 - Search source URLs, recoverable ReAct action formats, and OpenRouter response

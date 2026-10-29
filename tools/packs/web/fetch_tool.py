@@ -1,5 +1,6 @@
 # fetch_tool.py
 from copy import deepcopy
+from io import BytesIO
 
 import requests
 from markdownify import markdownify as md
@@ -38,6 +39,19 @@ class FetchTool(BaseTool):
             resp.raise_for_status()
         except requests.RequestException as e:
             return f"Fetch error: {e}"
+        content = resp.content
+        if isinstance(content, bytes) and content.startswith(b"%PDF-"):
+            if len(content) > 10_000_000:
+                return "Fetch error: PDF exceeds the 10 MB extraction limit."
+            try:
+                from pypdf import PdfReader
+                reader = PdfReader(BytesIO(content))
+                text = "\n".join(page.extract_text() or "" for page in reader.pages[:10])
+                return text[:max_chars] if text.strip() else "Fetch error: PDF contains no extractable text; it may require OCR."
+            except ImportError:
+                return "Fetch error: PDF support requires pypdf. Install the project's web-tools extras."
+            except Exception as exc:
+                return f"Fetch error: PDF extraction failed ({type(exc).__name__})."
         markdown = md(resp.text, heading_style="ATX")
         return markdown[:max_chars]
-    
+

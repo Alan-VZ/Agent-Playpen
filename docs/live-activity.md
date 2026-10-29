@@ -50,7 +50,9 @@ Search results now include source URLs so the agent can fetch and cite the actua
 result. All search providers can still fail, return no results, or encounter a
 site that blocks retrieval. The observation feed makes that distinction visible.
 An OpenRouter key is not a Google/Tavily/SerpAPI search key. Auto search uses any
-separately saved search credentials and otherwise tries DuckDuckGo.
+separately saved search credentials and otherwise tries explicit DDGS free engines (DuckDuckGo, Yahoo, Brave). Paper,
+journal, DOI, and similar scholarly queries can then fall back to Crossref
+metadata. Crossref records locate publications; they are not full-text evidence.
 
 An empty model response occurs before a tool can run. It is reported explicitly.
 If the finish reason is `length`, the output allowance was exhausted: some models
@@ -78,3 +80,8 @@ record and should not be treated as successful.
 
 The original synchronous endpoint remains available. It now saves failed traces,
 returns redacted diagnostics, and reports incomplete runs explicitly.
+
+Repeated identical search/fetch operations reuse a per-run cached result, with a
+visible warning, and stop as incomplete on the third attempt. The page labels
+finished runs with tool warnings separately. A final model reply does not itself
+verify that the task was achieved. See [search reliability](search-reliability.md).

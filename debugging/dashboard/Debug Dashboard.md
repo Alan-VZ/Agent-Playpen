@@ -62,3 +62,9 @@ time, and Stop Run. Both successful and failed traces are saved; budget exhausti
 is labeled incomplete. This is a single-agent page. See
 [live activity and troubleshooting](../../docs/live-activity.md) for restart
 instructions, empty-response diagnostics, and cancellation limits.
+
+Search providers now include `ddgs` (explicit free-engine fallback) and `crossref`
+(scholarly metadata, no key required). Auto uses Crossref for scholarly queries
+when earlier providers fail. PDFs are extracted as text. Finished runs with tool
+warnings receive a warning label; they do not certify research success. See
+[search reliability](../../docs/search-reliability.md).

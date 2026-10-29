@@ -20,6 +20,7 @@
     }
 
     * { box-sizing: border-box; }
+    .status.warning { color: var(--warning); border-color: var(--warning); }
     .activity-log { max-height: 480px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 10px; }
     .activity-log:empty::before { content: "Tool calls, observations, and model status will appear here during a run."; color: var(--muted); }
     .activity-event { border-bottom: 1px solid var(--border); padding: 9px 0; }
@@ -471,6 +472,8 @@
               <label for="search_provider">Web search provider</label>
               <select id="search_provider" name="search_provider">
                 <option value="auto">auto</option>
+                <option value="ddgs">ddgs (free engine fallback)</option>
+                <option value="crossref">crossref (scholarly metadata)</option>
                 <option value="duckduckgo">duckduckgo</option>
                 <option value="serpapi">serpapi</option>
                 <option value="tavily">tavily</option>
@@ -781,7 +784,7 @@
         }
         completed = true;
         if (record.status === 'success') {
-          setStatus('success', 'Execution complete');
+          setStatus(record.warning_count ? 'warning' : 'success', record.warning_count ? 'Run finished with tool warnings' : 'Run finished');
           resultOutput.textContent = record.result || 'The agent returned an empty final response.';
         } else if (record.status === 'incomplete') {
           setStatus('error', 'Stopped without a final answer');
@@ -937,7 +940,9 @@
       search_provider: `
         <p>The search engine behind the <code>web_search</code> tool. Irrelevant unless that tool is ticked.</p>
         <ul>
-          <li><code>auto</code> â€” tries saved Google, Tavily, and SerpAPI credentials first, then falls back to DuckDuckGo. Best default.</li>
+          <li><code>auto</code> â€” tries saved Google, Tavily, and SerpAPI credentials first, then uses DDGS free engines. Scholarly queries can fall back to Crossref metadata.</li>
+          <li><code>ddgs</code> — free explicit engine fallback (DuckDuckGo, Yahoo, Brave).</li>
+          <li><code>crossref</code> — free scholarly metadata/DOI search, not full text.</li>
           <li><code>duckduckgo</code> â€” <strong>no API key, no account, free.</strong> Best starting point.</li>
           <li><code>tavily</code> â€” built for AI agents and gives cleaner results. Requires a key in the <strong>API Key</strong> box (or <code>TAVILY_API_KEY</code>).</li>
           <li><code>serpapi</code> â€” Google results. Requires a key in the <strong>API Key</strong> box (or <code>SERPAPI_API_KEY</code>).</li>
@@ -1111,7 +1116,7 @@
 
       if (!name && document.getElementById('search_provider').value === 'auto') {
         apiKeyInput.placeholder = 'Optional - auto uses saved search keys';
-        setNote(keyNote, '', 'Auto will use any saved search credentials, then fall back to DuckDuckGo.');
+        setNote(keyNote, '', 'Auto will use any saved search credentials, then try the free DDGS engine fallback.');
         setNote(cseNote, '', '');
         return;
       }

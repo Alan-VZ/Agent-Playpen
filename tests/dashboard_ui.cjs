@@ -42,6 +42,12 @@ async function mockFetch(resource, options = {}) {
         return;
       }
       timers.push(setTimeout(() => {
+        if (task === 'warning') {
+          emit({ type: 'warning', content: 'Search returned no results' });
+          emit({ type: 'complete', status: 'success', warning_count: 1, result: 'Could not verify the source', session_id: 'test-session' });
+          controller.close();
+          return;
+        }
         if (task === 'fail') {
           emit({ type: 'error', content: 'Provider unavailable' });
           emit({ type: 'complete', status: 'error', message: 'Provider unavailable', session_id: 'test-session', trace_path: 'saved-failure.json' });
@@ -103,6 +109,12 @@ function submit(task) {
     await waitFor(() => !document.getElementById('run-agent').disabled);
     assert.ok(document.getElementById('activity-log').textContent.includes('Provider unavailable'));
     assert.ok(document.getElementById('meta-output').textContent.includes('saved-failure.json'));
+
+    submit('warning');
+    await waitFor(() => document.getElementById('result-output').textContent === 'Could not verify the source');
+    await waitFor(() => !document.getElementById('run-agent').disabled);
+    assert.ok(document.getElementById('status').classList.contains('warning'));
+    assert.ok(document.getElementById('status').textContent.includes('tool warnings'));
 
     submit('slow');
     await waitFor(() => !document.getElementById('stop-agent').disabled);

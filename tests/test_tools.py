@@ -59,5 +59,5 @@ def test_search_falls_back_after_provider_error(monkeypatch):
     def fail(*args):
         raise RuntimeError("offline")
     monkeypatch.setattr(tool, "_google", fail)
-    monkeypatch.setattr(tool, "_duckduckgo", lambda *args: "- Result: example")
+    monkeypatch.setattr(tool, "_ddgs", lambda *args: "- Result: example")
     assert tool.run(query="test") == "- Result: example"

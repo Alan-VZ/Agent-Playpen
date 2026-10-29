@@ -460,7 +460,7 @@ def _execute_run(config: AgentConfig, on_event=None, cancel_event=None):
         result = agent.run(config.task)
         payload.update(status=agent.completion_status, result=result)
         if agent.completion_status == "incomplete":
-            payload["message"] = "No final answer was reached. Showing the last tool result; review the activity log or adjust the task/iteration budget."
+            payload["message"] = "No final answer was reached. " + agent.stop_reason + " Showing the last tool result."
     except AgentCancelledError as exc:
         tracer.on_status(str(exc), "warning")
         payload.update(status="cancelled", message=str(exc), result="")
@@ -469,6 +469,7 @@ def _execute_run(config: AgentConfig, on_event=None, cancel_event=None):
         tracer.on_error(RuntimeError(message))
         payload.update(status="error", message=message, error_type=type(exc).__name__, result="")
     finally:
+        payload["warning_count"] = sum(event.type == "warning" for event in tracer.events)
         try:
             payload["trace_path"] = tracer.save()
         except OSError:

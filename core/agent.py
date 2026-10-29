@@ -8,6 +8,7 @@ from tools.tool_registry import ToolRegistry
 from memory.memory_manager import MemoryManager
 from debugging.tracer import Tracer
 import uuid
+import json
 
 
 class Agent:
@@ -36,6 +37,7 @@ class Agent:
         self.max_iterations = max_iterations
         self.cancel_event = cancel_event
         self.completion_status = "running"
+        self.stop_reason = ""
 
     def _check_cancelled(self):
         if self.cancel_event is not None and self.cancel_event.is_set():
@@ -45,6 +47,9 @@ class Agent:
     def run(self, task: str) -> str:
         """Execute a task end-to-end and return the final answer."""
         self.completion_status = "running"
+        self.stop_reason = "The iteration budget or planned steps ended."
+        cached_reads = {}
+        read_attempts = {}
         ctx = AgentContext(
             session_id=str(uuid.uuid4()),
             task=task,
@@ -83,10 +88,28 @@ class Agent:
                 return redact(thought.answer)
 
             # ACT: execute the tool named in the Thought
-            self.tracer.on_action(thought.tool_name, thought.tool_args)
             self._check_cancelled()
-            action_result = self._act(thought, ctx)
+            read_key = None
+            if thought.tool_name in {"web_search", "fetch"}:
+                args = dict(thought.tool_args)
+                if thought.tool_name == "web_search" and isinstance(args.get("query"), str):
+                    args["query"] = " ".join(args["query"].casefold().split())
+                read_key = (thought.tool_name, json.dumps(args, sort_keys=True, ensure_ascii=False))
+                read_attempts[read_key] = read_attempts.get(read_key, 0) + 1
+                if read_attempts[read_key] >= 3:
+                    self.stop_reason = f"The same {thought.tool_name} request was attempted three times. Change the query/provider or supply a known source URL."
+                    break
+            if read_key is not None and read_key in cached_reads:
+                self.tracer.on_status("Repeated identical read request: reusing the cached result without another network call. Change the request or finish with the limitation.", "warning")
+                action_result = "Cached result (no new network call): " + str(cached_reads[read_key])
+            else:
+                self.tracer.on_action(thought.tool_name, thought.tool_args)
+                action_result = self._act(thought, ctx)
+                if read_key is not None:
+                    cached_reads[read_key] = action_result
             self._check_cancelled()
+            if isinstance(action_result, str) and action_result.lower().startswith(("no results", "fetch error", "error:", "[error]")):
+                self.tracer.on_status("The tool returned no usable result or an error. Try another query/source; this is not evidence that the requested document does not exist.", "warning")
             ctx.action_history.append(action_result)
 
             # OBSERVE: format the result as a natural-language observation
@@ -104,7 +127,7 @@ class Agent:
             ctx.iteration += 1
 
         self.completion_status = "incomplete"
-        self.tracer.on_status("Stopped before a final answer: the iteration budget or planned steps ended.", "warning")
+        self.tracer.on_status("Stopped before a final answer: " + self.stop_reason, "warning")
         # Fallback: return last observation if no terminal thought was reached
         if ctx.observation_history:
             # Strip the "Observation: " prefix before returning

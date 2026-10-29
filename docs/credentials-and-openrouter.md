@@ -51,6 +51,7 @@ All cloud backends and search credentials share the same manager:
 | Tavily | `TAVILY_API_KEY` |
 | SerpAPI | `SERPAPI_API_KEY` |
 | Google search | `GOOGLE_API_KEY`, plus `GOOGLE_CSE_ID` |
+| DDGS / Crossref | No API key required; Crossref supplies scholarly metadata |
 | LM Studio / Ollama | No API key required by these local adapters |
 
 Select an explicit credential name to manage search keys independently of the

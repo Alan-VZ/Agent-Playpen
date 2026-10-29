@@ -60,3 +60,8 @@ node tests/dashboard_ui.cjs
 
 The DOM check does not replace a full browser/layout test or call a live provider.
 See [live activity and troubleshooting](live-activity.md).
+
+Search-reliability tests cover explicit free-engine fallback, conservative
+query-term screening, Crossref metadata, PDF extraction, duplicate-read loop
+prevention, and unwrapping simple final-answer JSON envelopes. Free web engines
+are best effort; offline passing tests do not establish search availability.

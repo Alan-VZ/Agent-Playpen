@@ -61,7 +61,7 @@ class Settings(BaseSettings):
         "os.system,subprocess,__import__,eval,exec,socket"
     )
     ALLOWED_DIRS: str = "."
-    WEB_SEARCH_PROVIDER: str = "auto"    # auto | duckduckgo | serpapi | tavily | google
+    WEB_SEARCH_PROVIDER: str = "auto"    # auto | ddgs | crossref | duckduckgo | serpapi | tavily | google
     SERPAPI_API_KEY: Optional[str] = None
     TAVILY_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None

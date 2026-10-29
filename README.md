@@ -428,7 +428,7 @@ Then open `http://localhost:8765` in your browser.
 - Choose backend (LM Studio, Ollama, OpenRouter, OpenAI, Anthropic, Groq, Together, Azure)
 - **Live model discovery** — Load available models from your backend in real time
 - **API key storage** — Enter/save/clear keys in native encrypted OS storage; no key-export endpoint
-- **Auto search provider** — `web_search` can fall back through saved Google, Tavily, SerpAPI, and DuckDuckGo sources
+- **Auto search provider** — `web_search` can fall back through saved Google, Tavily, SerpAPI, DDGS free engines, and scholarly Crossref metadata
 - Pick planner (ReAct, CoT, Tree-of-Thought) and enable tools
 - Configure temperature, max iterations, and token limits
 - Save configurations as JSON for reuse
@@ -542,6 +542,14 @@ This enables a consistent pattern for dynamically registered functions. To add a
 
 This design makes it easy to extend the agent with domain-specific actions.
 
+## Research search and source retrieval
+
+Auto search uses saved search-provider credentials when available, then explicit
+DDGS free engines. Paper/journal/DOI queries can fall back to Crossref metadata.
+PDF sources are extracted as text; repeated identical search/fetch calls are
+cached within a run and stopped on the third attempt. A finished run is not a
+verified answer. See [search reliability](docs/search-reliability.md).
+
 ## Proposed multi-agent consensus
 
 The [Bayesian aggregation concept](docs/bayesian-agent-consensus.md) describes a
@@ -601,7 +609,7 @@ Because the project includes tools like filesystem access and Python execution, 
 
 - 🎯 **Live model discovery** — Load available models directly from LM Studio, Ollama, OpenAI, etc.
 - 🔐 **Encrypted API keys** — Native OS credential storage, legacy migration, protected local API, and filtered exports
-- 🔎 **Auto search fallback** — `web_search` can automatically try saved Google, Tavily, and SerpAPI credentials, then DuckDuckGo
+- 🔎 **Auto search fallback** — `web_search` can automatically try saved Google, Tavily, and SerpAPI credentials, then the DDGS free-engine fallback
 - ❓ **Comprehensive help** — Context-sensitive `?` buttons on every field with examples
 - 🎨 **Custom dropdown** — Functional model selector (replaces broken HTML5 datalist)
 
