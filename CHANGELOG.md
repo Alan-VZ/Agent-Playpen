@@ -26,6 +26,11 @@
 
 ## Unreleased
 
+- Live dashboard activity stream, elapsed timer, Stop Run, retained failed traces,
+  redacted actionable errors, and explicit incomplete outcomes.
+- Search source URLs, recoverable ReAct action formats, and OpenRouter response
+  metadata/empty-output diagnostics. Added stream lifecycle and DOM smoke tests.
+
 - Encrypted native OS credential manager for all cloud backends and search keys,
   hidden CLI entry, legacy migration, presence-only status, and export filtering.
 - OpenRouter dashboard/CLI setup, model selection and discovery, trusted endpoint

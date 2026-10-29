@@ -4,7 +4,7 @@ from planner.base_planner import BasePlanner, Plan, Step, Thought
 REACT_SYSTEM_PROMPT = """You are an AI agent that solves tasks step by step.
 At each step you must respond in EXACTLY this format:
 
-Thought: <your reasoning about what to do next>
+Thought: <brief action summary, without private internal reasoning>
 Action: <the name of the tool to call, or FINISH if done>
 Action Input: <JSON object of arguments for the tool, or the final answer>
 
@@ -80,11 +80,11 @@ class ReActPlanner(BasePlanner):
         """
         import json
 
-        if not re.search(r"^Action:\s*", raw, re.MULTILINE):
+        if not re.search(r"^\s*Action:\s*", raw, re.MULTILINE):
             return Thought(reasoning=raw, is_terminal=True, answer=raw.strip())
 
         thought_match = re.search(r"Thought:\s*(.+?)(?=Action:|$)", raw, re.DOTALL)
-        action_match = re.search(r"Action:\s*(.+?)(?=Action Input:|$)", raw, re.DOTALL)
+        action_match = re.search(r"^\s*Action:\s*([^\r\n]+)", raw, re.MULTILINE)
         input_match = re.search(r"Action Input:\s*(.+?)$", raw, re.DOTALL)
 
         reasoning = thought_match.group(1).strip() if thought_match else raw
@@ -99,7 +99,12 @@ class ReActPlanner(BasePlanner):
             )
 
         try:
-            tool_args = json.loads(raw_input)
+            # Some models fence JSON or append another action. Execute only the
+            # first object, then let the next round use the real observation.
+            cleaned_input = re.sub(r"^```(?:json)?\s*", "", raw_input, flags=re.IGNORECASE)
+            tool_args, _ = json.JSONDecoder().raw_decode(cleaned_input)
+            if not isinstance(tool_args, dict):
+                tool_args = {"input": raw_input}
         except json.JSONDecodeError:
             tool_args = {"input": raw_input}
 

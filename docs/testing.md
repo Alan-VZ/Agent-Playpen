@@ -43,3 +43,20 @@ credential-path denial, redaction, export allowlists, and provider endpoint
 restrictions. Native Windows/macOS/Linux credential persistence still requires
 an integration check in the user's desktop session. OpenRouter chat/stream tests
 use mocked clients; the provider is not charged during tests.
+
+Live-activity tests additionally verify ordered model/tool events, actual event
+delivery while a fake model is blocked, failure-trace persistence, redaction,
+incomplete outcomes, cancellation scheduling, empty model replies, OpenRouter
+usage metadata, source URLs, and fenced/non-object action inputs.
+
+An optional DOM test executes the real dashboard JavaScript against a fake
+stream, including UTF-8 chunk boundaries, early progress, final/error states,
+escaped tool output, and Stop Run:
+
+```bash
+npm install --prefix .test-tmp/ui-test --no-audit --no-fund --ignore-scripts jsdom
+node tests/dashboard_ui.cjs
+```
+
+The DOM check does not replace a full browser/layout test or call a live provider.
+See [live activity and troubleshooting](live-activity.md).

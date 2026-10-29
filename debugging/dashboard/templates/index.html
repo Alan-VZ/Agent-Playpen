@@ -20,6 +20,19 @@
     }
 
     * { box-sizing: border-box; }
+    .activity-log { max-height: 480px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 10px; }
+    .activity-log:empty::before { content: "Tool calls, observations, and model status will appear here during a run."; color: var(--muted); }
+    .activity-event { border-bottom: 1px solid var(--border); padding: 9px 0; }
+    .activity-event:last-child { border-bottom: 0; }
+    .activity-event summary { cursor: pointer; font-size: .85rem; color: var(--accent); }
+    .activity-event[data-type="error"] summary { color: var(--error); }
+    .activity-event[data-type="warning"] summary { color: var(--warning); }
+    .activity-event pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .82rem; margin: 8px 0; }
+    .activity-heading { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+    .activity-heading h3 { margin: 0; font-size: 1rem; }
+    #elapsed { color: var(--muted); font-size: .85rem; }
+    button:disabled { opacity: .6; cursor: wait; }
+
 
     body {
       margin: 0;
@@ -495,7 +508,8 @@
                 <label data-help="actions">Actions</label>
               </div>
               <div class="actions">
-                <button type="submit" class="primary">Run Agent</button>
+                <button type="submit" id="run-agent" class="primary">Run Agent</button>
+                <button type="button" id="stop-agent" class="secondary" disabled>Stop Run</button>
                 <button type="button" id="migrate-keys" class="secondary">Migrate Legacy Keys</button>
                 <button type="button" id="save-config" class="secondary">Save Config</button>
                 <button type="button" id="save-env" class="secondary">Save Settings</button>
@@ -506,10 +520,13 @@
       </section>
 
       <section class="panel results">
-        <h2>Execution Result</h2>
+        <h2>Agent Workspace</h2>
+        <p class="meta">One agent per run. Live status and tool results appear below.</p>
         <div id="status" class="status" style="display:none"></div>
         <div id="result-output" class="result-output">Configure the form, then run the agent.</div>
         <div class="meta" id="meta-output">No trace generated yet.</div>
+        <div class="activity-heading"><h3>Live activity</h3><span id="elapsed">Idle</span></div>
+        <div id="activity-log" class="activity-log" role="log" aria-label="Agent activity" aria-live="polite"></div>
       </section>
     </div>
   </div>
@@ -691,44 +708,127 @@
       metaOutput.textContent = 'Generated environment file: ' + data.path;
     }
 
+    let activeRun = null;
+    const runButton = document.getElementById('run-agent');
+    const stopButton = document.getElementById('stop-agent');
+    const activityLog = document.getElementById('activity-log');
+    const elapsedLabel = document.getElementById('elapsed');
+
+    function appendActivity(event) {
+      const labels = {
+        session: 'Session started', status: 'Status', model_request: 'Model request',
+        model_response: 'Model response received', think: 'Action selected',
+        act: 'Tool call', observe: 'Tool response', response: 'Agent response',
+        warning: 'Attention', error: 'Error'
+      };
+      const item = document.createElement('details');
+      item.className = 'activity-event';
+      item.dataset.type = event.type;
+      item.open = ['act', 'observe', 'response', 'error', 'warning'].includes(event.type);
+      const summary = document.createElement('summary');
+      const step = Number.isInteger(event.iteration) ? ' · step ' + (event.iteration + 1) : '';
+      summary.textContent = new Date().toLocaleTimeString() + ' · ' + (event.agent_id || 'agent-1') + step + ' · ' + (labels[event.type] || event.type) + (event.tool_name ? ': ' + event.tool_name : '');
+      const content = document.createElement('pre');
+      content.textContent = event.content || (event.type === 'session' ? event.backend + ' / ' + event.model : '');
+      item.append(summary, content);
+      activityLog.appendChild(item);
+      // Keep a bounded browser view; the complete trace remains on disk.
+      while (activityLog.children.length > 300) activityLog.firstElementChild.remove();
+      activityLog.scrollTop = activityLog.scrollHeight;
+    }
+
+    document.getElementById('stop-agent').addEventListener('click', () => {
+      if (activeRun) activeRun.abort();
+    });
+
     document.getElementById('agent-form').addEventListener('submit', async function (event) {
       event.preventDefault();
+      if (activeRun) return;
       const payload = collectConfig();
-
       if (apiKeyInput.value.trim() || searchCseInput.value.trim()) {
         setStatus('error', 'Save entered credentials before running.');
         return;
       }
       if (!payload.task.trim()) {
         setStatus('error', 'A task is required before running the agent.');
-        resultOutput.textContent = 'Please enter a task for the agent.';
         return;
       }
-
+      const controller = new AbortController();
+      activeRun = controller;
+      runButton.disabled = true;
+      stopButton.disabled = false;
+      activityLog.replaceChildren();
+      resultOutput.textContent = 'Waiting for the agent. Follow live activity below.';
+      metaOutput.textContent = 'Starting local session...';
       setStatus('success', 'Running agent...');
-      resultOutput.textContent = 'Working...';
-      metaOutput.textContent = 'Agent is executing with the selected configuration.';
+      const started = Date.now();
+      const timer = setInterval(() => {
+        elapsedLabel.textContent = Math.floor((Date.now() - started) / 1000) + 's elapsed';
+      }, 500);
+      let completed = false;
+      let sessionId = '';
+
+      function receive(record) {
+        if (record.type === 'heartbeat') return;
+        if (record.type === 'session') {
+          sessionId = record.session_id;
+          metaOutput.textContent = 'Session: ' + sessionId + ' · ' + record.agent_id + ' · ' + record.backend + ' / ' + record.model;
+        }
+        if (record.type === 'response') resultOutput.textContent = record.content;
+        if (record.type !== 'complete') {
+          appendActivity(record);
+          return;
+        }
+        completed = true;
+        if (record.status === 'success') {
+          setStatus('success', 'Execution complete');
+          resultOutput.textContent = record.result || 'The agent returned an empty final response.';
+        } else if (record.status === 'incomplete') {
+          setStatus('error', 'Stopped without a final answer');
+          resultOutput.textContent = record.message + (record.result ? '\n\nLast tool result:\n' + record.result : '');
+        } else {
+          setStatus('error', record.status === 'cancelled' ? 'Run stopped' : 'Execution failed');
+          resultOutput.textContent = record.message || 'The run did not finish.';
+        }
+        metaOutput.textContent = 'Session: ' + (record.session_id || sessionId) + (record.trace_path ? ' | Trace: ' + record.trace_path : '') + (record.trace_save_error ? ' | ' + record.trace_save_error : '') + (record.dropped_events ? ' | Some live events were omitted; inspect the saved trace.' : '');
+      }
 
       try {
-        const response = await fetch('/api/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        const response = await fetch('/api/run/stream', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload), signal: controller.signal
         });
-
-        const data = await response.json();
-
-        if (!response.ok || data.status === 'error') {
-          throw new Error(data.message || 'Request failed');
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || error.detail || 'The run could not start. Reload the page if the server restarted.');
         }
-
-        setStatus('success', 'Execution complete');
-        resultOutput.textContent = data.result || 'No output received.';
-        metaOutput.textContent = 'Session: ' + data.session_id + ' | Trace: ' + data.trace_path;
+        if (!response.body) throw new Error('This browser does not support streamed responses.');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let pending = '';
+        while (true) {
+          const { value, done } = await reader.read();
+          pending += done ? decoder.decode() : decoder.decode(value, { stream: true });
+          const lines = pending.split('\n');
+          pending = lines.pop();
+          for (const line of lines) if (line.trim()) receive(JSON.parse(line));
+          if (done) break;
+        }
+        if (pending.trim()) receive(JSON.parse(pending));
+        if (!completed) throw new Error('The connection ended before completion. The activity above shows the last operation; retry after checking the server.');
       } catch (error) {
-        setStatus('error', 'Execution failed');
-        resultOutput.textContent = error.message || 'Unknown error';
-        metaOutput.textContent = 'Check backend connectivity or the task configuration.';
+        const stopped = error.name === 'AbortError';
+        const message = stopped ? 'Stop requested. An in-flight model or tool call may finish, but no further steps will be scheduled.' : error.message || 'Connection failed.';
+        setStatus('error', stopped ? 'Run stopped' : 'Execution failed');
+        resultOutput.textContent = message;
+        appendActivity({ type: stopped ? 'warning' : 'error', content: message });
+        if (sessionId) metaOutput.textContent = 'Session: ' + sessionId + ' | Review the activity above and the server trace folder.';
+      } finally {
+        clearInterval(timer);
+        elapsedLabel.textContent = Math.floor((Date.now() - started) / 1000) + 's total';
+        activeRun = null;
+        runButton.disabled = false;
+        stopButton.disabled = true;
       }
     });
 
@@ -870,11 +970,12 @@
           <li><code>2048</code> â€” default, fine for most tasks</li>
           <li><code>4096</code>+ â€” long reports, or generating substantial code</li>
         </ul>
-        <p class="warn">If answers keep stopping mid-sentence, this value is too low.</p>
+        <p class="warn">An output limit can truncate an answer or leave no text at all if reasoning consumes the allowance. Check the live model-response metadata. Increase the limit deliberately or choose another model; the app does not silently increase it.</p>
         <p>On paid backends this is the main lever on cost per step.</p>`,
 
       actions: `
         <p><strong>Run Agent</strong> â€” executes the task with the settings above. Requires a <strong>Task</strong>. The answer appears on the right, along with a session id and the path to a saved trace file recording every step.</p>
+        <p><strong>Stop Run</strong> requests no further steps. An in-flight model or tool call may still finish. Live activity shows status, tool requests/results, and responses while a run executes.</p>
         <p><strong>Save Config</strong> â€” writes the current form to <code>config/web_agent_config.json</code> so you can reuse it later. Credentials are excluded and remain in encrypted OS storage.</p>
         <p><strong>Save Settings</strong> â€” writes backend settings to <code>.env</code> for the CLI to pick up. Existing entries are merged, so non-secret settings and comments are preserved. Save credentials separately.</p>
         <p>To store an API key, use the <strong>Save</strong> button beside the API Key field rather than this one.</p>`

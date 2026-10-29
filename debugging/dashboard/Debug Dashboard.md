@@ -36,6 +36,7 @@ errors omit raw exception tracebacks and request input values.
 | `POST /api/save-config` | Saves allowlisted non-secret configuration |
 | `POST /api/save-env` | Saves non-secret settings to `.env`; ignores credential fields |
 | `POST /api/run` | Executes with saved credentials; validates task/planner/budgets |
+| `POST /api/run/stream` | Live NDJSON activity and terminal result; same token/config validation |
 
 There is no key-retrieval/export endpoint. No `/api/clear-key` endpoint is needed;
 use an empty value with `/api/save-key`. API documentation endpoints are disabled;
@@ -55,3 +56,9 @@ The prior regression fixes preserve planner steps, tool observation feedback,
 and working-memory entries, validate malformed requests, and repair backend
 construction and evaluator parsing. See [the testing guide](../../docs/testing.md)
 for offline coverage and the remaining live-integration checks.
+
+The workspace now shows live tool requests/results and model status, elapsed
+time, and Stop Run. Both successful and failed traces are saved; budget exhaustion
+is labeled incomplete. This is a single-agent page. See
+[live activity and troubleshooting](../../docs/live-activity.md) for restart
+instructions, empty-response diagnostics, and cancellation limits.

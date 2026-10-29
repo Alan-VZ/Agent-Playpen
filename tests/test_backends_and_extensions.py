@@ -27,7 +27,7 @@ def test_openai_compatible_backend_chat_and_stream(monkeypatch, module_name, cla
     monkeypatch.setattr(module.openai, client_name, Mock(return_value=client))
     backend = getattr(module, class_name)(**kwargs)
     messages = [{"role": "user", "content": "hello"}]
-    client.chat.completions.create.return_value = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="reply"))])
+    client.chat.completions.create.return_value = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="reply"), finish_reason="stop")])
     assert backend.chat(messages) == "reply"
     client.chat.completions.create.return_value = [SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content="part"))])]
     assert list(backend.stream(messages)) == ["part"]

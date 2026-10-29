@@ -441,8 +441,14 @@ Then open `http://localhost:8765` in your browser.
 
 **Observability:**
 
+- **Live activity** — Model status, tool calls/results, elapsed time, final answers,
+  and redacted errors appear while the run executes. Failed traces are retained.
+- **Stop Run** — Stops scheduling new steps; an in-flight call may finish.
+- **Single-agent workspace** — This page runs one agent per task. See the
+  [live activity guide](docs/live-activity.md) for diagnostics and streaming API details.
+
 - Run the agent and view the final answer in real time
-- Inspect the execution trace with full thought/action/observation history
+- Inspect action summaries, tool requests/results, and final responses in the live feed and saved trace
 - See which tools were called and what they returned
 
 This keeps the core implementation in Python while allowing non-technical users to configure and orchestrate agents entirely in the browser.

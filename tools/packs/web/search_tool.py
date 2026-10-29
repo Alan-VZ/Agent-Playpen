@@ -112,7 +112,7 @@ class WebSearchTool(BaseTool):
         results = []
         with DDGS() as ddgs:
             for r in ddgs.text(query, max_results=n):
-                results.append(f"- {r['title']}: {r['body']}")
+                results.append(f"- {r.get('title', '')}: {r.get('body', '')}\n  URL: {r.get('href') or r.get('url', '')}")
         return "\n".join(results) if results else "No results found."
 
     def _google(self, query: str, n: int) -> str:
@@ -139,7 +139,7 @@ class WebSearchTool(BaseTool):
         data = resp.json()
         items = data.get("items", [])
         lines = [
-            f"- {item.get('title')}: {item.get('snippet')}"
+            f"- {item.get('title')}: {item.get('snippet')}\n  URL: {item.get('link', '')}"
             for item in items[:n]
             if item.get("title") or item.get("snippet")
         ]
@@ -159,7 +159,7 @@ class WebSearchTool(BaseTool):
         )
         resp.raise_for_status()
         data = resp.json()
-        lines = [f"- {r['title']}: {r['content']}" for r in data.get("results", [])]
+        lines = [f"- {r['title']}: {r['content']}\n  URL: {r.get('url', '')}" for r in data.get("results", [])]
         return "\n".join(lines) if lines else "No results."
 
     def _serpapi(self, query: str, n: int) -> str:
@@ -177,5 +177,5 @@ class WebSearchTool(BaseTool):
         resp.raise_for_status()
         data = resp.json()
         results = data.get("organic_results", [])
-        lines = [f"- {r.get('title')}: {r.get('snippet')}" for r in results[:n]]
+        lines = [f"- {r.get('title')}: {r.get('snippet')}\n  URL: {r.get('link', '')}" for r in results[:n]]
         return "\n".join(lines) if lines else "No results."

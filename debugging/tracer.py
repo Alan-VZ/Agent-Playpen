@@ -24,12 +24,13 @@ class Tracer:
     Pretty-prints to console using rich if available.
     """
 
-    def __init__(self, trace_dir: str = "./traces", session_id: str = "default"):
+    def __init__(self, trace_dir: str = "./traces", session_id: str = "default", on_event=None):
         self.trace_dir = Path(trace_dir)
         self.trace_dir.mkdir(parents=True, exist_ok=True)
         self.session_id = session_id
         self.events: list[TraceEvent] = []
         self._iteration = 0
+        self.on_event = on_event
 
         # Use rich for coloured output if available
         try:
@@ -43,6 +44,8 @@ class Tracer:
         event.content = redact(event.content)
         event.tool_name = redact(event.tool_name)
         self.events.append(event)
+        if self.on_event is not None:
+            self.on_event(redact(asdict(event)))
         self._print(event)
 
     def _print(self, event: TraceEvent) -> None:
@@ -57,7 +60,7 @@ class Tracer:
     def on_think(self, thought) -> None:
         self._record(TraceEvent(
             type="think",
-            content=redact(str(thought.reasoning))[:500],
+            content="Final response ready." if thought.is_terminal else f"Selected action: {thought.tool_name}",
             iteration=self._iteration,
         ))
 
@@ -70,19 +73,25 @@ class Tracer:
         ))
 
     def on_observe(self, observation: str) -> None:
-        self._iteration += 1
         self._record(TraceEvent(
             type="observe",
-            content=redact(observation)[:500],
+            content=redact(observation)[:2000],
             iteration=self._iteration,
         ))
+        self._iteration += 1
 
     def on_error(self, exc: Exception) -> None:
         self._record(TraceEvent(
             type="error",
-            content=str(exc),
+            content=redact(str(exc))[:1000],
             iteration=self._iteration,
         ))
+
+    def on_status(self, message: str, event_type: str = "status") -> None:
+        self._record(TraceEvent(type=event_type, content=message, iteration=self._iteration))
+
+    def on_response(self, answer: str) -> None:
+        self.on_status(redact(answer), event_type="response")
 
     def save(self) -> str:
         """Persist the full trace to disk and return the file path."""

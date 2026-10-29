@@ -33,7 +33,17 @@ class OpenRouterBackend(BaseBackend):
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
-        return response.choices[0].message.content
+        if not response.choices:
+            raise ValueError("OpenRouter returned no completion choices. Retry or choose another model.")
+        choice = response.choices[0]
+        usage = getattr(response, "usage", None)
+        details = getattr(usage, "completion_tokens_details", None)
+        self.last_response_stats = {
+            "finish_reason": choice.finish_reason,
+            "output_tokens": getattr(usage, "completion_tokens", None),
+            "reasoning_tokens": getattr(details, "reasoning_tokens", None),
+        }
+        return choice.message.content
 
     def stream(self, messages: list[dict]):
         stream = self.client.chat.completions.create(

@@ -5,12 +5,14 @@ import os
 import secrets
 import re
 import threading
+import queue
+import time
 import uuid
 from pathlib import Path
 
 import requests
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -23,6 +25,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from backends.backend_factory import BackendFactory
 from core.agent import Agent
+from core.exceptions import AgentCancelledError
 from debugging.tracer import Tracer
 from memory.memory_manager import MemoryManager
 from planner.cot_planner import CoTPlanner
@@ -403,8 +406,7 @@ def api_defaults():
     }
 
 
-@app.post("/api/run")
-def run_agent(config: AgentConfig):
+def _validate_run(config: AgentConfig):
     if not config.task.strip():
         raise HTTPException(status_code=400, detail="Task is required.")
     if config.api_key or config.search_cse_id:
@@ -414,49 +416,137 @@ def run_agent(config: AgentConfig):
     if config.planner not in PLANNER_MAP:
         raise HTTPException(status_code=400, detail="Unsupported planner.")
 
+
+def _run_error(exc: Exception) -> str:
+    code = getattr(exc, "status_code", None)
+    descriptions = {
+        401: "The provider rejected the API key. Check or replace its saved credential.",
+        402: "The provider reports insufficient credit or a spending limit.",
+        403: "The provider denied access to this model or request.",
+        429: "The provider rate limit was reached. Wait and retry or choose another model.",
+    }
+    if code in descriptions:
+        detail = descriptions[code]
+    elif isinstance(exc, ValidationError):
+        detail = "The model returned an invalid action shape. Check the activity log and try another model."
+    elif code:
+        detail = f"The provider returned HTTP {code}. Retry or choose another model."
+    else:
+        detail = redact(str(exc))[:600] or "No additional detail was provided."
+    return redact(f"Agent execution failed ({type(exc).__name__}): {detail}")
+
+
+def _execute_run(config: AgentConfig, on_event=None, cancel_event=None):
+    session_id = uuid.uuid4().hex
+    tracer = Tracer(trace_dir=str(ROOT / "traces"), session_id=session_id, on_event=on_event)
+    backend = None
+    payload = {"session_id": session_id, "agent_id": "agent-1", "backend": config.backend, "model": config.model}
+    if on_event:
+        on_event({"type": "session", **payload, "max_iterations": config.max_iterations})
     try:
+        tracer.on_status(f"Connecting to {config.backend} / {config.model}.")
         backend = _build_backend(config)
-        planner_cls = PLANNER_MAP.get(config.planner, ReActPlanner)
-        planner = planner_cls(backend=backend)
-
+        planner = PLANNER_MAP[config.planner](backend=backend)
         registry = ToolRegistry()
-        tool_descriptions = []
         for tool_name in config.tools:
-            if tool_name not in TOOL_CHOICES:
-                continue
-            tool = _tool_factory(tool_name, config)
-            registry.register(tool)
-            tool_descriptions.append(f"{tool.name}: {tool.description}")
-
-        planner.tool_descriptions = "\n".join(tool_descriptions) if tool_descriptions else "No tools available."
-        memory = MemoryManager()
-        session_id = uuid.uuid4().hex
-        tracer = Tracer(trace_dir=str(ROOT / "traces"), session_id=session_id)
+            if tool_name in TOOL_CHOICES:
+                registry.register(_tool_factory(tool_name, config))
+        tracer.on_status("Tools ready: " + (", ".join(registry.list_all()) or "none"))
         agent = Agent(
-            backend=backend,
-            planner=planner,
-            tool_registry=registry,
-            memory_manager=memory,
-            tracer=tracer,
-            max_iterations=config.max_iterations,
+            backend=backend, planner=planner, tool_registry=registry,
+            memory_manager=MemoryManager(), tracer=tracer,
+            max_iterations=config.max_iterations, cancel_event=cancel_event,
         )
-
         result = agent.run(config.task)
-        trace_path = tracer.save()
-        return {
-            "status": "success",
-            "result": result,
-            "trace_path": trace_path,
-            "session_id": session_id,
-        }
-    except Exception:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": "Agent execution failed. Check backend settings and provider availability.",
-            },
-        )
+        payload.update(status=agent.completion_status, result=result)
+        if agent.completion_status == "incomplete":
+            payload["message"] = "No final answer was reached. Showing the last tool result; review the activity log or adjust the task/iteration budget."
+    except AgentCancelledError as exc:
+        tracer.on_status(str(exc), "warning")
+        payload.update(status="cancelled", message=str(exc), result="")
+    except Exception as exc:
+        message = _run_error(exc)
+        tracer.on_error(RuntimeError(message))
+        payload.update(status="error", message=message, error_type=type(exc).__name__, result="")
+    finally:
+        try:
+            payload["trace_path"] = tracer.save()
+        except OSError:
+            payload["trace_save_error"] = "The trace could not be saved to disk."
+        if backend is not None:
+            client = getattr(backend, "client", None)
+            if client is not None:
+                try:
+                    client.close()
+                except Exception:
+                    pass
+    return redact(payload)
+
+
+@app.post("/api/run")
+def run_agent(config: AgentConfig):
+    _validate_run(config)
+    payload = _execute_run(config)
+    return JSONResponse(status_code=500 if payload["status"] == "error" else 200, content=payload)
+
+
+@app.post("/api/run/stream")
+def run_agent_stream(config: AgentConfig):
+    _validate_run(config)
+    stopped = threading.Event()
+    events = queue.Queue(maxsize=512)
+    dropped = 0
+
+    def publish(event):
+        nonlocal dropped
+        if stopped.is_set():
+            return
+        event = redact({"agent_id": "agent-1", **event})
+        try:
+            events.put_nowait(event)
+        except queue.Full:
+            try:
+                events.get_nowait()
+            except queue.Empty:
+                pass
+            dropped += 1
+            events.put_nowait(event)
+
+    def worker():
+        try:
+            result = _execute_run(config, on_event=publish, cancel_event=stopped)
+            publish({"type": "complete", **result, "dropped_events": dropped})
+        except Exception as exc:
+            publish({"type": "complete", "status": "error", "message": _run_error(exc)})
+
+    def stream():
+        started = time.monotonic()
+        thread = threading.Thread(target=worker, daemon=True, name="playpen-agent-run")
+        thread.start()
+        try:
+            while True:
+                try:
+                    event = events.get(timeout=1)
+                except queue.Empty:
+                    event = {"type": "heartbeat", "elapsed_seconds": int(time.monotonic() - started)}
+                yield json.dumps(event, ensure_ascii=False) + "\n"
+                if event["type"] == "complete":
+                    break
+        finally:
+            # A disconnect stops scheduling new calls, but cannot interrupt a
+            # model request/tool operation that is already executing.
+            stopped.set()
+
+    class RunStreamingResponse(StreamingResponse):
+        async def __call__(self, scope, receive, send):
+            try:
+                await super().__call__(scope, receive, send)
+            finally:
+                # Always signal even if the server loses the connection while
+                # sending a chunk, before the generator is explicitly closed.
+                stopped.set()
+
+    return RunStreamingResponse(stream(), media_type="application/x-ndjson", headers={"X-Accel-Buffering": "no"})
 
 
 @app.get("/api/models")
