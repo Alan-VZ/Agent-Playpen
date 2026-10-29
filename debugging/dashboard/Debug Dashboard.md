@@ -71,6 +71,12 @@ warnings receive a warning label; they do not certify research success. See
 
 ## Additional search services
 
+Model choices show input/output prices in USD per million text tokens and
+selected-model source/cache details. **Compare model prices across backends**
+opens `/model-prices` with filtering, sorting, and base token estimates. Published
+rates, community reference estimates, unknown/account-specific prices, and local
+costs are distinguished. See [model pricing](../../docs/model-pricing.md).
+
 Open **Maintenance: connect accounts & manage keys** at `/maintenance` for
 provider portal setup, encrypted saving, access checks, and review tracking.
 OpenRouter supports a direct browser authorization flow; human account/email,

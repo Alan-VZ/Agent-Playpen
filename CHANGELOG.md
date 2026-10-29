@@ -26,6 +26,9 @@
 
 ## Unreleased
 
+- Added token prices to model choices and a cross-backend comparison screen:
+  provider catalog/official-page rates, labeled reference fallback, cache rates,
+  source/freshness, cost sorting, base text estimates, and explicit unknown prices.
 - Added a Maintenance screen with guided provider onboarding, OpenRouter S256
   PKCE authorization and direct vault saving, account/usage access checks,
   opt-in search tests, review dates, and secret-free maintenance history.

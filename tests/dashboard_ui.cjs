@@ -12,6 +12,15 @@ const console = new VirtualConsole();
 console.on('jsdomError', error => jsErrors.push(error));
 const requests = [];
 const savedSearchKeys = [];
+let holdModelLoads = false;
+const pendingModelLoads = [];
+function modelData(name, input = 0, output = 2) {
+  return { models: [name], source: 'live', model_details: [{ id: name, pricing: {
+    status: 'published', input_per_million: input, output_per_million: output,
+    cache_read_per_million: null, cache_write_per_million: null, source_label: 'Provider catalog',
+    source_url: 'https://example.org/prices', fetched_at: 'test-time', notes: []
+  } }], pricing_default: { status: 'unavailable', source_label: 'Price unavailable', notes: [] } };
+}
 
 async function mockFetch(resource, options = {}) {
   const url = new URL(resource, 'http://127.0.0.1:8765');
@@ -25,7 +34,10 @@ async function mockFetch(resource, options = {}) {
     savedSearchKeys.push(JSON.parse(options.body));
     return json({ status: 'saved', message: 'Credential saved in encrypted OS storage.' });
   }
-  if (url.pathname === '/api/models') return json({ models: ['demo'], source: 'live' });
+  if (url.pathname === '/api/models') {
+    if (holdModelLoads) return new Promise(resolve => pendingModelLoads.push({ backend: url.searchParams.get('backend'), resolve: data => resolve(json(data)) }));
+    return json(modelData('demo'));
+  }
   assert.equal(url.pathname, '/api/run/stream');
   const task = JSON.parse(options.body).task;
   const timers = [];
@@ -99,6 +111,30 @@ function submit(task) {
   try {
     await waitFor(() => document.getElementById('backend').options.length > 0);
     await waitFor(() => requests.includes('/api/keys'));
+    await waitFor(() => document.getElementById('model-options').children.length > 0);
+    document.querySelector('#model-options .dropdown-item').click();
+    assert.equal(document.getElementById('model').value, 'demo');
+    assert.ok(document.getElementById('model-price-note').textContent.includes('Input $0'));
+    assert.ok(document.getElementById('model-price-note').textContent.includes('Output $2'));
+    document.getElementById('model').value = 'unlisted-model';
+    document.getElementById('model').dispatchEvent(new dom.window.Event('input'));
+    assert.ok(document.getElementById('model-price-note').textContent.includes('Price unavailable'));
+    holdModelLoads = true;
+    const backendSelect = document.getElementById('backend');
+    backendSelect.value = 'openrouter'; backendSelect.dispatchEvent(new dom.window.Event('change'));
+    backendSelect.value = 'groq'; backendSelect.dispatchEvent(new dom.window.Event('change'));
+    await waitFor(() => pendingModelLoads.length === 2);
+    pendingModelLoads[1].resolve(modelData('groq/demo', 3, 4));
+    await waitFor(() => document.querySelector('#model-options .dropdown-item')?.dataset.value === 'groq/demo');
+    document.querySelector('#model-options .dropdown-item').click();
+    pendingModelLoads[0].resolve(modelData('router/demo', .1, .2));
+    await sleep(30);
+    assert.equal(document.getElementById('model').value, 'groq/demo');
+    assert.ok(document.getElementById('model-price-note').textContent.includes('Input $3'));
+    assert.equal(document.querySelector('#model-options .dropdown-item').dataset.value, 'groq/demo');
+    holdModelLoads = false;
+    backendSelect.value = 'lm_studio'; backendSelect.dispatchEvent(new dom.window.Event('change'));
+    await waitFor(() => document.querySelector('#model-options .dropdown-item')?.dataset.value === 'demo');
     const searchSelect = document.getElementById('search_provider');
     for (const [provider, key] of Object.entries({ serper: 'SERPER_API_KEY', brave: 'BRAVE_API_KEY', exa: 'EXA_API_KEY', firecrawl: 'FIRECRAWL_API_KEY', openwebninja: 'OPENWEBNINJA_API_KEY' })) {
       searchSelect.value = provider;

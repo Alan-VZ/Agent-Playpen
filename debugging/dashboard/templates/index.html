@@ -365,6 +365,8 @@
     .dropdown-item.hidden {
       display: none;
     }
+    .model-price-line { display: block; color: var(--muted, #a8bbd0); font-size: .76rem; margin-top: 4px; }
+    #model-price-note { white-space: pre-line; }
 
     .field {
       position: relative;
@@ -421,9 +423,13 @@
                 <button type="button" id="load-models" class="inline-btn">Load</button>
               </div>
               <div id="model-dropdown" class="custom-dropdown" style="display: none;">
-                <div id="model-options" class="dropdown-list"></div>
+                <div id="model-options" class="dropdown-list" role="listbox" aria-label="Models with prices"></div>
               </div>
               <div id="model-note" class="field-note"></div>
+              <div id="model-price-note" class="field-note" aria-live="polite"></div>
+              <p class="field-note"><a id="model-price-source" target="_blank" rel="noopener noreferrer" hidden>Price source ↗</a>
+                <a href="/model-prices" target="_blank" rel="noopener" style="color: var(--accent, #79baff);">Compare model prices across backends ↗</a></p>
+              <div class="field-note">Base text rates; routing, account terms, and other charges can change the bill.</div>
             </div>
 
             <div class="field">
@@ -1098,6 +1104,11 @@
     const modelInput = document.getElementById('model');
     const modelOptions = document.getElementById('model-options');
     const modelNote = document.getElementById('model-note');
+    const modelPriceNote = document.getElementById('model-price-note');
+    const modelPriceSource = document.getElementById('model-price-source');
+    let modelPriceLookup = new Map();
+    let modelDefaultPricing = null;
+    let modelCatalogSequence = 0;
     const apiKeyInput = document.getElementById('api_key');
     const keyNote = document.getElementById('key-note');
     const searchCseField = document.getElementById('google-cse-field');
@@ -1241,43 +1252,95 @@
       }
     }
 
+    function modelMoney(value) {
+      return typeof value === 'number' && Number.isFinite(value) && value >= 0
+        ? '$' + (value > 0 && value < 1e-10 ? value.toExponential(3) : value.toLocaleString('en-US', { maximumFractionDigits: 10 })) : 'Unavailable';
+    }
+
+    function priceSummary(price) {
+      if (!price || price.status === 'unavailable') return 'Price unavailable; check official pricing.';
+      if (price.status === 'local') return 'Local / self-hosted; hardware and hosting costs are separate.';
+      if (price.status === 'account_specific') return 'Account/deployment-specific price; obtain an account quote.';
+      return `Input ${modelMoney(price.input_per_million)} · Output ${modelMoney(price.output_per_million)} / 1M text tokens (USD)`;
+    }
+
+    function renderSelectedModelPrice() {
+      const detail = modelPriceLookup.get(modelInput.value.trim());
+      const price = detail && detail.pricing || modelDefaultPricing;
+      let summary = priceSummary(price);
+      if (price) {
+        if (price.cache_read_per_million !== null && price.cache_read_per_million !== undefined) summary += `\nCached input: ${modelMoney(price.cache_read_per_million)} / 1M`;
+        if (price.cache_write_per_million !== null && price.cache_write_per_million !== undefined) summary += ` · Cache write: ${modelMoney(price.cache_write_per_million)} / 1M`;
+        summary += `\n${price.source_label}${price.stale ? ' · STALE: refresh failed' : ''}${price.fetched_at ? ' · Retrieved ' + price.fetched_at : ''}`;
+        if (price.tiers && price.tiers.length) summary += '\nLong-context tiers exist; see the comparison screen.';
+      }
+      setNote(modelPriceNote, price && price.status === 'published' && !price.stale ? '' : 'warn', summary);
+      modelPriceSource.hidden = true; modelPriceSource.removeAttribute('href');
+      try {
+        const url = new URL(price && (price.source_url || price.official_url));
+        if (url.protocol === 'https:' && !url.username && !url.password) { modelPriceSource.href = url.href; modelPriceSource.hidden = false; }
+      } catch {}
+      modelPriceNote.title = price && price.notes ? price.notes.join('\n') : 'Load the model catalog or select a known model ID.';
+    }
+
     async function loadModels(silent) {
       const button = document.getElementById('load-models');
+      const sequence = ++modelCatalogSequence;
+      const requestedBackend = backendSelect.value;
       const params = new URLSearchParams({
-        backend: backendSelect.value,
+        backend: requestedBackend,
         base_url: document.getElementById('base_url').value
       });
 
       button.disabled = true;
+      modelPriceLookup = new Map(); modelDefaultPricing = null; modelOptions.replaceChildren();
+      modelPriceSource.hidden = true; modelPriceSource.removeAttribute('href');
+      setNote(modelPriceNote, '', 'Loading model catalog and prices…');
       if (!silent) setNote(modelNote, '', 'Loading models...');
 
       try {
         const data = await (await fetch('/api/models?' + params)).json();
-        modelOptions.innerHTML = '';
+        if (sequence !== modelCatalogSequence || requestedBackend !== backendSelect.value) return;
+        modelPriceLookup = new Map((data.model_details || []).map(item => [item.id, item]));
+        modelDefaultPricing = data.pricing_default || null;
+        modelOptions.replaceChildren();
         (data.models || []).forEach((name) => {
           const item = document.createElement('div');
           item.className = 'dropdown-item';
-          item.textContent = name;
+          const label = document.createElement('span'); label.textContent = name;
+          const detail = modelPriceLookup.get(name);
+          const price = detail && detail.pricing;
+          const costs = document.createElement('small'); costs.className = 'model-price-line';
+          costs.textContent = priceSummary(price) + (price && price.status === 'reference' ? ' · Reference estimate' : '') + (price && price.stale ? ' · Stale' : '');
+          item.append(label, costs);
           item.dataset.value = name;
+          item.tabIndex = 0; item.setAttribute('role', 'option');
           item.addEventListener('click', () => {
             modelInput.value = name;
+            renderSelectedModelPrice();
             document.getElementById('model-dropdown').style.display = 'none';
           });
+          item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); item.click(); } });
           modelOptions.appendChild(item);
         });
 
         const count = (data.models || []).length;
         if (data.source === 'live') {
           setNote(modelNote, 'ok', `${count} model(s) available - click the field or type to filter.`);
+        } else if (data.source === 'cached') {
+          setNote(modelNote, 'warn', `${count} cached model(s); catalog refresh failed. Prices may be stale.`);
         } else if (count) {
           setNote(modelNote, 'warn', `${data.message} Showing ${count} known name(s).`);
         } else {
           setNote(modelNote, 'warn', data.message || 'No models found. Type the name manually.');
         }
+        renderSelectedModelPrice();
       } catch (err) {
+        if (sequence !== modelCatalogSequence) return;
         setNote(modelNote, 'bad', 'Could not load models. Type the model name manually.');
+        renderSelectedModelPrice();
       } finally {
-        button.disabled = false;
+        if (sequence === modelCatalogSequence) button.disabled = false;
       }
     }
 
@@ -1294,6 +1357,7 @@
 
       // Filter dropdown as user types
       modelInput.addEventListener('input', () => {
+        renderSelectedModelPrice();
         if (modelOptions.children.length > 0) {
           dropdown.style.display = 'block';
           filterModelDropdown(modelInput.value.toLowerCase());

@@ -9,6 +9,12 @@ Use **Maintenance: connect accounts & manage keys** to follow provider setup,
 save keys in encrypted OS storage, check access, and track review dates.
 OpenRouter supports direct secure authorization; other providers have guided
 portal setup. See [the Maintenance screen guide](docs/maintenance-screen.md).
+
+The model picker now displays input/output token prices, cache rates where
+listed, source, and retrieval time. **Compare model prices across backends**
+opens a searchable table with published provider rates, clearly labeled
+reference estimates, and base text-cost calculations. Unknown prices remain
+unavailable. See [model pricing](docs/model-pricing.md) for coverage and limits.
 <!-- cSpell:ignore Ollama, Groq -->
 
 <p align="center">

@@ -29,7 +29,7 @@ from backends.backend_factory import BackendFactory
 from core.agent import Agent
 from core.exceptions import AgentCancelledError
 from debugging.tracer import Tracer
-from debugging.dashboard import setup_guide, maintenance
+from debugging.dashboard import setup_guide, maintenance, model_pricing
 from memory.memory_manager import MemoryManager
 from planner.cot_planner import CoTPlanner
 from planner.react_planner import ReActPlanner
@@ -221,6 +221,12 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
     """Query the provider for its available models. Raises on failure."""
     timeout = 10
 
+    if backend == "openrouter":
+        source = model_pricing.snapshot("openrouter", refresh=True)
+        if not source["data"]:
+            raise RuntimeError("OpenRouter model catalog unavailable")
+        return model_pricing.ModelCatalog(backend, source["data"]["data"], source["fetched_at"], source["stale"])
+
     if backend == "lm_studio":
         url = (base_url or "http://localhost:1234/v1").rstrip("/") + "/models"
         response = requests.get(url, timeout=timeout, allow_redirects=False)
@@ -264,7 +270,7 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
         response.raise_for_status()
         payload = response.json()
         entries = payload.get("data", payload) if isinstance(payload, dict) else payload
-        return sorted(e["id"] for e in entries if isinstance(e, dict) and e.get("id"))
+        return model_pricing.ModelCatalog(backend, entries)
 
     if backend == "anthropic":
         key = _require_key(get_credential("ANTHROPIC_API_KEY", api_key), backend)
@@ -275,7 +281,7 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
             allow_redirects=False,
         )
         response.raise_for_status()
-        return sorted(m["id"] for m in response.json().get("data", []))
+        return model_pricing.ModelCatalog(backend, response.json().get("data", []))
 
     return []
 
@@ -396,6 +402,18 @@ def setup_page(request: Request):
         name="setup.html",
         context={"guide": setup_guide, "stale": date.today() >= date.fromisoformat(setup_guide.NEXT_REVIEW)},
     )
+
+
+@app.get("/model-prices")
+def model_prices_page(request: Request):
+    return templates.TemplateResponse(request=request, name="model_prices.html", context={
+        "session_token": API_TOKEN, "backends": list(BackendFactory.REGISTRY.keys()),
+    })
+
+
+@app.get("/api/model-prices")
+def model_prices_catalog(refresh: bool = False):
+    return model_pricing.comparison_catalog(refresh)
 
 
 @app.get("/maintenance")
@@ -579,6 +597,8 @@ def run_agent_stream(config: AgentConfig):
 
 @app.get("/api/models")
 def api_models(backend: str = "lm_studio", base_url: str = ""):
+    if backend not in BackendFactory.REGISTRY:
+        raise HTTPException(status_code=400, detail="Unknown backend.")
     fallback = FALLBACK_MODELS.get(backend, [])
     try:
         models = _fetch_models(backend, base_url, "")
@@ -587,6 +607,9 @@ def api_models(backend: str = "lm_studio", base_url: str = ""):
             "status": "error",
             "source": "fallback",
             "models": fallback,
+            "model_details": model_pricing.model_details(backend, fallback),
+            "pricing_url": model_pricing.OFFICIAL_URLS.get(backend),
+            "pricing_default": model_pricing.unknown_price(backend),
             "message": f"Could not reach {backend}. Check provider settings or use a model name manually.",
         }
 
@@ -595,13 +618,19 @@ def api_models(backend: str = "lm_studio", base_url: str = ""):
             "status": "empty",
             "source": "fallback",
             "models": fallback,
+            "model_details": model_pricing.model_details(backend, fallback),
+            "pricing_url": model_pricing.OFFICIAL_URLS.get(backend),
+            "pricing_default": model_pricing.unknown_price(backend),
             "message": f"{backend} returned no models. Showing known names instead.",
         }
 
     return {
         "status": "ok",
-        "source": "live",
+        "source": "cached" if getattr(models, "stale", False) else "live",
         "models": models,
+        "model_details": model_pricing.model_details(backend, models),
+        "pricing_url": model_pricing.OFFICIAL_URLS.get(backend),
+        "pricing_default": model_pricing.unknown_price(backend),
         "message": f"Loaded {len(models)} model(s) from {backend}.",
     }
 

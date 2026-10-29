@@ -189,6 +189,7 @@ def render_markdown() -> str:
         lines += [paragraph, ""]
     lines += ["See [search setup](search-providers.md) and [credential storage](credentials-and-openrouter.md).", "",
               "Use the [Maintenance screen](maintenance-screen.md) for provider onboarding, encrypted saves, access checks, and review dates. OpenRouter has a direct authorization flow; other portals require guided human steps.", "",
+              "For input/output model token rates across backends, see [model pricing](model-pricing.md) and the dashboard's comparison screen.", "",
               "Maintainers: edit `debugging/dashboard/setup_guide.py`, recheck primary sources, and run "
               "`python -m debugging.dashboard.setup_guide --write-docs` to refresh this document. The dashboard uses the same snapshot.", ""]
     return "\n".join(lines)
