@@ -26,6 +26,9 @@
 
 ## Unreleased
 
+- Added a dashboard keys/costs/maintenance guide and matching generated document:
+  dated primary-source prices, account links, key-count scenarios, cash-flow
+  distinctions, review reminders, and a manual account-maintenance plan.
 - Added Serper, Brave Search API, Exa, Firecrawl Search, and OpenWeb Ninja direct
   API adapters, encrypted credential support, automatic fallback, and a dedicated
   dashboard search-key shortcut. Documented API versus MCP integration scope.

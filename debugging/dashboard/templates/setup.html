@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Keys, costs &amp; maintenance · Agent Playpen</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0c1118; color: #e5edf7; }
+    body { margin: 0; line-height: 1.6; }
+    main { max-width: 1180px; margin: auto; padding: 28px 24px 64px; }
+    h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.2; margin-bottom: 12px; }
+    h2 { margin-top: 36px; font-size: 1.35rem; }
+    p { max-width: 92ch; }
+    a { color: #79baff; text-underline-offset: 3px; }
+    a:focus-visible { outline: 2px solid #79baff; outline-offset: 4px; }
+    .meta { color: #a9bad0; font-size: .9rem; }
+    .summary { border: 1px solid #38658d; background: #132334; border-radius: 12px; padding: 18px 22px; margin-top: 24px; }
+    .summary p { margin: 0; font-size: 1.1rem; }
+    .warning { padding: 12px 16px; background: #302714; border-left: 3px solid #e0b75c; }
+    nav { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 22px 0; }
+    .table-wrap { overflow-x: auto; border: 1px solid #334155; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    th, td { text-align: left; padding: 12px 15px; vertical-align: top; border-bottom: 1px solid #334155; }
+    th { background: #1a2636; }
+    tr:last-child td { border-bottom: none; }
+    .providers { min-width: 940px; }
+    .providers th:first-child { width: 19%; }
+    .providers th:nth-child(2) { width: 22%; }
+    .providers th:nth-child(3) { width: 28%; }
+    code { overflow-wrap: anywhere; color: #b8ddff; }
+    td p { margin: 0 0 8px; }
+    td small { display: block; margin-top: 10px; color: #b8c6d8; }
+    li { margin-bottom: 10px; max-width: 100ch; }
+    footer { border-top: 1px solid #334155; padding-top: 20px; margin-top: 40px; }
+    @media (max-width: 600px) { main { padding: 20px 14px; } th, td { padding: 10px; } }
+    @media print { :root { color-scheme: light; background: white; color: black; } .table-wrap { overflow: visible; } .providers { min-width: 0; } a, code, .meta, td small { color: #123b61; } }
+  </style>
+</head>
+<body>
+<main>
+  <a href="/">← Back to Agent Playpen</a>
+  <h1>Keys, costs &amp; maintenance</h1>
+  <p class="meta">Reviewed {{ guide.REVIEWED }} · Next suggested review {{ guide.NEXT_REVIEW }} · USD, before tax</p>
+  {% if stale %}<p class="warning">This pricing snapshot is due for review. Open the official pricing links before choosing or renewing a paid plan.</p>{% endif %}
+  <div class="summary"><p>{{ guide.INTRO }}</p></div>
+  <nav aria-label="Guide sections">
+    <a href="#keys">Key count</a><a href="#start">Starting plan</a><a href="#providers">Accounts &amp; prices</a>
+    <a href="#budget">Usage estimates</a><a href="#maintenance">Maintenance</a><a href="#controls">Current controls</a>
+  </nav>
+
+  <section id="keys">
+    <h2>How many keys do I need?</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Setup</th><th scope="col">Keys total</th><th scope="col">Meaning</th></tr></thead>
+      <tbody>{% for row in guide.KEY_COUNTS %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table></div>
+    <p>{{ guide.KEY_NOTE }}</p>
+  </section>
+
+  <section id="start">
+    <h2>Recommended starting plan</h2>
+    <ol>{% for step in guide.STARTER_STEPS %}<li>{{ step }}</li>{% endfor %}</ol>
+    <p class="warning">Suggested budgets are planning choices. This guide does not set spending limits or activate a plan.</p>
+  </section>
+
+  <section id="providers">
+    <h2>Where to get keys, and what you actually pay</h2>
+    <p>Confirm current checkout terms before buying. A free allowance, a prepaid pack, and a monthly subscription have different cash requirements. Prices apply to the API modes described below.</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Provider accounts and pricing; scroll horizontally on small screens"><table class="providers">
+      <thead><tr><th scope="col">Provider / key</th><th scope="col">Free allowance</th><th scope="col">Upfront payment</th><th scope="col">Monthly / usage cost</th></tr></thead>
+      <tbody>{% for provider in guide.PROVIDERS %}<tr>
+        <td><strong>{{ provider.name }}</strong><p><code>{{ provider['keys'] }}</code></p>
+          {% if provider.signup %}<p><a href="{{ provider.signup }}" target="_blank" rel="noopener noreferrer">Get key / open account ↗</a></p>{% endif %}
+          <a href="{{ provider.pricing }}" target="_blank" rel="noopener noreferrer">Official pricing / docs ↗</a>
+          {% for label, url in provider.sources %}<p><a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ label }} ↗</a></p>{% endfor %}
+        </td>
+        <td>{{ provider.free }}</td><td>{{ provider.upfront }}</td>
+        <td>{{ provider.monthly }}<small>{{ provider.note }}</small></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+
+  <section id="budget">
+    <h2>Estimate requests before buying credits</h2>
+    {% for paragraph in guide.BUDGET_NOTES %}<p>{{ paragraph }}</p>{% endfor %}
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Mode</th><th scope="col">1,000 calls</th><th scope="col">10,000 calls</th><th scope="col">Cash-flow caveat</th></tr></thead>
+      <tbody>{% for row in guide.USAGE_EXAMPLES %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+
+  <section id="maintenance">
+    <h2>A small maintenance plan</h2>
+    <p>Keep a manual inventory of account names and key labels. Provider dashboards supply actual balances and bills.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">When</th><th scope="col">Action</th></tr></thead>
+      <tbody>{% for row in guide.MAINTENANCE %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+
+  <section id="controls">
+    <h2>Current controls and planned accounting</h2>
+    {% for paragraph in guide.LIMITS %}<p>{{ paragraph }}</p>{% endfor %}
+  </section>
+  <footer><a href="/">Return to dashboard and configure a provider →</a><p class="meta">This guide loads a dated local snapshot. It does not contact providers or reveal saved credentials.</p></footer>
+</main>
+</body>
+</html>

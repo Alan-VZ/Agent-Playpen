@@ -1,4 +1,9 @@
 # Agent Playpen
+
+Before buying API access, open the dashboard's **Keys, costs & maintenance guide**
+or read [the setup and budget plan](docs/keys-costs-maintenance.md). It explains
+key counts, account URLs, free allowances, upfront payments, recurring charges,
+and a manual maintenance checklist, with dated primary-source pricing.
 <!-- cSpell:ignore Ollama, Groq -->
 
 <p align="center">

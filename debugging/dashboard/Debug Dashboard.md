@@ -71,6 +71,12 @@ warnings receive a warning label; they do not certify research success. See
 
 ## Additional search services
 
+Before registering for services, open **Keys, costs & maintenance guide** at the
+top of the dashboard (`/setup`). It lists official account/pricing URLs, key
+counts, upfront versus recurring payments, and a maintenance checklist. The
+page shows its review date and flags overdue pricing reviews. It is a planning
+guide; it does not activate subscriptions or enforce a search-dollar budget.
+
 The Web search provider selector also includes Serper, Brave Search API, Exa,
 Firecrawl Search, and OpenWeb Ninja. **Set search API key** selects the correct
 credential in the existing encrypted manager. Model keys and search keys are

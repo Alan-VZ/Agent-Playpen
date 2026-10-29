@@ -8,6 +8,7 @@ import threading
 import queue
 import time
 import uuid
+from datetime import date
 from pathlib import Path
 
 import requests
@@ -27,6 +28,7 @@ from backends.backend_factory import BackendFactory
 from core.agent import Agent
 from core.exceptions import AgentCancelledError
 from debugging.tracer import Tracer
+from debugging.dashboard import setup_guide
 from memory.memory_manager import MemoryManager
 from planner.cot_planner import CoTPlanner
 from planner.react_planner import ReActPlanner
@@ -382,6 +384,15 @@ def home(request: Request):
             "planners": list(PLANNER_MAP.keys()),
             "tools": TOOL_CHOICES,
         },
+    )
+
+
+@app.get("/setup")
+def setup_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="setup.html",
+        context={"guide": setup_guide, "stale": date.today() >= date.fromisoformat(setup_guide.NEXT_REVIEW)},
     )
 
 

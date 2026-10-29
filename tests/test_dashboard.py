@@ -16,9 +16,22 @@ def client(monkeypatch, tmp_path):
     return TestClient(server.app, base_url="http://127.0.0.1", headers={"X-Playpen-Token": server.API_TOKEN}, raise_server_exceptions=False)
 
 
-@pytest.mark.parametrize("path", ["/", "/api/defaults", "/api/keys", "/openapi.json"])
+@pytest.mark.parametrize("path", ["/", "/setup", "/api/defaults", "/api/keys", "/openapi.json"])
 def test_dashboard_startup_routes(client, path):
     assert client.get(path).status_code == 200
+
+
+def test_setup_guide_shows_key_names_without_saved_values(client):
+    from config import credentials
+    credentials.store.set("TAVILY_API_KEY", "private-guide-test-credential")
+    response = client.get("/setup")
+    assert response.status_code == 200
+    assert "TAVILY_API_KEY" in response.text
+    assert "private-guide-test-credential" not in response.text
+    assert "built-in method" not in response.text
+    assert "https://app.tavily.com/" in response.text
+    assert "2026-10-29" in response.text
+    assert "does not cancel billing" in response.text
 
 
 @pytest.mark.parametrize("payload", [

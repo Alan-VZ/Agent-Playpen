@@ -1,5 +1,9 @@
 # OpenRouter and encrypted credentials
 
+For key counts, signup URLs, upfront/recurring costs, and the account maintenance
+checklist, see [Keys, costs, and maintenance](keys-costs-maintenance.md). A typical
+OpenRouter plus one search-service setup needs two keys total.
+
 ## OpenRouter setup
 
 OpenRouter is available in the dashboard and through `BackendFactory` as

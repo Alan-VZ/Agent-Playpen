@@ -1,5 +1,9 @@
 # Search APIs and MCP
 
+Start with [Keys, costs, and maintenance](keys-costs-maintenance.md) before
+creating accounts or buying credits. The same reviewed snapshot is available
+from the dashboard's **Keys, costs & maintenance guide** link at `/setup`.
+
 Agent Playpen's `web_search` tool supports direct search APIs. An LLM backend
 (for example OpenRouter) and a search service have separate credentials and
 usage charges. The same search tool works with every supported model backend.
