@@ -171,6 +171,7 @@ class WebSearchTool(BaseTool):
                 "num": min(max(n, 1), 10),
             },
             timeout=15,
+            allow_redirects=False,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -211,6 +212,7 @@ class WebSearchTool(BaseTool):
             "https://api.tavily.com/search",
             json={"api_key": api_key, "query": query, "max_results": n},
             timeout=15,
+            allow_redirects=False,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -228,6 +230,7 @@ class WebSearchTool(BaseTool):
             "https://serpapi.com/search",
             params={"q": query, "api_key": api_key, "num": n},
             timeout=15,
+            allow_redirects=False,
         )
         resp.raise_for_status()
         data = resp.json()

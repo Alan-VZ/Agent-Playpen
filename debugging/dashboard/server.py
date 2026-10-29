@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import secrets
 import re
@@ -28,7 +29,7 @@ from backends.backend_factory import BackendFactory
 from core.agent import Agent
 from core.exceptions import AgentCancelledError
 from debugging.tracer import Tracer
-from debugging.dashboard import setup_guide
+from debugging.dashboard import setup_guide, maintenance
 from memory.memory_manager import MemoryManager
 from planner.cot_planner import CoTPlanner
 from planner.react_planner import ReActPlanner
@@ -121,6 +122,7 @@ _load_env_into_process()
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 app = FastAPI(title="Agent Playpen Web Wrapper", version="1.1.0", docs_url=None, redoc_url=None)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
+logging.getLogger("uvicorn.access").addFilter(maintenance.CallbackAccessFilter())
 API_TOKEN = secrets.token_urlsafe(32)
 
 
@@ -396,6 +398,24 @@ def setup_page(request: Request):
     )
 
 
+@app.get("/maintenance")
+def maintenance_page(request: Request):
+    owner = request.cookies.get(maintenance.COOKIE_NAME, "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", owner):
+        owner = secrets.token_urlsafe(32)
+    response = templates.TemplateResponse(request=request, name="maintenance.html", context={
+        "session_token": API_TOKEN, "providers": list(maintenance.CATALOG.values()),
+    })
+    response.set_cookie(maintenance.COOKIE_NAME, owner, max_age=600, httponly=True, samesite="lax", path="/")
+    return response
+
+
+@app.get(maintenance.CALLBACK_PATH)
+def maintenance_callback(request: Request):
+    # Do not reflect authorization codes into HTML, errors, history, or logs.
+    return templates.TemplateResponse(request=request, name="maintenance_callback.html", context={"session_token": API_TOKEN})
+
+
 @app.get("/api/defaults")
 def api_defaults():
     return {
@@ -608,6 +628,30 @@ class KeyPayload(BaseModel):
     model_config = {"extra": "ignore"}
 
 
+def _maintenance_event(provider, event, **kwargs):
+    try:
+        maintenance.MaintenanceHistory(ROOT).update(provider, event, **kwargs)
+        return True
+    except OSError:
+        # Metadata availability must not turn a verified vault save into a failure.
+        return False
+
+
+def _persist_key(name, value):
+    with maintenance.LOCK:
+        if value:
+            credentials.store.set(name, value)
+        else:
+            credentials.store.delete(name)
+        provider = next((entry["id"] for entry in maintenance.CATALOG.values() if entry["key_name"] == name), None)
+        if name == "GOOGLE_CSE_ID":
+            provider = "google"
+        if provider:
+            _maintenance_event(provider, "key_saved" if value else "key_cleared")
+        _write_env_file({name: None})
+        os.environ.pop(name, None)
+
+
 @app.post("/api/save-key")
 def save_key(payload: KeyPayload):
     if payload.name not in MANAGED_KEYS:
@@ -618,16 +662,106 @@ def save_key(payload: KeyPayload):
 
     value = payload.value.strip()
     try:
-        if value:
-            credentials.store.set(payload.name, value)
-        else:
-            credentials.store.delete(payload.name)
-        # Remove duplicate legacy entries only after a verified encrypted save.
-        _write_env_file({payload.name: None})
-        os.environ.pop(payload.name, None)
+        _persist_key(payload.name, value)
     except CredentialError:
         return JSONResponse(status_code=503, content={"status": "error", "message": "Encrypted credential storage is unavailable; no plaintext fallback was written."})
+    except OSError:
+        return JSONResponse(status_code=503, content={"status": "error", "message": "The vault was updated, but legacy file cleanup failed. Check .env permissions and retry; legacy credentials may still be available."})
     return {"status": "saved", "message": "Credential saved in encrypted OS storage." if value else "Credential removed."}
+
+
+class MaintenanceCheck(BaseModel):
+    provider: str
+    allow_billable: bool = False
+
+
+class MaintenanceReview(BaseModel):
+    provider: str
+    portal_ready: bool = False
+    billing_reviewed: bool = False
+    next_review: date | None = None
+
+
+class ConnectionStart(BaseModel):
+    replace_existing: bool = False
+
+
+class ConnectionFinish(BaseModel):
+    state: str = Field(min_length=20, max_length=128)
+    code: str = Field(min_length=1, max_length=4096)
+
+
+def _maintenance_provider(provider):
+    if provider not in maintenance.CATALOG:
+        raise HTTPException(status_code=400, detail="Unknown provider.")
+
+
+def _connection_owner(request):
+    owner = request.cookies.get(maintenance.COOKIE_NAME, "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", owner):
+        raise HTTPException(status_code=403, detail="Open or reload Maintenance in this browser first.")
+    return owner
+
+
+@app.get("/api/maintenance")
+def maintenance_status():
+    return {"keys": api_keys(), "history": maintenance.MaintenanceHistory(ROOT).read()}
+
+
+@app.post("/api/maintenance/review")
+def maintenance_review(payload: MaintenanceReview):
+    _maintenance_provider(payload.provider)
+    saved = _maintenance_event(payload.provider, "review_updated", portal_ready=payload.portal_ready,
+                               billing_reviewed=payload.billing_reviewed,
+                               next_review=payload.next_review.isoformat() if payload.next_review else None)
+    if not saved:
+        return JSONResponse(status_code=503, content={"message": "Could not save maintenance metadata. Check the traces directory permissions. Credentials were not changed."})
+    return {"status": "saved", "message": "Checklist saved. Portal completion is self-reported; API access is checked separately."}
+
+
+@app.post("/api/maintenance/check")
+def maintenance_check(payload: MaintenanceCheck):
+    _maintenance_provider(payload.provider)
+    try:
+        with maintenance.LOCK:
+            result = maintenance.verify_access(payload.provider, payload.allow_billable)
+            _maintenance_event(payload.provider, "access_checked", status=result["status"])
+        return result
+    except maintenance.MaintenanceError as exc:
+        _maintenance_event(payload.provider, "access_checked", status="failed")
+        return {"status": "failed", "message": str(exc), "usage": {}}
+    except Exception:
+        _maintenance_event(payload.provider, "access_checked", status="failed")
+        return {"status": "failed", "message": "Access check failed. Check the saved key, account permissions, credits, and provider availability. No automatic retry was made.", "usage": {}}
+
+
+@app.post("/api/maintenance/openrouter/start")
+def connection_start(payload: ConnectionStart, request: Request):
+    owner = _connection_owner(request)
+    try:
+        result = maintenance.connections.start(owner, str(request.base_url), payload.replace_existing)
+        _maintenance_event("openrouter", "connection_started")
+        return result
+    except CredentialError:
+        return JSONResponse(status_code=503, content={"message": "Native encrypted storage is unavailable. Fix it before connecting."})
+    except ValueError as exc:
+        return JSONResponse(status_code=409, content={"message": str(exc)})
+
+
+@app.post("/api/maintenance/openrouter/finish")
+def connection_finish(payload: ConnectionFinish, request: Request):
+    owner = _connection_owner(request)
+    try:
+        with maintenance.LOCK:
+            key = maintenance.connections.exchange(owner, payload.state, payload.code)
+            _persist_key("OPENROUTER_API_KEY", key)
+        _maintenance_event("openrouter", "connection_saved")
+        return {"status": "saved", "message": "OpenRouter key saved in encrypted OS storage. Run Check access from Maintenance to verify it."}
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={"message": str(exc)})
+    except Exception:
+        _maintenance_event("openrouter", "connection_failed")
+        return JSONResponse(status_code=503, content={"message": "Connection or encrypted save failed. A newly authorized key may exist in OpenRouter; review/revoke it in the portal before retrying. No key was exported."})
 
 
 @app.post("/api/migrate-keys")

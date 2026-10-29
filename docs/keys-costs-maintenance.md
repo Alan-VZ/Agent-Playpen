@@ -200,4 +200,6 @@ Store only key labels and account metadata in a maintenance inventory. Keep actu
 
 See [search setup](search-providers.md) and [credential storage](credentials-and-openrouter.md).
 
+Use the [Maintenance screen](maintenance-screen.md) for provider onboarding, encrypted saves, access checks, and review dates. OpenRouter has a direct authorization flow; other portals require guided human steps.
+
 Maintainers: edit `debugging/dashboard/setup_guide.py`, recheck primary sources, and run `python -m debugging.dashboard.setup_guide --write-docs` to refresh this document. The dashboard uses the same snapshot.

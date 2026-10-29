@@ -65,7 +65,17 @@ Search-reliability tests cover explicit free-engine fallback, conservative
 query-term screening, Crossref metadata, PDF extraction, duplicate-read loop
 prevention, and unwrapping simple final-answer JSON envelopes. Free web engines
 are best effort; offline passing tests do not establish search availability.
+
 ## Search API integration coverage
+
+Maintenance coverage is in `tests/test_maintenance.py`: browser-bound PKCE,
+replay/expiry, key replacement, vault failure, non-billable checks versus opt-in
+search tests, and safe history. Optional UI checks:
+
+```powershell
+python tests/render_maintenance_ui.py
+node tests/maintenance_ui.cjs
+```
 
 `tests/test_search_apis.py` validates the five added APIs with isolated credentials
 and mocked HTTP: provider-specific request/response contracts, bounded output,

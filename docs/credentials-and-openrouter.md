@@ -4,6 +4,10 @@ For key counts, signup URLs, upfront/recurring costs, and the account maintenanc
 checklist, see [Keys, costs, and maintenance](keys-costs-maintenance.md). A typical
 OpenRouter plus one search-service setup needs two keys total.
 
+The [Maintenance screen](maintenance-screen.md) combines portal setup, encrypted
+saving, access checks, and review dates. OpenRouter's authorization flow can
+save a newly approved key directly to the OS vault without displaying the key.
+
 ## OpenRouter setup
 
 OpenRouter is available in the dashboard and through `BackendFactory` as

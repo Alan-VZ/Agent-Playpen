@@ -4,6 +4,11 @@ Before buying API access, open the dashboard's **Keys, costs & maintenance guide
 or read [the setup and budget plan](docs/keys-costs-maintenance.md). It explains
 key counts, account URLs, free allowances, upfront payments, recurring charges,
 and a manual maintenance checklist, with dated primary-source pricing.
+
+Use **Maintenance: connect accounts & manage keys** to follow provider setup,
+save keys in encrypted OS storage, check access, and track review dates.
+OpenRouter supports direct secure authorization; other providers have guided
+portal setup. See [the Maintenance screen guide](docs/maintenance-screen.md).
 <!-- cSpell:ignore Ollama, Groq -->
 
 <p align="center">

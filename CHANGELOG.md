@@ -26,6 +26,9 @@
 
 ## Unreleased
 
+- Added a Maintenance screen with guided provider onboarding, OpenRouter S256
+  PKCE authorization and direct vault saving, account/usage access checks,
+  opt-in search tests, review dates, and secret-free maintenance history.
 - Added a dashboard keys/costs/maintenance guide and matching generated document:
   dated primary-source prices, account links, key-count scenarios, cash-flow
   distinctions, review reminders, and a manual account-maintenance plan.

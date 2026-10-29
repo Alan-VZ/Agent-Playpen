@@ -71,6 +71,13 @@ warnings receive a warning label; they do not certify research success. See
 
 ## Additional search services
 
+Open **Maintenance: connect accounts & manage keys** at `/maintenance` for
+provider portal setup, encrypted saving, access checks, and review tracking.
+OpenRouter supports a direct browser authorization flow; human account/email,
+MFA, and billing steps remain on the provider's portal. Other search-provider
+tests explicitly identify possible credit use. See the
+[Maintenance guide](../../docs/maintenance-screen.md).
+
 Before registering for services, open **Keys, costs & maintenance guide** at the
 top of the dashboard (`/setup`). It lists official account/pricing URLs, key
 counts, upfront versus recurring payments, and a maintenance checklist. The
