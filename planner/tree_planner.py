@@ -44,9 +44,16 @@ class TreePlanner(BasePlanner):
         messages = [{"role": "user", "content": prompt}]
         raw = self.backend.chat(messages)
         try:
-            return json.loads(raw)
+            branches = json.loads(raw)
         except json.JSONDecodeError:
-            return [{"branch": 1, "description": task}]
+            branches = []
+        if isinstance(branches, list):
+            valid = [b for b in branches if isinstance(b, dict)
+                     and isinstance(b.get("description"), str)
+                     and b["description"].strip()]
+            if valid:
+                return valid
+        return [{"branch": 1, "description": task}]
 
     def _score_branch(self, task: str, candidate: str) -> int:
         """Ask the LLM to score a single branch candidate."""
@@ -69,14 +76,18 @@ class TreePlanner(BasePlanner):
         # Select the highest-scoring branch
         best = max(scored, key=lambda x: x[1])
         self.branch_history.append(best)
-        return Plan(
+        plan = Plan(
             task=task,
             steps=[Step(index=0, description=best[0]["description"])],
             rationale=f"Best branch scored {best[1]}/10 out of {self.n_branches} candidates.",
         )
+        ctx.metadata["tree_plan"] = plan
+        return plan
 
     def next_step(self, ctx) -> Step:
-        return Step(index=ctx.iteration, description=ctx.task)
+        plan = ctx.metadata.get("tree_plan")
+        description = plan.steps[0].description if plan else ctx.task
+        return Step(index=ctx.iteration, description=description)
 
     def format_thought_prompt(self, step: Step, ctx) -> list[dict]:
         return [
@@ -85,8 +96,11 @@ class TreePlanner(BasePlanner):
                 "content": (
                     f"Task: {ctx.task}\n"
                     f"Selected branch: {step.description}\n"
+                    f"Observations: {ctx.observation_history}\n"
+                    f"Available tools: {getattr(self, 'tool_descriptions', '')}\n"
                     "What tool should be called? Respond with:\n"
-                    "Action: \nArgs: "
+                    "Action: <tool name>\nArgs: <JSON object>\n"
+                    "Or respond FINISH followed by the final answer."
                 ),
             }
         ]
@@ -108,4 +122,4 @@ class TreePlanner(BasePlanner):
         """Remove the last selected branch and try the next-best candidate."""
         if self.branch_history:
             self.branch_history.pop()
-            
+

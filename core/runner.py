@@ -1,5 +1,9 @@
 import argparse
 import sys
+from pathlib import Path
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backends.backend_factory import BackendFactory
 from core.agent import Agent
@@ -52,6 +56,9 @@ def parse_args():
         help="Which LLM backend to use (default: lm_studio)",
     )
     parser.add_argument(
+        "--model", default=None, help="Provider model ID, for example an OpenRouter model slug",
+    )
+    parser.add_argument(
         "--planner",
         default="react",
         choices=list(PLANNERS.keys()),
@@ -76,7 +83,7 @@ def main():
     args = parse_args()
 
     # --- Backend ---
-    backend = BackendFactory.create(args.backend)
+    backend = BackendFactory.create(args.backend, **({"model": args.model} if args.model else {}))
 
     # --- Planner ---
     planner_cls = PLANNERS[args.planner]

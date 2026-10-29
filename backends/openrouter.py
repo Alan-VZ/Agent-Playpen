@@ -1,4 +1,5 @@
-import os
+from config.security import openrouter_endpoint
+from config.credentials import require_credential
 
 import openai
 
@@ -17,8 +18,9 @@ class OpenRouterBackend(BaseBackend):
         base_url: str = "https://openrouter.ai/api/v1",
     ):
         self.client = openai.OpenAI(
-            api_key=api_key or os.environ["OPENROUTER_API_KEY"],
-            base_url=base_url,
+            http_client=openai.DefaultHttpxClient(follow_redirects=False),
+            api_key=require_credential("OPENROUTER_API_KEY", api_key or ""),
+            base_url=openrouter_endpoint(base_url),
         )
         self.model = model
         self.temperature = temperature
@@ -31,7 +33,17 @@ class OpenRouterBackend(BaseBackend):
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
-        return response.choices[0].message.content
+        if not response.choices:
+            raise ValueError("OpenRouter returned no completion choices. Retry or choose another model.")
+        choice = response.choices[0]
+        usage = getattr(response, "usage", None)
+        details = getattr(usage, "completion_tokens_details", None)
+        self.last_response_stats = {
+            "finish_reason": choice.finish_reason,
+            "output_tokens": getattr(usage, "completion_tokens", None),
+            "reasoning_tokens": getattr(details, "reasoning_tokens", None),
+        }
+        return choice.message.content
 
     def stream(self, messages: list[dict]):
         stream = self.client.chat.completions.create(

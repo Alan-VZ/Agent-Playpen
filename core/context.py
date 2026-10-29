@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Any
 import datetime
 
 
@@ -33,6 +32,6 @@ class AgentContext:
 
     # ISO-8601 UTC timestamp of session creation
     created_at: str = field(
-        default_factory=lambda: datetime.datetime.utcnow().isoformat()
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
     )
-    
+

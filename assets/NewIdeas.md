@@ -1,3 +1,8 @@
+> Historical concept notes. Current behavior is documented in
+> [the credential guide](../docs/credentials-and-openrouter.md) and
+> [the testing guide](../docs/testing.md). Keys are now saved in encrypted OS
+> storage; references below to plaintext key saves describe the older concept.
+
 
 # NewIdeas.md
 
@@ -29,59 +34,59 @@ Inspired by Idea.md and a comparison against similar agent frameworks (LangGraph
 
 ### A. Provider & Model Management Module
 
-- Provider profiles  
-- Connection test  
-- Model discovery  
-- Model recommendations  
+- Provider profiles
+- Connection test
+- Model discovery
+- Model recommendations
 - Local backend status (LM Studio / Ollama)
 
 ### B. Health & Diagnostics Module
 
-- Reachability checks  
-- Tool validation  
-- API key validation  
-- Filesystem scope validation  
+- Reachability checks
+- Tool validation
+- API key validation
+- Filesystem scope validation
 - “Doctor” button with actionable fixes
 
 ### C. Trace Viewer Module
 
-- Step-by-step reasoning  
-- Tool inputs/outputs  
-- Error stack traces  
-- Token usage  
+- Step-by-step reasoning
+- Tool inputs/outputs
+- Error stack traces
+- Token usage
 - Timeline visualization
 
 ### D. Workflow Engine Module
 
-- Ordered steps  
-- Node graph (future)  
-- Step templates (search, summarize, write file, run python)  
-- Run history  
+- Ordered steps
+- Node graph (future)
+- Step templates (search, summarize, write file, run python)
+- Run history
 - Export/import workflows
 
 ### E. Knowledge Surface Module
 
-- File browser  
-- Notes/documents  
-- Chunking + embeddings  
-- Retrieval tools  
+- File browser
+- Notes/documents
+- Chunking + embeddings
+- Retrieval tools
 - Knowledge tagging
 
 ### F. Presets & Profiles Module
 
-- Saved agent profiles  
-- Saved tool sets  
-- Saved prompt templates  
-- Saved workflows  
+- Saved agent profiles
+- Saved tool sets
+- Saved prompt templates
+- Saved workflows
 - Named projects/workspaces
 
 ### G. Operational Controls Module
 
-- Running jobs  
-- Queue  
-- Durations  
-- Token estimates  
-- Error counts  
+- Running jobs
+- Queue
+- Durations
+- Token estimates
+- Error counts
 - Backend uptime
 
 ---
@@ -90,14 +95,14 @@ Inspired by Idea.md and a comparison against similar agent frameworks (LangGraph
 
 ### A. Split UI into Workspace Panels
 
-- Chat  
-- Tools  
-- Files  
-- Knowledge  
-- Traces  
-- Settings  
-- Runs  
-- Workflows  
+- Chat
+- Tools
+- Files
+- Knowledge
+- Traces
+- Settings
+- Runs
+- Workflows
 
 ### B. Unified Configuration Layer
 

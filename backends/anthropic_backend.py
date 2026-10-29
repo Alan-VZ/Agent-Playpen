@@ -1,4 +1,4 @@
-import os
+from config.credentials import require_credential
 import anthropic
 from backends.base_backend import BaseBackend
 
@@ -18,7 +18,9 @@ class AnthropicBackend(BaseBackend):
         max_tokens: int = 4096,
     ):
         self.client = anthropic.Anthropic(
-            api_key=api_key or os.environ["ANTHROPIC_API_KEY"]
+            http_client=anthropic.DefaultHttpxClient(follow_redirects=False),
+            base_url="https://api.anthropic.com",
+            api_key=require_credential("ANTHROPIC_API_KEY", api_key or "")
         )
         self.model = model
         self.max_tokens = max_tokens

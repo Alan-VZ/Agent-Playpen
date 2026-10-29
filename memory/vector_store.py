@@ -1,9 +1,8 @@
 # Vector Store Memory (vector_store.py)
-# Supports ChromaDB (default, pip install chromadb sentence-transformers) and FAISS 
-# (pip install faiss-cpu). The provider is selected via the MEMORY_VECTOR_PROVIDER 
+# Supports ChromaDB (default, pip install chromadb sentence-transformers) and FAISS
+# (pip install faiss-cpu). The provider is selected via the MEMORY_VECTOR_PROVIDER
 # environment variable.
 
-import os
 import uuid
 from memory.base_memory import BaseMemory
 
@@ -89,4 +88,3 @@ class VectorStoreMemory(BaseMemory):
 
     def retrieve(self, query: str, top_k: int = 5) -> list:
         return self.query(query, top_k)
-    

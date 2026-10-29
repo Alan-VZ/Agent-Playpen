@@ -1,25 +1,39 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
+import logging
 import os
-import traceback
+import secrets
+import re
+import threading
+import queue
+import time
 import uuid
+from datetime import date
 from pathlib import Path
 
 import requests
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field
+from fastapi.exceptions import RequestValidationError
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from dotenv import dotenv_values
+
+from config import credentials
+from config.credentials import get_credential, redact, CredentialError
+from config.security import azure_endpoint
+from pydantic import BaseModel, Field, ValidationError
 
 from backends.backend_factory import BackendFactory
 from core.agent import Agent
+from core.exceptions import AgentCancelledError
 from debugging.tracer import Tracer
+from debugging.dashboard import setup_guide, maintenance, model_pricing
 from memory.memory_manager import MemoryManager
 from planner.cot_planner import CoTPlanner
 from planner.react_planner import ReActPlanner
 from planner.tree_planner import TreePlanner
-from tools.packs.code.python_repl import PythonReplTool
 from tools.packs.filesystem.read_file import ReadFileTool
 from tools.packs.filesystem.write_file import WriteFileTool
 from tools.packs.utils.calculator_tool import CalculatorTool
@@ -31,6 +45,7 @@ from tools.tool_registry import ToolRegistry
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_DIR = ROOT / "debugging" / "dashboard" / "templates"
 ENV_PATH = ROOT / ".env"
+_SETTINGS_LOCK = threading.RLock()
 
 BACKEND_KEY_VAR = {
     "openai": "OPENAI_API_KEY",
@@ -41,11 +56,7 @@ BACKEND_KEY_VAR = {
     "azure_openai": "AZURE_OPENAI_KEY",
 }
 
-SEARCH_KEY_VAR = {
-    "tavily": "TAVILY_API_KEY",
-    "serpapi": "SERPAPI_API_KEY",
-    "google": "GOOGLE_API_KEY",
-}
+SEARCH_KEY_VAR = credentials.SEARCH_KEYS
 
 SEARCH_EXTRA_VAR = {
     "google": "GOOGLE_CSE_ID",
@@ -59,12 +70,7 @@ def _read_env_file() -> dict[str, str]:
     values: dict[str, str] = {}
     if not ENV_PATH.exists():
         return values
-    for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key, _, value = stripped.partition("=")
-        values[key.strip()] = value.strip()
+    values = {k: v for k, v in dotenv_values(ENV_PATH, interpolate=False, encoding="utf-8-sig").items() if v is not None}
     return values
 
 
@@ -73,48 +79,84 @@ def _write_env_file(updates: dict[str, str | None]) -> None:
     Merge updates into .env, preserving every unrelated line, comment and
     blank line. A value of None deletes that entry.
     """
-    lines = ENV_PATH.read_text(encoding="utf-8").splitlines() if ENV_PATH.exists() else []
-    pending = dict(updates)
-    output: list[str] = []
+    with _SETTINGS_LOCK:
+        lines = ENV_PATH.read_text(encoding="utf-8-sig").splitlines() if ENV_PATH.exists() else []
+        pending = dict(updates)
+        output: list[str] = []
 
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            output.append(line)
-            continue
-        key = stripped.partition("=")[0].strip()
-        if key in pending:
-            value = pending.pop(key)
+        for line in lines:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                output.append(line)
+                continue
+            match = re.match(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=", stripped)
+            if not match:
+                output.append(line)
+                continue
+            key = match.group(1)
+            if key in updates:
+                value = pending.pop(key, None)
+                if value is not None:
+                    output.append(f"{key}={json.dumps(value)}")
+            else:
+                output.append(line)
+
+        for key, value in pending.items():
             if value is not None:
-                output.append(f"{key}={value}")
-        else:
-            output.append(line)
+                output.append(f"{key}={json.dumps(value)}")
 
-    for key, value in pending.items():
-        if value is not None:
-            output.append(f"{key}={value}")
-
-    ENV_PATH.write_text("\n".join(output).rstrip("\n") + "\n", encoding="utf-8")
+        ENV_PATH.write_text("\n".join(output).rstrip("\n") + "\n", encoding="utf-8")
 
 
 def _load_env_into_process() -> None:
     """Make saved .env values visible to os.getenv without python-dotenv."""
     for key, value in _read_env_file().items():
-        os.environ.setdefault(key, value)
-
-
-def _mask(value: str) -> str:
-    if not value:
-        return ""
-    if len(value) <= 8:
-        return "*" * len(value)
-    return f"{value[:3]}...{value[-4:]}"
+        if key not in MANAGED_KEYS:
+            os.environ.setdefault(key, value)
+        else:
+            credentials.remember_secret(value)
 
 
 _load_env_into_process()
 
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
-app = FastAPI(title="Agent Playpen Web Wrapper", version="1.0.0")
+app = FastAPI(title="Agent Playpen Web Wrapper", version="1.1.0", docs_url=None, redoc_url=None)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
+logging.getLogger("uvicorn.access").addFilter(maintenance.CallbackAccessFilter())
+API_TOKEN = secrets.token_urlsafe(32)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request, exc):
+    # Pydantic's default errors include input values, which may contain a key.
+    return JSONResponse(status_code=422, content={"message": "Invalid request fields."})
+
+
+@app.middleware("http")
+async def local_session_boundary(request: Request, call_next):
+    if request.url.path.startswith("/api/"):
+        origin = request.headers.get("origin")
+        if origin and origin != str(request.base_url).rstrip("/"):
+            return JSONResponse(status_code=403, content={"message": "Cross-origin API access denied."})
+        if not secrets.compare_digest(request.headers.get("x-playpen-token", ""), API_TOKEN):
+            return JSONResponse(status_code=403, content={"message": "Open the local dashboard to establish a session."})
+        if "api_key" in request.query_params:
+            return JSONResponse(status_code=400, content={"message": "Credentials are not accepted in URLs. Use the credential manager."})
+        # Register all available secrets so accidental echoes are redacted.
+        for name in MANAGED_KEYS:
+            get_credential(name)
+    try:
+        response = await call_next(request)
+        if request.url.path.startswith("/api/") and "application/json" in response.headers.get("content-type", ""):
+            body = b"".join([part async for part in response.body_iterator])
+            response = JSONResponse(content=redact(json.loads(body)), status_code=response.status_code)
+    except Exception:
+        response = JSONResponse(status_code=500, content={"status": "error", "message": "Operation failed. Check local configuration and provider availability."})
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Content-Security-Policy"] = f"default-src 'self'; script-src 'self' 'nonce-{API_TOKEN}'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    return response
 
 PLANNER_MAP = {
     "react": ReActPlanner,
@@ -127,7 +169,6 @@ TOOL_CHOICES = [
     "fetch",
     "read_file",
     "write_file",
-    "python_repl",
     "calculator",
     "datetime",
 ]
@@ -180,9 +221,15 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
     """Query the provider for its available models. Raises on failure."""
     timeout = 10
 
+    if backend == "openrouter":
+        source = model_pricing.snapshot("openrouter", refresh=True)
+        if not source["data"]:
+            raise RuntimeError("OpenRouter model catalog unavailable")
+        return model_pricing.ModelCatalog(backend, source["data"]["data"], source["fetched_at"], source["stale"])
+
     if backend == "lm_studio":
         url = (base_url or "http://localhost:1234/v1").rstrip("/") + "/models"
-        response = requests.get(url, timeout=timeout)
+        response = requests.get(url, timeout=timeout, allow_redirects=False)
         response.raise_for_status()
         return sorted(m["id"] for m in response.json().get("data", []))
 
@@ -190,7 +237,7 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
         root = (base_url or "http://localhost:11434").rstrip("/")
         if root.endswith("/v1"):
             root = root[: -len("/v1")]
-        response = requests.get(f"{root}/api/tags", timeout=timeout)
+        response = requests.get(f"{root}/api/tags", timeout=timeout, allow_redirects=False)
         response.raise_for_status()
         payload = response.json()
         models = payload.get("models", []) if isinstance(payload, dict) else []
@@ -211,26 +258,30 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
             "groq": "https://api.groq.com/openai/v1/models",
             "together": "https://api.together.xyz/v1/models",
         }
-        key = _require_key(api_key or os.getenv(BACKEND_KEY_VAR[backend], ""), backend)
+        key = get_credential(BACKEND_KEY_VAR[backend], api_key) if backend != "openrouter" else ""
+        if backend != "openrouter":
+            key = _require_key(key, backend)
         response = requests.get(
             endpoints[backend],
-            headers={"Authorization": "Bearer " + key},
+            headers={"Authorization": "Bearer " + key} if key else {},
             timeout=timeout,
+            allow_redirects=False,
         )
         response.raise_for_status()
         payload = response.json()
         entries = payload.get("data", payload) if isinstance(payload, dict) else payload
-        return sorted(e["id"] for e in entries if isinstance(e, dict) and e.get("id"))
+        return model_pricing.ModelCatalog(backend, entries)
 
     if backend == "anthropic":
-        key = _require_key(api_key or os.getenv("ANTHROPIC_API_KEY", ""), backend)
+        key = _require_key(get_credential("ANTHROPIC_API_KEY", api_key), backend)
         response = requests.get(
             "https://api.anthropic.com/v1/models",
             headers={"x-api-key": key, "anthropic-version": "2023-06-01"},
             timeout=timeout,
+            allow_redirects=False,
         )
         response.raise_for_status()
-        return sorted(m["id"] for m in response.json().get("data", []))
+        return model_pricing.ModelCatalog(backend, response.json().get("data", []))
 
     return []
 
@@ -241,11 +292,11 @@ class AgentConfig(BaseModel):
     base_url: str = "http://localhost:1234/v1"
     api_key: str = ""
     temperature: float = 0.7
-    max_tokens: int = 2048
+    max_tokens: int = Field(default=2048, ge=1)
     planner: str = "react"
     tools: list[str] = Field(default_factory=lambda: ["web_search", "fetch", "calculator"])
     task: str = ""
-    max_iterations: int = 10
+    max_iterations: int = Field(default=10, ge=1)
     allowed_dirs: str = "."
     search_provider: str = "auto"
     search_cse_id: str = ""
@@ -258,18 +309,18 @@ def _tool_factory(name: str, config: AgentConfig):
 
     if name == "web_search":
         key_var = SEARCH_KEY_VAR.get(config.search_provider)
-        search_key = (os.getenv(key_var, "") if key_var else "") or config.api_key
+        search_key = get_credential(key_var) if key_var else ""
         cse_var = SEARCH_EXTRA_VAR.get(config.search_provider)
-        search_cse_id = (os.getenv(cse_var, "") if cse_var else "") or config.search_cse_id
+        search_cse_id = get_credential(cse_var) if cse_var else ""
         return WebSearchTool(provider=config.search_provider, api_key=search_key or None, cse_id=search_cse_id or None)
     if name == "fetch":
         return FetchTool()
     if name == "read_file":
         return ReadFileTool(allowed_dirs=dirs)
     if name == "write_file":
-        return WriteFileTool(allowed_dirs=dirs)
+        return WriteFileTool(allowed_dirs=dirs, safe_mode=True)
     if name == "python_repl":
-        return PythonReplTool()
+        raise ValueError("Unrestricted Python execution is unavailable in the credential-enabled dashboard.")
     if name == "calculator":
         return CalculatorTool()
     if name == "datetime":
@@ -288,27 +339,30 @@ def _build_backend(config: AgentConfig):
         kwargs["base_url"] = config.base_url
         backend = BackendFactory.create("lm_studio", **kwargs)
     elif config.backend == "openai":
-        kwargs["api_key"] = config.api_key or os.getenv("OPENAI_API_KEY", "")
+        kwargs["api_key"] = get_credential("OPENAI_API_KEY", config.api_key)
         kwargs["org_id"] = os.getenv("OPENAI_ORG_ID")
         backend = BackendFactory.create("openai", **kwargs)
     elif config.backend == "openrouter":
-        kwargs["api_key"] = config.api_key or os.getenv("OPENROUTER_API_KEY", "")
-        kwargs["base_url"] = config.base_url or os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        kwargs["model"] = config.model if config.model not in {"", "local-model"} else os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+        kwargs["api_key"] = get_credential("OPENROUTER_API_KEY", config.api_key)
+        kwargs["base_url"] = "https://openrouter.ai/api/v1"
         backend = BackendFactory.create("openrouter", **kwargs)
     elif config.backend == "anthropic":
-        kwargs["api_key"] = config.api_key or os.getenv("ANTHROPIC_API_KEY", "")
+        kwargs.pop("temperature")
+        kwargs["api_key"] = get_credential("ANTHROPIC_API_KEY", config.api_key)
         backend = BackendFactory.create("anthropic", **kwargs)
     elif config.backend == "azure_openai":
-        kwargs["api_key"] = config.api_key or os.getenv("AZURE_OPENAI_KEY", "")
-        kwargs["endpoint"] = os.getenv("AZURE_OPENAI_ENDPOINT", "")
-        kwargs["deployment"] = os.getenv("AZURE_OPENAI_DEPLOYMENT", "")
-        kwargs["api_version"] = os.getenv("AZURE_OPENAI_API_VERSION", "")
+        kwargs.pop("model")
+        kwargs["api_key"] = get_credential("AZURE_OPENAI_KEY", config.api_key)
+        kwargs["azure_endpoint"] = azure_endpoint(os.getenv("AZURE_OPENAI_ENDPOINT", ""))
+        kwargs["deployment_name"] = os.getenv("AZURE_OPENAI_DEPLOYMENT", "")
+        kwargs["api_version"] = os.getenv("AZURE_OPENAI_API_VERSION") or "2024-05-01-preview"
         backend = BackendFactory.create("azure_openai", **kwargs)
     elif config.backend == "groq":
-        kwargs["api_key"] = config.api_key or os.getenv("GROQ_API_KEY", "")
+        kwargs["api_key"] = get_credential("GROQ_API_KEY", config.api_key)
         backend = BackendFactory.create("groq", **kwargs)
     elif config.backend == "together":
-        kwargs["api_key"] = config.api_key or os.getenv("TOGETHER_API_KEY", "")
+        kwargs["api_key"] = get_credential("TOGETHER_API_KEY", config.api_key)
         kwargs["model"] = config.model or os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3-70b-chat-hf")
         backend = BackendFactory.create("together", **kwargs)
     elif config.backend == "ollama":
@@ -333,11 +387,51 @@ def home(request: Request):
         request=request,
         name="index.html",
         context={
+            "session_token": API_TOKEN,
             "backends": list(BackendFactory.REGISTRY.keys()),
             "planners": list(PLANNER_MAP.keys()),
             "tools": TOOL_CHOICES,
         },
     )
+
+
+@app.get("/setup")
+def setup_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="setup.html",
+        context={"guide": setup_guide, "stale": date.today() >= date.fromisoformat(setup_guide.NEXT_REVIEW)},
+    )
+
+
+@app.get("/model-prices")
+def model_prices_page(request: Request):
+    return templates.TemplateResponse(request=request, name="model_prices.html", context={
+        "session_token": API_TOKEN, "backends": list(BackendFactory.REGISTRY.keys()),
+    })
+
+
+@app.get("/api/model-prices")
+def model_prices_catalog(refresh: bool = False):
+    return model_pricing.comparison_catalog(refresh)
+
+
+@app.get("/maintenance")
+def maintenance_page(request: Request):
+    owner = request.cookies.get(maintenance.COOKIE_NAME, "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", owner):
+        owner = secrets.token_urlsafe(32)
+    response = templates.TemplateResponse(request=request, name="maintenance.html", context={
+        "session_token": API_TOKEN, "providers": list(maintenance.CATALOG.values()),
+    })
+    response.set_cookie(maintenance.COOKIE_NAME, owner, max_age=600, httponly=True, samesite="lax", path="/")
+    return response
+
+
+@app.get(maintenance.CALLBACK_PATH)
+def maintenance_callback(request: Request):
+    # Do not reflect authorization codes into HTML, errors, history, or logs.
+    return templates.TemplateResponse(request=request, name="maintenance_callback.html", context={"session_token": API_TOKEN})
 
 
 @app.get("/api/defaults")
@@ -357,68 +451,166 @@ def api_defaults():
     }
 
 
+def _validate_run(config: AgentConfig):
+    if not config.task.strip():
+        raise HTTPException(status_code=400, detail="Task is required.")
+    if config.api_key or config.search_cse_id:
+        raise HTTPException(status_code=400, detail="Save credentials using the credential manager first.")
+    if "python_repl" in config.tools:
+        raise HTTPException(status_code=400, detail="Python execution is disabled in the credential-enabled dashboard.")
+    if config.planner not in PLANNER_MAP:
+        raise HTTPException(status_code=400, detail="Unsupported planner.")
+
+
+def _run_error(exc: Exception) -> str:
+    code = getattr(exc, "status_code", None)
+    descriptions = {
+        401: "The provider rejected the API key. Check or replace its saved credential.",
+        402: "The provider reports insufficient credit or a spending limit.",
+        403: "The provider denied access to this model or request.",
+        429: "The provider rate limit was reached. Wait and retry or choose another model.",
+    }
+    if code in descriptions:
+        detail = descriptions[code]
+    elif isinstance(exc, ValidationError):
+        detail = "The model returned an invalid action shape. Check the activity log and try another model."
+    elif code:
+        detail = f"The provider returned HTTP {code}. Retry or choose another model."
+    else:
+        detail = redact(str(exc))[:600] or "No additional detail was provided."
+    return redact(f"Agent execution failed ({type(exc).__name__}): {detail}")
+
+
+def _execute_run(config: AgentConfig, on_event=None, cancel_event=None):
+    session_id = uuid.uuid4().hex
+    tracer = Tracer(trace_dir=str(ROOT / "traces"), session_id=session_id, on_event=on_event)
+    backend = None
+    payload = {"session_id": session_id, "agent_id": "agent-1", "backend": config.backend, "model": config.model}
+    if on_event:
+        on_event({"type": "session", **payload, "max_iterations": config.max_iterations})
+    try:
+        tracer.on_status(f"Connecting to {config.backend} / {config.model}.")
+        backend = _build_backend(config)
+        planner = PLANNER_MAP[config.planner](backend=backend)
+        registry = ToolRegistry()
+        for tool_name in config.tools:
+            if tool_name in TOOL_CHOICES:
+                registry.register(_tool_factory(tool_name, config))
+        tracer.on_status("Tools ready: " + (", ".join(registry.list_all()) or "none"))
+        agent = Agent(
+            backend=backend, planner=planner, tool_registry=registry,
+            memory_manager=MemoryManager(), tracer=tracer,
+            max_iterations=config.max_iterations, cancel_event=cancel_event,
+        )
+        result = agent.run(config.task)
+        payload.update(status=agent.completion_status, result=result)
+        if agent.completion_status == "incomplete":
+            payload["message"] = "No final answer was reached. " + agent.stop_reason + " Showing the last tool result."
+    except AgentCancelledError as exc:
+        tracer.on_status(str(exc), "warning")
+        payload.update(status="cancelled", message=str(exc), result="")
+    except Exception as exc:
+        message = _run_error(exc)
+        tracer.on_error(RuntimeError(message))
+        payload.update(status="error", message=message, error_type=type(exc).__name__, result="")
+    finally:
+        payload["warning_count"] = sum(event.type == "warning" for event in tracer.events)
+        try:
+            payload["trace_path"] = tracer.save()
+        except OSError:
+            payload["trace_save_error"] = "The trace could not be saved to disk."
+        if backend is not None:
+            client = getattr(backend, "client", None)
+            if client is not None:
+                try:
+                    client.close()
+                except Exception:
+                    pass
+    return redact(payload)
+
+
 @app.post("/api/run")
 def run_agent(config: AgentConfig):
-    if not config.task.strip():
-        raise ValueError("Task is required.")
+    _validate_run(config)
+    payload = _execute_run(config)
+    return JSONResponse(status_code=500 if payload["status"] == "error" else 200, content=payload)
 
-    try:
-        backend = _build_backend(config)
-        planner_cls = PLANNER_MAP.get(config.planner, ReActPlanner)
-        planner = planner_cls(backend=backend)
 
-        registry = ToolRegistry()
-        tool_descriptions = []
-        for tool_name in config.tools:
-            if tool_name not in TOOL_CHOICES:
-                continue
-            tool = _tool_factory(tool_name, config)
-            registry.register(tool)
-            tool_descriptions.append(f"{tool.name}: {tool.description}")
+@app.post("/api/run/stream")
+def run_agent_stream(config: AgentConfig):
+    _validate_run(config)
+    stopped = threading.Event()
+    events = queue.Queue(maxsize=512)
+    dropped = 0
 
-        planner.tool_descriptions = "\n".join(tool_descriptions) if tool_descriptions else "No tools available."
-        memory = MemoryManager()
-        session_id = uuid.uuid4().hex
-        tracer = Tracer(trace_dir=str(ROOT / "traces"), session_id=session_id)
-        agent = Agent(
-            backend=backend,
-            planner=planner,
-            tool_registry=registry,
-            memory_manager=memory,
-            tracer=tracer,
-            max_iterations=config.max_iterations,
-        )
+    def publish(event):
+        nonlocal dropped
+        if stopped.is_set():
+            return
+        event = redact({"agent_id": "agent-1", **event})
+        try:
+            events.put_nowait(event)
+        except queue.Full:
+            try:
+                events.get_nowait()
+            except queue.Empty:
+                pass
+            dropped += 1
+            events.put_nowait(event)
 
-        result = agent.run(config.task)
-        trace_path = tracer.save()
-        return {
-            "status": "success",
-            "result": result,
-            "trace_path": trace_path,
-            "session_id": session_id,
-        }
-    except Exception as exc:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": str(exc),
-                "traceback": traceback.format_exc(),
-            },
-        )
+    def worker():
+        try:
+            result = _execute_run(config, on_event=publish, cancel_event=stopped)
+            publish({"type": "complete", **result, "dropped_events": dropped})
+        except Exception as exc:
+            publish({"type": "complete", "status": "error", "message": _run_error(exc)})
+
+    def stream():
+        started = time.monotonic()
+        thread = threading.Thread(target=worker, daemon=True, name="playpen-agent-run")
+        thread.start()
+        try:
+            while True:
+                try:
+                    event = events.get(timeout=1)
+                except queue.Empty:
+                    event = {"type": "heartbeat", "elapsed_seconds": int(time.monotonic() - started)}
+                yield json.dumps(event, ensure_ascii=False) + "\n"
+                if event["type"] == "complete":
+                    break
+        finally:
+            # A disconnect stops scheduling new calls, but cannot interrupt a
+            # model request/tool operation that is already executing.
+            stopped.set()
+
+    class RunStreamingResponse(StreamingResponse):
+        async def __call__(self, scope, receive, send):
+            try:
+                await super().__call__(scope, receive, send)
+            finally:
+                # Always signal even if the server loses the connection while
+                # sending a chunk, before the generator is explicitly closed.
+                stopped.set()
+
+    return RunStreamingResponse(stream(), media_type="application/x-ndjson", headers={"X-Accel-Buffering": "no"})
 
 
 @app.get("/api/models")
-def api_models(backend: str = "lm_studio", base_url: str = "", api_key: str = ""):
+def api_models(backend: str = "lm_studio", base_url: str = ""):
+    if backend not in BackendFactory.REGISTRY:
+        raise HTTPException(status_code=400, detail="Unknown backend.")
     fallback = FALLBACK_MODELS.get(backend, [])
     try:
-        models = _fetch_models(backend, base_url, api_key)
-    except Exception as exc:
+        models = _fetch_models(backend, base_url, "")
+    except Exception:
         return {
             "status": "error",
             "source": "fallback",
             "models": fallback,
-            "message": f"Could not reach {backend}: {exc}",
+            "model_details": model_pricing.model_details(backend, fallback),
+            "pricing_url": model_pricing.OFFICIAL_URLS.get(backend),
+            "pricing_default": model_pricing.unknown_price(backend),
+            "message": f"Could not reach {backend}. Check provider settings or use a model name manually.",
         }
 
     if not models:
@@ -426,24 +618,35 @@ def api_models(backend: str = "lm_studio", base_url: str = "", api_key: str = ""
             "status": "empty",
             "source": "fallback",
             "models": fallback,
+            "model_details": model_pricing.model_details(backend, fallback),
+            "pricing_url": model_pricing.OFFICIAL_URLS.get(backend),
+            "pricing_default": model_pricing.unknown_price(backend),
             "message": f"{backend} returned no models. Showing known names instead.",
         }
 
     return {
         "status": "ok",
-        "source": "live",
+        "source": "cached" if getattr(models, "stale", False) else "live",
         "models": models,
+        "model_details": model_pricing.model_details(backend, models),
+        "pricing_url": model_pricing.OFFICIAL_URLS.get(backend),
+        "pricing_default": model_pricing.unknown_price(backend),
         "message": f"Loaded {len(models)} model(s) from {backend}.",
     }
 
 
 @app.get("/api/keys")
 def api_keys():
-    stored = _read_env_file()
     result = {}
     for name in MANAGED_KEYS:
-        value = stored.get(name) or os.getenv(name, "")
-        result[name] = {"set": bool(value), "hint": _mask(value)}
+        try:
+            encrypted = bool(credentials.store.get(name))
+            available = True
+        except CredentialError:
+            encrypted, available = False, False
+        legacy = bool(os.getenv(name) or _read_env_file().get(name))
+        result[name] = {"set": encrypted or legacy, "encrypted": encrypted,
+                        "legacy": legacy, "storage_available": available}
     return result
 
 
@@ -454,39 +657,182 @@ class KeyPayload(BaseModel):
     model_config = {"extra": "ignore"}
 
 
+def _maintenance_event(provider, event, **kwargs):
+    try:
+        maintenance.MaintenanceHistory(ROOT).update(provider, event, **kwargs)
+        return True
+    except OSError:
+        # Metadata availability must not turn a verified vault save into a failure.
+        return False
+
+
+def _persist_key(name, value):
+    with maintenance.LOCK:
+        if value:
+            credentials.store.set(name, value)
+        else:
+            credentials.store.delete(name)
+        provider = next((entry["id"] for entry in maintenance.CATALOG.values() if entry["key_name"] == name), None)
+        if name == "GOOGLE_CSE_ID":
+            provider = "google"
+        if provider:
+            _maintenance_event(provider, "key_saved" if value else "key_cleared")
+        _write_env_file({name: None})
+        os.environ.pop(name, None)
+
+
 @app.post("/api/save-key")
 def save_key(payload: KeyPayload):
     if payload.name not in MANAGED_KEYS:
         return JSONResponse(
             status_code=400,
-            content={"status": "error", "message": f"Unknown key name: {payload.name}"},
+            content={"status": "error", "message": "Unknown credential name."},
         )
 
     value = payload.value.strip()
-    if value:
-        _write_env_file({payload.name: value})
-        os.environ[payload.name] = value
-        message = f"{payload.name} saved. It will be reused automatically."
-    else:
-        _write_env_file({payload.name: None})
-        os.environ.pop(payload.name, None)
-        message = f"{payload.name} removed."
+    try:
+        _persist_key(payload.name, value)
+    except CredentialError:
+        return JSONResponse(status_code=503, content={"status": "error", "message": "Encrypted credential storage is unavailable; no plaintext fallback was written."})
+    except OSError:
+        return JSONResponse(status_code=503, content={"status": "error", "message": "The vault was updated, but legacy file cleanup failed. Check .env permissions and retry; legacy credentials may still be available."})
+    return {"status": "saved", "message": "Credential saved in encrypted OS storage." if value else "Credential removed."}
 
-    return {"status": "saved", "message": message, "path": str(ENV_PATH)}
+
+class MaintenanceCheck(BaseModel):
+    provider: str
+    allow_billable: bool = False
+
+
+class MaintenanceReview(BaseModel):
+    provider: str
+    portal_ready: bool = False
+    billing_reviewed: bool = False
+    next_review: date | None = None
+
+
+class ConnectionStart(BaseModel):
+    replace_existing: bool = False
+
+
+class ConnectionFinish(BaseModel):
+    state: str = Field(min_length=20, max_length=128)
+    code: str = Field(min_length=1, max_length=4096)
+
+
+def _maintenance_provider(provider):
+    if provider not in maintenance.CATALOG:
+        raise HTTPException(status_code=400, detail="Unknown provider.")
+
+
+def _connection_owner(request):
+    owner = request.cookies.get(maintenance.COOKIE_NAME, "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", owner):
+        raise HTTPException(status_code=403, detail="Open or reload Maintenance in this browser first.")
+    return owner
+
+
+@app.get("/api/maintenance")
+def maintenance_status():
+    return {"keys": api_keys(), "history": maintenance.MaintenanceHistory(ROOT).read()}
+
+
+@app.post("/api/maintenance/review")
+def maintenance_review(payload: MaintenanceReview):
+    _maintenance_provider(payload.provider)
+    saved = _maintenance_event(payload.provider, "review_updated", portal_ready=payload.portal_ready,
+                               billing_reviewed=payload.billing_reviewed,
+                               next_review=payload.next_review.isoformat() if payload.next_review else None)
+    if not saved:
+        return JSONResponse(status_code=503, content={"message": "Could not save maintenance metadata. Check the traces directory permissions. Credentials were not changed."})
+    return {"status": "saved", "message": "Checklist saved. Portal completion is self-reported; API access is checked separately."}
+
+
+@app.post("/api/maintenance/check")
+def maintenance_check(payload: MaintenanceCheck):
+    _maintenance_provider(payload.provider)
+    try:
+        with maintenance.LOCK:
+            result = maintenance.verify_access(payload.provider, payload.allow_billable)
+            _maintenance_event(payload.provider, "access_checked", status=result["status"])
+        return result
+    except maintenance.MaintenanceError as exc:
+        _maintenance_event(payload.provider, "access_checked", status="failed")
+        return {"status": "failed", "message": str(exc), "usage": {}}
+    except Exception:
+        _maintenance_event(payload.provider, "access_checked", status="failed")
+        return {"status": "failed", "message": "Access check failed. Check the saved key, account permissions, credits, and provider availability. No automatic retry was made.", "usage": {}}
+
+
+@app.post("/api/maintenance/openrouter/start")
+def connection_start(payload: ConnectionStart, request: Request):
+    owner = _connection_owner(request)
+    try:
+        result = maintenance.connections.start(owner, str(request.base_url), payload.replace_existing)
+        _maintenance_event("openrouter", "connection_started")
+        return result
+    except CredentialError:
+        return JSONResponse(status_code=503, content={"message": "Native encrypted storage is unavailable. Fix it before connecting."})
+    except ValueError as exc:
+        return JSONResponse(status_code=409, content={"message": str(exc)})
+
+
+@app.post("/api/maintenance/openrouter/finish")
+def connection_finish(payload: ConnectionFinish, request: Request):
+    owner = _connection_owner(request)
+    try:
+        with maintenance.LOCK:
+            key = maintenance.connections.exchange(owner, payload.state, payload.code)
+            _persist_key("OPENROUTER_API_KEY", key)
+        _maintenance_event("openrouter", "connection_saved")
+        return {"status": "saved", "message": "OpenRouter key saved in encrypted OS storage. Run Check access from Maintenance to verify it."}
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={"message": str(exc)})
+    except Exception:
+        _maintenance_event("openrouter", "connection_failed")
+        return JSONResponse(status_code=503, content={"message": "Connection or encrypted save failed. A newly authorized key may exist in OpenRouter; review/revoke it in the portal before retrying. No key was exported."})
+
+
+@app.post("/api/migrate-keys")
+def migrate_keys():
+    legacy = _read_env_file()
+    migrated = []
+    try:
+        for name in MANAGED_KEYS:
+            value = legacy.get(name)
+            if value:
+                # Preserve a newer key already saved in native storage.
+                if not credentials.store.get(name):
+                    credentials.store.set(name, value)
+                migrated.append(name)
+        _write_env_file({name: None for name in migrated})
+        for name in migrated:
+            os.environ.pop(name, None)
+    except CredentialError:
+        return JSONResponse(status_code=503, content={"message": "Migration incomplete. Legacy entries were retained; encrypted storage must be available."})
+    return {"status": "saved", "migrated": migrated, "message": "Legacy file credentials migrated. Remove any backups or synced historical copies separately."}
 
 
 @app.post("/api/save-config")
 async def save_config(request: Request):
     try:
         payload = await request.json()
-    except Exception as exc:
+    except Exception:
         return JSONResponse(
             status_code=400,
-            content={"status": "error", "message": f"Invalid JSON payload: {exc}"},
+            content={"status": "error", "message": "Invalid JSON payload."},
         )
 
-    payload.pop("api_key", None)
-    payload.pop("search_cse_id", None)
+    if not isinstance(payload, dict):
+        return JSONResponse(status_code=400, content={"message": "Expected a JSON object."})
+    # Export only known non-secret configuration, never arbitrary nested input.
+    allowed = set(AgentConfig.model_fields) - {"api_key", "search_cse_id", "task"}
+    payload = {key: value for key, value in payload.items() if key in allowed}
+    try:
+        payload = AgentConfig.model_validate(payload).model_dump(exclude={"api_key", "search_cse_id", "task"})
+    except ValidationError:
+        return JSONResponse(status_code=422, content={"message": "Invalid configuration fields."})
+    payload = redact(payload)
     config_dir = ROOT / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
     output_path = config_dir / "web_agent_config.json"
@@ -494,7 +840,7 @@ async def save_config(request: Request):
     return {
         "status": "saved",
         "path": str(output_path),
-        "message": "Configuration saved. API keys are kept in .env, not here.",
+        "message": "Configuration saved. Credentials are stored separately in encrypted OS storage.",
     }
 
 
@@ -502,12 +848,18 @@ async def save_config(request: Request):
 async def save_env(request: Request):
     try:
         payload = await request.json()
-    except Exception as exc:
+    except Exception:
         return JSONResponse(
             status_code=400,
-            content={"status": "error", "message": f"Invalid JSON payload: {exc}"},
+            content={"status": "error", "message": "Invalid JSON payload."},
         )
 
+    if not isinstance(payload, dict):
+        return JSONResponse(status_code=400, content={"message": "Expected a JSON object."})
+    try:
+        payload = AgentConfig.model_validate(payload).model_dump()
+    except ValidationError:
+        return JSONResponse(status_code=422, content={"message": "Invalid settings fields."})
     backend = str(payload.get("backend", "lm_studio"))
     base_url = str(payload.get("base_url", "http://localhost:1234/v1"))
     model_name = str(payload.get("model", "local-model"))
@@ -532,28 +884,8 @@ async def save_env(request: Request):
         "MAX_ITERATIONS": str(payload.get("max_iterations", 10)),
     }
 
-    api_key = str(payload.get("api_key") or "").strip()
-    if api_key:
-        backend = str(payload.get("backend", ""))
-        key_var = BACKEND_KEY_VAR.get(backend)
-        search_provider = str(payload.get("search_provider", ""))
-        search_key_var = SEARCH_KEY_VAR.get(search_provider)
-        if key_var:
-            updates[key_var] = api_key
-            os.environ[key_var] = api_key
-        elif search_key_var:
-            updates[search_key_var] = api_key
-            os.environ[search_key_var] = api_key
-        if backend == "openrouter":
-            updates["OPENROUTER_API_KEY"] = api_key
-            os.environ["OPENROUTER_API_KEY"] = api_key
-
-    search_cse_id = str(payload.get("search_cse_id") or "").strip()
-    search_provider = str(payload.get("search_provider", ""))
-    search_extra_var = SEARCH_EXTRA_VAR.get(search_provider)
-    if search_cse_id and search_extra_var:
-        updates[search_extra_var] = search_cse_id
-        os.environ[search_extra_var] = search_cse_id
+    # This endpoint writes non-secret settings only. Key saving is separate.
+    updates = redact(updates)
 
     _write_env_file(updates)
     return {
@@ -566,4 +898,4 @@ async def save_env(request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("debugging.dashboard.server:app", host="0.0.0.0", port=8765, reload=False)
+    uvicorn.run("debugging.dashboard.server:app", host="127.0.0.1", port=8765, reload=False, access_log=False)

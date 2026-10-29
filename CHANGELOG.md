@@ -26,6 +26,38 @@
 
 ## Unreleased
 
+- Added token prices to model choices and a cross-backend comparison screen:
+  provider catalog/official-page rates, labeled reference fallback, cache rates,
+  source/freshness, cost sorting, base text estimates, and explicit unknown prices.
+- Added a Maintenance screen with guided provider onboarding, OpenRouter S256
+  PKCE authorization and direct vault saving, account/usage access checks,
+  opt-in search tests, review dates, and secret-free maintenance history.
+- Added a dashboard keys/costs/maintenance guide and matching generated document:
+  dated primary-source prices, account links, key-count scenarios, cash-flow
+  distinctions, review reminders, and a manual account-maintenance plan.
+- Added Serper, Brave Search API, Exa, Firecrawl Search, and OpenWeb Ninja direct
+  API adapters, encrypted credential support, automatic fallback, and a dedicated
+  dashboard search-key shortcut. Documented API versus MCP integration scope.
+- Replaced the deprecated search wrapper with pinned DDGS engines, conservative
+  unrelated-batch screening, and free Crossref fallback for scholarly queries.
+- Added PDF text/font extraction, duplicate search/fetch loop prevention, readable
+  final-answer envelopes, and explicit finished-with-tool-warnings UI state.
+
+- Live dashboard activity stream, elapsed timer, Stop Run, retained failed traces,
+  redacted actionable errors, and explicit incomplete outcomes.
+- Search source URLs, recoverable ReAct action formats, and OpenRouter response
+  metadata/empty-output diagnostics. Added stream lifecycle and DOM smoke tests.
+
+- Encrypted native OS credential manager for all cloud backends and search keys,
+  hidden CLI entry, legacy migration, presence-only status, and export filtering.
+- OpenRouter dashboard/CLI setup, model selection and discovery, trusted endpoint
+  routing, and provider presets.
+- Local session/origin/host protections, no-store/CSP headers, sanitized errors,
+  credential-path restrictions, and dashboard arbitrary-Python removal.
+- Regression suite and repaired package/CLI startup, planner execution, memory,
+  dashboard validation, provider construction, and evaluator parsing.
+- Updated setup, dashboard, extension, testing, and credential-security guides.
+
 - Repository polish, asset cleanup, and documentation improvements
 - GitHub metadata and release preparation work
 - Optional refinements for production hardening and packaging

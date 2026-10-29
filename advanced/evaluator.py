@@ -43,18 +43,22 @@ class Evaluator:
         raw = self.backend.chat(messages)
         try:
             data = json.loads(raw)
-        except json.JSONDecodeError:
+            if not isinstance(data, dict):
+                raise ValueError("Expected an object")
+            dimension_keys = ["relevance", "accuracy", "completeness", "format"]
+            scores = {k: int(data.get(k, 5)) for k in dimension_keys}
+            if any(not 0 <= score <= 10 for score in scores.values()):
+                raise ValueError("Scores must be between 0 and 10")
+        except (json.JSONDecodeError, ValueError, TypeError):
             return EvalResult(
                 scores={"relevance": 5, "accuracy": 5, "completeness": 5, "format": 5},
                 reasoning="Could not parse evaluator response.",
                 overall=5.0,
             )
-        dimension_keys = ["relevance", "accuracy", "completeness", "format"]
-        scores = {k: int(data.get(k, 5)) for k in dimension_keys}
         overall = sum(scores.values()) / len(scores)
         return EvalResult(
             scores=scores,
             reasoning=data.get("reasoning", ""),
             overall=round(overall, 2),
         )
-        
+

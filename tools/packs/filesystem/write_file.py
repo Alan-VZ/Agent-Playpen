@@ -1,3 +1,4 @@
+from config.security import check_sensitive_path
 # write_file.py
 from pathlib import Path
 from tools.base_tool import BaseTool
@@ -23,12 +24,14 @@ class WriteFileTool(BaseTool):
         "required": ["path", "content"],
     }
 
-    def __init__(self, allowed_dirs: list[str] | None = None):
+    def __init__(self, allowed_dirs: list[str] | None = None, safe_mode: bool = False):
+        self.safe_mode = safe_mode
         self.allowed_dirs = [
             Path(d).resolve() for d in (allowed_dirs or ["."])
         ]
 
     def _check_allowed(self, path: Path):
+        check_sensitive_path(path)
         resolved = path.resolve()
         for allowed in self.allowed_dirs:
             try:
@@ -42,8 +45,12 @@ class WriteFileTool(BaseTool):
         path = kwargs["path"]
         content = kwargs["content"]
         mode = kwargs.get("mode", "w")
+        if mode not in {"w", "a"}:
+            raise ValueError("mode must be 'w' or 'a'")
         p = Path(path)
         self._check_allowed(p)
+        if self.safe_mode and p.suffix.lower() not in {".txt", ".md", ".csv", ".json"}:
+            raise PermissionError("Dashboard file writes are limited to text, Markdown, CSV, and JSON artifacts.")
         p.parent.mkdir(parents=True, exist_ok=True)
         if mode == "w":
             p.write_text(content, encoding="utf-8")
@@ -51,4 +58,4 @@ class WriteFileTool(BaseTool):
             with open(p, "a", encoding="utf-8") as f:
                 f.write(content)
         return f"Written {len(content)} characters to {path}"
-    
+

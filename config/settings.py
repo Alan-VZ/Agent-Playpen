@@ -1,6 +1,5 @@
 #  settings.py — Full Pydantic-Settings Class
 from pydantic_settings import BaseSettings
-from pydantic import Field
 from typing import Optional
 
 
@@ -62,7 +61,12 @@ class Settings(BaseSettings):
         "os.system,subprocess,__import__,eval,exec,socket"
     )
     ALLOWED_DIRS: str = "."
-    WEB_SEARCH_PROVIDER: str = "auto"    # auto | duckduckgo | serpapi | tavily | google
+    WEB_SEARCH_PROVIDER: str = "auto"    # See docs/search-providers.md for supported providers.
+    SERPER_API_KEY: Optional[str] = None
+    BRAVE_API_KEY: Optional[str] = None
+    EXA_API_KEY: Optional[str] = None
+    FIRECRAWL_API_KEY: Optional[str] = None
+    OPENWEBNINJA_API_KEY: Optional[str] = None
     SERPAPI_API_KEY: Optional[str] = None
     TAVILY_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
@@ -81,4 +85,3 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
-        

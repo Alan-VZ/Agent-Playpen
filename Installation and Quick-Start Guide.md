@@ -24,7 +24,7 @@ source .venv/bin/activate        # Linux / macOS
 
 ```bash
 pip install -U pip
-pip install openai anthropic pydantic pydantic-settings structlog rich
+pip install -e ".[web-tools,dashboard,dev]"
 ```
 
 ## Install optional dependency groups
@@ -53,13 +53,18 @@ pip install -e .[web-tools,dashboard,dev]
 cp .env.example .env
 ```
 
-Open `.env` in your editor and fill in:
+Use `.env` for non-secret settings, including local URLs and Azure deployment
+information. Save API keys using the dashboard credential manager or a hidden CLI
+prompt:
 
-- **LM_STUDIO_URL** — typically `http://localhost:1234/v1` (if running LM Studio locally)
-- **OPENAI_API_KEY** — if using OpenAI
-- **ANTHROPIC_API_KEY** — if using Anthropic
-- **GROQ_API_KEY** — if using Groq
-- **TAVILY_API_KEY**, **SERPAPI_API_KEY**, or **GOOGLE_API_KEY** + **GOOGLE_CSE_ID** — for web search (if enabled)
+```bash
+python -m config.credentials set OPENROUTER_API_KEY
+```
+
+Keys are stored in Windows Credential Locker, macOS Keychain, or Linux Secret
+Service, outside the repository. Saving fails if native encrypted storage is
+unavailable. Existing `.env` keys can be moved with **Migrate Legacy Keys**.
+See the [complete credential guide](docs/credentials-and-openrouter.md).
 
 ## Start LM Studio for local inference (optional)
 
@@ -76,7 +81,7 @@ Open `.env` in your editor and fill in:
 ### Start the web dashboard
 
 ```bash
-python -m debugging.dashboard.server --port 8765
+python -m debugging.dashboard.server
 ```
 
 Or use the **desktop shortcut** on Windows:
@@ -90,7 +95,7 @@ Open your browser to: `http://localhost:8765`
 
 ### Using the web dashboard
 
-1. **Select Backend** — Choose "lm_studio" (local) or a cloud provider
+1. **Select Backend** — Choose "lm_studio" (local) or a cloud provider such as "openrouter"; save its key with the credential manager before running
 2. **Load Models** — Click the **Load** button to discover available models
 3. **Select a Model** — Pick from the dropdown (filters as you type)
 4. **Configure Tools** — Check which tools to enable (web_search, fetch, read_file, etc.)
@@ -100,7 +105,7 @@ Open your browser to: `http://localhost:8765`
 
 **Features:**
 - Contextual help on every field (click the `?` icon)
-- API keys stored securely in `.env` (never sent to browser)
+- API keys saved in native encrypted OS storage; status does not return their values
 - Model discovery with live backend queries
 - Web search provider `auto` falls back through Google, Tavily, SerpAPI, then DuckDuckGo
 - Save configurations as JSON for reuse
@@ -127,7 +132,8 @@ python core/runner.py \
 
 **CLI Arguments:**
 - `--task` — The task to solve
-- `--backend` — Backend name (lm_studio, openai, anthropic, groq, together, ollama, azure_openai)
+- `--backend` — Backend name (lm_studio, openrouter, openai, anthropic, groq, together, ollama, azure_openai)
+- `--model` — Provider model ID, including OpenRouter model slugs
 - `--planner` — Planning strategy (react, cot, tree)
 - `--tools` — Space-separated tool names
 - `--max-iter` — Max reasoning iterations (default: 10)
@@ -146,12 +152,19 @@ python core/runner.py \
 
 ### Web UI won't open
 - Ensure port 8765 is free: `netstat -an | findstr 8765` (Windows)
-- Try starting manually: `python -m debugging.dashboard.server --port 8765`
+- Try starting manually: `python -m debugging.dashboard.server`
 - Check that FastAPI is installed: `pip install fastapi uvicorn jinja2`
 
 ### Tool execution times out
 - Default timeout is 30 seconds; adjust `TOOL_TIMEOUT_SECONDS` in `.env`
 - Long fetches or large file operations may exceed the timeout
+
+## Security and testing
+
+Unrestricted Python tools are disabled in the credential-enabled dashboard. The
+trusted CLI retains them; same-user arbitrary code can access your credentials.
+Run `python -m pytest -q` and `ruff check .` after installing the dev extras.
+See [testing](docs/testing.md) and [credential security](docs/credentials-and-openrouter.md).
 
 ## Next Steps
 

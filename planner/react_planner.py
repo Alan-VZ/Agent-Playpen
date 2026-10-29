@@ -4,7 +4,7 @@ from planner.base_planner import BasePlanner, Plan, Step, Thought
 REACT_SYSTEM_PROMPT = """You are an AI agent that solves tasks step by step.
 At each step you must respond in EXACTLY this format:
 
-Thought: <your reasoning about what to do next>
+Thought: <brief action summary, without private internal reasoning>
 Action: <the name of the tool to call, or FINISH if done>
 Action Input: <JSON object of arguments for the tool, or the final answer>
 
@@ -15,6 +15,10 @@ Rules:
 - Never skip the Thought / Action / Action Input structure.
 - Use FINISH as the Action when you have the final answer.
 - Action Input must be valid JSON.
+- Do not repeat identical unsuccessful searches or fetches. Change the query,
+  use a known source URL, or finish with the limitation clearly stated.
+- Search snippets can be irrelevant. Check title, URL, and source content.
+- A failed search does not prove that a document does not exist.
 """
 
 REACT_USER_TEMPLATE = """Task: {task}
@@ -80,8 +84,24 @@ class ReActPlanner(BasePlanner):
         """
         import json
 
+        def final_answer(text):
+            cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=re.IGNORECASE)
+            try:
+                decoded = json.loads(cleaned)
+                if isinstance(decoded, str):
+                    return decoded
+                if isinstance(decoded, dict) and set(decoded) == {"answer"} and isinstance(decoded["answer"], str):
+                    return decoded["answer"]
+            except json.JSONDecodeError:
+                pass
+            return text.strip()
+
+
+        if not re.search(r"^\s*Action:\s*", raw, re.MULTILINE):
+            return Thought(reasoning=raw, is_terminal=True, answer=final_answer(raw))
+
         thought_match = re.search(r"Thought:\s*(.+?)(?=Action:|$)", raw, re.DOTALL)
-        action_match = re.search(r"Action:\s*(.+?)(?=Action Input:|$)", raw, re.DOTALL)
+        action_match = re.search(r"^\s*Action:\s*([^\r\n]+)", raw, re.MULTILINE)
         input_match = re.search(r"Action Input:\s*(.+?)$", raw, re.DOTALL)
 
         reasoning = thought_match.group(1).strip() if thought_match else raw
@@ -92,11 +112,16 @@ class ReActPlanner(BasePlanner):
             return Thought(
                 reasoning=reasoning,
                 is_terminal=True,
-                answer=raw_input,
+                answer=final_answer(raw_input),
             )
 
         try:
-            tool_args = json.loads(raw_input)
+            # Some models fence JSON or append another action. Execute only the
+            # first object, then let the next round use the real observation.
+            cleaned_input = re.sub(r"^```(?:json)?\s*", "", raw_input, flags=re.IGNORECASE)
+            tool_args, _ = json.JSONDecoder().raw_decode(cleaned_input)
+            if not isinstance(tool_args, dict):
+                tool_args = {"input": raw_input}
         except json.JSONDecodeError:
             tool_args = {"input": raw_input}
 
