@@ -117,3 +117,7 @@ Automated tests use mocked provider responses and isolated test credentials.
 They validate request contracts, result normalization, fallback, quota and
 authentication errors, redirects, and redaction. They do not establish that an
 individual account has credit or that live search quality meets a task's needs.
+
+## Nimble Search Lite and basic extraction
+
+Select `nimble` explicitly and save `NIMBLE_API_KEY` through Maintenance. Nimble is excluded from `auto`; Search Lite disables full-content search. Optional `nimble_extract` is basic extraction without rendering. Both tools permit five attempts per instance and cache repeated results. See [Nimble setup](nimble.md) and [the roadmap](../todo.md). You.com remains deferred.

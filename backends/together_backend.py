@@ -10,7 +10,7 @@ class TogetherBackend(BaseBackend):
                     mistralai/Mixtral-8x7B-Instruct-v0.1
     """
 
-    TOGETHER_BASE_URL = "https://api.together.xyz/v1"
+    TOGETHER_BASE_URL = "https://api.together.ai/v1"
 
     def __init__(
         self,

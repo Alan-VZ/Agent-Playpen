@@ -122,6 +122,8 @@ function submit(task) {
     holdModelLoads = true;
     const backendSelect = document.getElementById('backend');
     backendSelect.value = 'openrouter'; backendSelect.dispatchEvent(new dom.window.Event('change'));
+    assert.equal(document.getElementById('model').value, 'openai/gpt-4o-mini');
+    assert.equal(document.getElementById('base_url').readOnly, true);
     backendSelect.value = 'groq'; backendSelect.dispatchEvent(new dom.window.Event('change'));
     await waitFor(() => pendingModelLoads.length === 2);
     pendingModelLoads[1].resolve(modelData('groq/demo', 3, 4));
@@ -135,8 +137,10 @@ function submit(task) {
     holdModelLoads = false;
     backendSelect.value = 'lm_studio'; backendSelect.dispatchEvent(new dom.window.Event('change'));
     await waitFor(() => document.querySelector('#model-options .dropdown-item')?.dataset.value === 'demo');
+    assert.equal(document.getElementById('model').value, 'unlisted-model');
+    assert.equal(document.getElementById('base_url').readOnly, false);
     const searchSelect = document.getElementById('search_provider');
-    for (const [provider, key] of Object.entries({ serper: 'SERPER_API_KEY', brave: 'BRAVE_API_KEY', exa: 'EXA_API_KEY', firecrawl: 'FIRECRAWL_API_KEY', openwebninja: 'OPENWEBNINJA_API_KEY' })) {
+    for (const [provider, key] of Object.entries({ nimble: 'NIMBLE_API_KEY', serper: 'SERPER_API_KEY', brave: 'BRAVE_API_KEY', exa: 'EXA_API_KEY', firecrawl: 'FIRECRAWL_API_KEY', openwebninja: 'OPENWEBNINJA_API_KEY' })) {
       searchSelect.value = provider;
       searchSelect.dispatchEvent(new dom.window.Event('change'));
       assert.equal(document.getElementById('manage-search-key').disabled, false);

@@ -39,6 +39,7 @@ from tools.packs.filesystem.write_file import WriteFileTool
 from tools.packs.utils.calculator_tool import CalculatorTool
 from tools.packs.utils.datetime_tool import DatetimeTool
 from tools.packs.web.fetch_tool import FetchTool
+from tools.packs.web.nimble_extract import NimbleExtractTool
 from tools.packs.web.search_tool import WebSearchTool
 from tools.tool_registry import ToolRegistry
 
@@ -167,6 +168,7 @@ PLANNER_MAP = {
 TOOL_CHOICES = [
     "web_search",
     "fetch",
+    "nimble_extract",
     "read_file",
     "write_file",
     "calculator",
@@ -256,7 +258,7 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
             "openai": "https://api.openai.com/v1/models",
             "openrouter": "https://openrouter.ai/api/v1/models",
             "groq": "https://api.groq.com/openai/v1/models",
-            "together": "https://api.together.xyz/v1/models",
+            "together": "https://api.together.ai/v1/models",
         }
         key = get_credential(BACKEND_KEY_VAR[backend], api_key) if backend != "openrouter" else ""
         if backend != "openrouter":
@@ -315,6 +317,8 @@ def _tool_factory(name: str, config: AgentConfig):
         return WebSearchTool(provider=config.search_provider, api_key=search_key or None, cse_id=search_cse_id or None)
     if name == "fetch":
         return FetchTool()
+    if name == "nimble_extract":
+        return NimbleExtractTool()
     if name == "read_file":
         return ReadFileTool(allowed_dirs=dirs)
     if name == "write_file":
@@ -354,8 +358,16 @@ def _build_backend(config: AgentConfig):
     elif config.backend == "azure_openai":
         kwargs.pop("model")
         kwargs["api_key"] = get_credential("AZURE_OPENAI_KEY", config.api_key)
-        kwargs["azure_endpoint"] = azure_endpoint(os.getenv("AZURE_OPENAI_ENDPOINT", ""))
-        kwargs["deployment_name"] = os.getenv("AZURE_OPENAI_DEPLOYMENT", "")
+        endpoint = config.base_url.strip()
+        if not endpoint or endpoint == AgentConfig.model_fields["base_url"].default or "<" in endpoint:
+            endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+        kwargs["azure_endpoint"] = azure_endpoint(endpoint)
+        deployment = config.model.strip()
+        if deployment in {"", "local-model"}:
+            deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "")
+        if not deployment:
+            raise ValueError("Enter your Azure deployment name, not a generic model name.")
+        kwargs["deployment_name"] = deployment
         kwargs["api_version"] = os.getenv("AZURE_OPENAI_API_VERSION") or "2024-05-01-preview"
         backend = BackendFactory.create("azure_openai", **kwargs)
     elif config.backend == "groq":
@@ -600,20 +612,38 @@ def api_models(backend: str = "lm_studio", base_url: str = ""):
     if backend not in BackendFactory.REGISTRY:
         raise HTTPException(status_code=400, detail="Unknown backend.")
     fallback = FALLBACK_MODELS.get(backend, [])
+    def fallback_result(reason, message, status="error"):
+        return {"status": status, "reason": reason, "source": "fallback", "models": fallback,
+                "model_details": model_pricing.model_details(backend, fallback),
+                "pricing_url": model_pricing.OFFICIAL_URLS.get(backend),
+                "pricing_default": model_pricing.unknown_price(backend), "message": message}
+
+    if backend == "azure_openai":
+        return fallback_result("manual_deployment", "Azure deployment discovery is not implemented here. Save AZURE_OPENAI_KEY, enter your actual resource endpoint and your deployed model's deployment name. The <your-resource> URL is only a placeholder.", "configuration_required")
+    key_name = BACKEND_KEY_VAR.get(backend) if backend != "openrouter" else None
+    key = get_credential(key_name) if key_name else ""
+    if key_name and not key:
+        return fallback_result("missing_key", f"No saved {key_name}. Set up {backend} in Maintenance, save its own API key, then press Load. An OpenRouter key cannot authenticate this direct backend.", "configuration_required")
     try:
-        models = _fetch_models(backend, base_url, "")
+        models = _fetch_models(backend, base_url, key)
+    except requests.HTTPError as exc:
+        code = exc.response.status_code if exc.response is not None else None
+        if code in {401, 403}:
+            return fallback_result("credentials_rejected", f"{backend} rejected model-list access (HTTP {code}). Check the saved key and account/project permissions.")
+        if code == 429:
+            return fallback_result("rate_limited", f"{backend} rate limit or quota reached (HTTP 429). Try later or review the account portal.")
+        return fallback_result("provider_http_error", f"{backend} returned HTTP {code or 'error'} for model discovery. Review provider status and configuration.")
+    except (requests.ConnectionError, requests.Timeout):
+        if backend in {"ollama", "lm_studio"}:
+            message = "Start Ollama locally (ollama serve) and install a model, then press Load. Local Ollama needs no API key." if backend == "ollama" else "Start LM Studio's local server and load a model, then press Load. Check the configured host and port."
+            return fallback_result("local_service_unavailable", message)
+        return fallback_result("network_error", f"No response from {backend}'s model endpoint. Check connectivity and provider availability; credentials have not been verified.")
     except Exception:
-        return {
-            "status": "error",
-            "source": "fallback",
-            "models": fallback,
-            "model_details": model_pricing.model_details(backend, fallback),
-            "pricing_url": model_pricing.OFFICIAL_URLS.get(backend),
-            "pricing_default": model_pricing.unknown_price(backend),
-            "message": f"Could not reach {backend}. Check provider settings or use a model name manually.",
-        }
+        return fallback_result("catalog_unavailable", f"{backend}'s model catalog could not be loaded. Check configuration or choose a model manually; account access is not verified.")
 
     if not models:
+        if backend in {"ollama", "lm_studio"}:
+            return fallback_result("no_local_models", f"{backend} responded but reported no models. Download/load a model in that application and press Load.", "empty")
         return {
             "status": "empty",
             "source": "fallback",
@@ -632,6 +662,7 @@ def api_models(backend: str = "lm_studio", base_url: str = ""):
         "pricing_url": model_pricing.OFFICIAL_URLS.get(backend),
         "pricing_default": model_pricing.unknown_price(backend),
         "message": f"Loaded {len(models)} model(s) from {backend}.",
+        "catalog_note": "Public catalog; this does not verify your API key, credits, or inference access." if backend == "openrouter" else "Model catalog loaded; individual model access can still depend on your account.",
     }
 
 

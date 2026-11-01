@@ -279,7 +279,7 @@ def provider_price(backend, entry, fetched_at, stale=False):
     if result["input_per_million"] is None and result["output_per_million"] is None:
         return result
     result.update(status="published", source_label="Provider catalog", fetched_at=fetched_at, stale=stale,
-                  source_url=OPENROUTER_URL if backend == "openrouter" else "https://api.together.xyz/v1/models",
+                  source_url=OPENROUTER_URL if backend == "openrouter" else "https://api.together.ai/v1/models",
                   notes=["Base text-token rates. Routing, long context, caching, reasoning, media, tools, taxes, and account terms can change the bill."])
     if backend == "openrouter":
         extras = [name for name, value in values.items() if name not in set(fields.values()) and rate(value) not in (None, 0)]

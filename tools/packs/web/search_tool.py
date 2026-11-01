@@ -34,6 +34,8 @@ class WebSearchTool(BaseTool):
         self.provider = (provider if provider is not None else os.getenv("WEB_SEARCH_PROVIDER") or "auto").lower()
         self.api_key = api_key
         self.cse_id = cse_id
+        self._nimble_cache = {}
+        self._nimble_attempts = 0
 
     def run(self, **kwargs) -> str:
         query = kwargs["query"].strip()
@@ -43,6 +45,16 @@ class WebSearchTool(BaseTool):
 
         if self.provider == "auto":
             return self._auto(query, num_results)
+        if self.provider == "nimble":
+            cache_key = (query, num_results)
+            if cache_key in self._nimble_cache:
+                return self._nimble_cache[cache_key] + "\nCache hit: no additional API request."
+            if self._nimble_attempts >= 5:
+                raise RuntimeError("Nimble Search limit reached: 5 requests per tool instance/run.")
+            self._nimble_attempts += 1
+            result = self._api_search(self.provider, query, num_results)
+            self._nimble_cache[cache_key] = result
+            return result
         if self.provider in API_PROVIDERS:
             return self._api_search(self.provider, query, num_results)
         if self.provider == "duckduckgo":
@@ -69,6 +81,9 @@ class WebSearchTool(BaseTool):
         if self._has_serpapi_credentials():
             attempts.append(("serpapi", self._serpapi))
         for provider in API_PROVIDERS:
+            if provider == "nimble":
+                # Trial billing is account-specific: require explicit selection.
+                continue
             if self._search_key(provider):
                 attempts.append((provider, lambda q, n, name=provider: self._api_search(name, q, n)))
         attempts.append(("ddgs", self._ddgs))

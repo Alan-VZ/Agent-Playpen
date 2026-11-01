@@ -1,6 +1,7 @@
 """Boundaries for agent-facing filesystem access and cloud credential routing."""
 
 from pathlib import Path
+import re
 from urllib.parse import urlsplit
 
 
@@ -20,6 +21,7 @@ def check_sensitive_path(path: Path) -> None:
 def azure_endpoint(value: str) -> str:
     parsed = urlsplit(value)
     if (parsed.scheme != "https" or not parsed.hostname
+            or not re.fullmatch(r"[a-z0-9.-]+", parsed.hostname)
             or not parsed.hostname.endswith(".openai.azure.com")
             or parsed.username or parsed.password or parsed.port not in (None, 443)
             or parsed.query or parsed.fragment or parsed.path not in ("", "/")):

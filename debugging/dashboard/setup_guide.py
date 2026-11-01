@@ -31,6 +31,16 @@ KEY_NOTE = (
 # with third-party comparisons or mix rates from modes this app does not call.
 PROVIDERS = [
     {
+        "name": "Nimble", "keys": "NIMBLE_API_KEY",
+        "signup": "https://online.nimbleway.com/settings/api-keys",
+        "pricing": "https://docs.nimbleway.com/nimble-sdk/admin/pricing",
+        "free": "Trial allowance is account-specific. Observed account: 5,000 API credits and 30 agent runs; renewal and unit conversion unverified.",
+        "upfront": "No payment required to create a trial. Verify Billing before upgrading.",
+        "monthly": "Published usage rates: Search Lite $1.10/1,000; basic Extract $1/1,000 URLs. No paid subscription selected by this app.",
+        "note": "Choose nimble explicitly; auto never spends Nimble credits. Extraction requires its own tool opt-in, is capped at 5 attempts/run, and excludes rendering, parsing, crawling, and research. Rates reviewed 2026-11-01; actual invoices may differ.",
+        "sources": [],
+    },
+    {
         "name": "OpenRouter (models)", "keys": "OPENROUTER_API_KEY",
         "signup": "https://openrouter.ai/workspaces/default/keys",
         "pricing": "https://openrouter.ai/pricing",

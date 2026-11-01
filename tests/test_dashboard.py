@@ -91,3 +91,47 @@ def test_models_offline_fallback(client, monkeypatch):
     monkeypatch.setattr(server, "_fetch_models", fail)
     response = client.get("/api/models?backend=lm_studio")
     assert response.status_code == 200
+
+@pytest.mark.parametrize('backend', ['openai', 'anthropic', 'groq', 'together'])
+def test_model_catalog_explains_missing_provider_key(client, monkeypatch, backend):
+    monkeypatch.setattr(server, 'get_credential', lambda *args: '')
+    monkeypatch.setattr(server.model_pricing, 'model_details', lambda *args: [])
+    monkeypatch.setattr(server, '_fetch_models', lambda *args: pytest.fail('Must not request models without a key'))
+    data = client.get('/api/models', params={'backend': backend}).json()
+    assert data['reason'] == 'missing_key'
+    assert data['status'] == 'configuration_required'
+    assert server.BACKEND_KEY_VAR[backend] in data['message']
+
+
+def test_azure_catalog_requests_actual_deployment(client, monkeypatch):
+    monkeypatch.setattr(server.model_pricing, 'model_details', lambda *args: [])
+    data = client.get('/api/models', params={'backend': 'azure_openai'}).json()
+    assert data['reason'] == 'manual_deployment'
+    assert 'placeholder' in data['message']
+
+
+def test_local_catalog_connection_failure_has_actionable_message(client, monkeypatch):
+    import requests
+    monkeypatch.setattr(server.model_pricing, 'model_details', lambda *args: [])
+    def unavailable(*args):
+        raise requests.ConnectionError('private diagnostic')
+    monkeypatch.setattr(server, '_fetch_models', unavailable)
+    data = client.get('/api/models', params={'backend': 'ollama'}).json()
+    assert data['reason'] == 'local_service_unavailable'
+    assert 'ollama serve' in data['message']
+    assert 'private diagnostic' not in str(data)
+
+
+def test_azure_backend_uses_form_endpoint_and_deployment(monkeypatch):
+    monkeypatch.setattr(server, 'get_credential', lambda *args: 'test-only')
+    create = Mock()
+    monkeypatch.setattr(server.BackendFactory, 'create', create)
+    server._build_backend(server.AgentConfig(task='test', backend='azure_openai',
+        base_url='https://my-resource.openai.azure.com', model='my-deployment'))
+    assert create.call_args.kwargs['azure_endpoint'] == 'https://my-resource.openai.azure.com'
+    assert create.call_args.kwargs['deployment_name'] == 'my-deployment'
+
+
+def test_azure_placeholder_is_not_a_resource_address():
+    with pytest.raises(ValueError):
+        server.azure_endpoint('https://<your-resource>.openai.azure.com')

@@ -6,7 +6,7 @@ agent arguments; authenticated requests must not follow redirects.
 
 from config.credentials import SEARCH_KEYS, remember_secret, redact
 
-API_PROVIDERS = ("serper", "brave", "exa", "firecrawl", "openwebninja")
+API_PROVIDERS = ("serper", "brave", "exa", "firecrawl", "openwebninja", "nimble")
 
 
 def search_api(provider: str, query: str, count: int, key: str) -> str:
@@ -35,6 +35,11 @@ def search_api(provider: str, query: str, count: int, key: str) -> str:
         headers["Authorization"] = f"Bearer {key}"
         # Search only: do not implicitly start crawls or scrape every result.
         payload = {"json": {"query": query, "limit": count, "sources": [{"type": "web"}]}}
+    elif provider == "nimble":
+        method, url = "POST", "https://sdk.nimbleway.com/v2/search"
+        headers["Authorization"] = f"Bearer {key}"
+        payload = {"json": {"query": query, "max_results": count,
+                            "search_depth": "lite", "full_content": False, "focus": "general"}}
     else:
         method, url = "GET", "https://api.openwebninja.com/realtime-web-search/search"
         headers["x-api-key"] = key
@@ -65,7 +70,7 @@ def search_api(provider: str, query: str, count: int, key: str) -> str:
             items = data.get("organic", [])
         elif provider == "brave":
             items = data.get("web", {}).get("results", [])
-        elif provider == "exa":
+        elif provider in {"exa", "nimble"}:
             items = data.get("results", [])
         elif provider == "firecrawl":
             items = data.get("data", {}).get("web", [])

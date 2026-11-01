@@ -12,6 +12,8 @@ from tools.packs.web.search_tool import WebSearchTool
 
 
 CASES = [
+    ("nimble", "POST", "https://sdk.nimbleway.com/v2/search", "Authorization", "json", "max_results",
+     {"results": [{"title": "Prelec paper", "url": "https://example.org/paper", "description": "Bayesian truth serum"}]}),
     ("serper", "POST", "https://google.serper.dev/search", "X-API-KEY", "json", "num",
      {"organic": [{"title": "Prelec paper", "link": "https://example.org/paper", "snippet": "Bayesian truth serum"}]}),
     ("brave", "GET", "https://api.search.brave.com/res/v1/web/search", "X-Subscription-Token", "params", "count",
@@ -38,7 +40,7 @@ def test_saved_search_key_reaches_only_its_provider(monkeypatch, provider, metho
     assert "Bayesian truth serum" in result and "https://example.org/paper" in result
     args, kwargs = request.call_args
     assert args == (method, url)
-    assert kwargs["headers"][header] == (f"Bearer {secret}" if provider == "firecrawl" else secret)
+    assert kwargs["headers"][header] == (f"Bearer {secret}" if provider in {"firecrawl", "nimble"} else secret)
     assert kwargs[body_field][count_field] == 10
     assert secret not in json.dumps(kwargs[body_field])
     assert secret not in result
@@ -104,11 +106,11 @@ def test_malformed_and_unsuccessful_responses_are_safe(monkeypatch, provider, da
 def test_auto_uses_configured_api_then_falls_back_on_quota(monkeypatch):
     credentials.store.set("SERPER_API_KEY", "test-serper-key")
     credentials.store.set("BRAVE_API_KEY", "test-brave-key")
-    request = Mock(side_effect=[Mock(status_code=429), Mock(status_code=200, json=Mock(return_value=CASES[1][-1]))])
+    request = Mock(side_effect=[Mock(status_code=429), Mock(status_code=200, json=Mock(return_value=CASES[2][-1]))])
     monkeypatch.setattr(requests, "request", request)
     result = WebSearchTool("auto").run(query="Prelec paper")
     assert "Search provider: brave" in result
-    assert [call.args[1] for call in request.call_args_list] == [CASES[0][2], CASES[1][2]]
+    assert [call.args[1] for call in request.call_args_list] == [CASES[1][2], CASES[2][2]]
 
 
 def test_auto_without_api_keys_does_not_call_paid_services(monkeypatch):

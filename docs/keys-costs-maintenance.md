@@ -25,6 +25,18 @@ Keys belong to services/projects, not to individual agents. A future 10-agent ru
 
 ## Provider accounts and current prices
 
+### Nimble
+
+Credential: `NIMBLE_API_KEY`.
+Get the key/account: [Provider portal](https://online.nimbleway.com/settings/api-keys).
+
+- Free allowance: Trial allowance is account-specific. Observed account: 5,000 API credits and 30 agent runs; renewal and unit conversion unverified.
+- Upfront: No payment required to create a trial. Verify Billing before upgrading.
+- Recurring/usage cost: Published usage rates: Search Lite $1.10/1,000; basic Extract $1/1,000 URLs. No paid subscription selected by this app.
+- Check: Choose nimble explicitly; auto never spends Nimble credits. Extraction requires its own tool opt-in, is capped at 5 attempts/run, and excludes rendering, parsing, crawling, and research. Rates reviewed 2026-11-01; actual invoices may differ.
+
+Source: [Official pricing/documentation](https://docs.nimbleway.com/nimble-sdk/admin/pricing).
+
 ### OpenRouter (models)
 
 Credential: `OPENROUTER_API_KEY`.

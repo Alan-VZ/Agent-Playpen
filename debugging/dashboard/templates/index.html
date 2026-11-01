@@ -447,7 +447,7 @@
                 <option>TAVILY_API_KEY</option><option>SERPAPI_API_KEY</option>
                 <option>SERPER_API_KEY</option><option>BRAVE_API_KEY</option>
                 <option>EXA_API_KEY</option><option>FIRECRAWL_API_KEY</option>
-                <option>OPENWEBNINJA_API_KEY</option>
+                <option>OPENWEBNINJA_API_KEY</option><option>NIMBLE_API_KEY</option>
                 <option>GOOGLE_API_KEY</option>
               </select>
               <label for="api_key">New API key (save before running)</label>
@@ -493,6 +493,7 @@
                 <option value="exa">Exa (search + highlights)</option>
                 <option value="firecrawl">Firecrawl Search</option>
                 <option value="openwebninja">OpenWeb Ninja</option>
+                <option value="nimble">Nimble Search Lite (explicit selection)</option>
                 <option value="google">google</option>
               </select>
               <button type="button" id="manage-search-key" class="inline-btn">Set search API key</button>
@@ -588,7 +589,7 @@
       anthropic: { base_url: 'https://api.anthropic.com', model: 'claude-3-5-sonnet-20241022' },
       azure_openai: { base_url: 'https://<your-resource>.openai.azure.com', model: 'gpt-4o' },
       groq: { base_url: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
-      together: { base_url: 'https://api.together.xyz/v1', model: 'meta-llama/Llama-3-70b-chat-hf' },
+      together: { base_url: 'https://api.together.ai/v1', model: 'meta-llama/Llama-3-70b-chat-hf' },
     };
 
     const backendSelect = document.getElementById('backend');
@@ -605,30 +606,23 @@
       applyDefaults(data);
     }
 
+    const backendFormState = new Map();
     function syncBackendDefaults() {
       const backend = backendSelect.value;
       const defaults = BACKEND_DEFAULTS[backend] || BACKEND_DEFAULTS.lm_studio;
       const previous = backendSelect.dataset.previousBackend;
       const baseUrlInput = document.getElementById('base_url');
       const modelInput = document.getElementById('model');
-
       if (previous !== backend) {
-        const previousDefaults = previous ? BACKEND_DEFAULTS[previous] : null;
-        const previousBase = previousDefaults ? previousDefaults.base_url : '';
-        const previousModel = previousDefaults ? previousDefaults.model : '';
-        const baseValue = baseUrlInput.value.trim();
-        const modelValue = modelInput.value.trim();
-
-        if (!baseValue || baseValue === previousBase || baseValue === 'http://localhost:1234/v1' || baseValue === 'http://localhost:11434' || baseValue === 'https://api.openai.com/v1' || baseValue === 'https://api.anthropic.com' || baseValue === 'https://api.groq.com/openai/v1' || baseValue === 'https://api.together.xyz/v1') {
-          baseUrlInput.value = defaults.base_url;
-        }
-
-        if (!modelValue || modelValue === previousModel || modelValue === 'local-model' || modelValue === 'llama3.1:8b' || modelValue === 'gpt-4o-mini' || modelValue === 'claude-3-5-sonnet-20241022' || modelValue === 'llama-3.3-70b-versatile' || modelValue === 'meta-llama/Llama-3-70b-chat-hf') {
-          modelInput.value = defaults.model;
-        }
-
+        if (previous) backendFormState.set(previous, { base_url: baseUrlInput.value, model: modelInput.value });
+        const restored = backendFormState.get(backend) || defaults;
+        baseUrlInput.value = restored.base_url;
+        modelInput.value = restored.model;
         backendSelect.dataset.previousBackend = backend;
       }
+      baseUrlInput.readOnly = !['lm_studio', 'ollama', 'azure_openai'].includes(backend);
+      if (baseUrlInput.readOnly) baseUrlInput.value = defaults.base_url;
+      modelInput.placeholder = backend === 'azure_openai' ? 'Your Azure deployment name' : 'Model ID';
     }
 
     function applyDefaults(values) {
@@ -663,7 +657,7 @@
       document.getElementById('temperature').value = values.temperature || defaultState.temperature;
       document.getElementById('max_tokens').value = values.max_tokens || defaultState.max_tokens;
 
-      const toolNames = ['web_search', 'fetch', 'read_file', 'write_file', 'calculator', 'datetime'];
+      const toolNames = ['web_search', 'fetch', 'nimble_extract', 'read_file', 'write_file', 'calculator', 'datetime'];
       toolList.innerHTML = '';
       toolNames.forEach((name) => {
         const wrapper = document.createElement('label');
@@ -1011,6 +1005,7 @@
     const TOOL_HELP = {
       web_search: 'Search the web using the provider selected below.',
       fetch: 'Download the contents of a specific URL.',
+      nimble_extract: 'Optional Nimble basic extraction; consumes credits. No rendering. Maximum 5 requests per run.',
       read_file: 'Read files, restricted to the Allowed directories.',
       write_file: 'Create or overwrite files, restricted to the Allowed directories.',
       calculator: 'Accurate arithmetic. Recommended for any numeric task.',
@@ -1090,6 +1085,7 @@
       exa: 'EXA_API_KEY',
       firecrawl: 'FIRECRAWL_API_KEY',
       openwebninja: 'OPENWEBNINJA_API_KEY',
+      nimble: 'NIMBLE_API_KEY',
       tavily: 'TAVILY_API_KEY',
       serpapi: 'SERPAPI_API_KEY',
       google: 'GOOGLE_API_KEY'
@@ -1326,11 +1322,11 @@
 
         const count = (data.models || []).length;
         if (data.source === 'live') {
-          setNote(modelNote, 'ok', `${count} model(s) available - click the field or type to filter.`);
+          setNote(modelNote, 'ok', `${count} catalog model(s) - click the field or type to filter. ${data.catalog_note || ""}`);
         } else if (data.source === 'cached') {
           setNote(modelNote, 'warn', `${count} cached model(s); catalog refresh failed. Prices may be stale.`);
         } else if (count) {
-          setNote(modelNote, 'warn', `${data.message} Showing ${count} known name(s).`);
+          setNote(modelNote, 'warn', `${data.message} Showing ${count} example name(s); availability is not verified.`);
         } else {
           setNote(modelNote, 'warn', data.message || 'No models found. Type the name manually.');
         }

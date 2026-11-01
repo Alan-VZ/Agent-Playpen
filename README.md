@@ -664,3 +664,87 @@ key** to save its separate credential in native encrypted OS storage. These are
 direct API adapters; a generic MCP client is not included. See the
 [search API and MCP guide](docs/search-providers.md) for setup, provider contracts,
 automatic fallback costs, and the distinction between search and source reading.
+
+For provider accounts, endpoint addresses, local servers, and Azure deployment setup,
+see [Backend setup and troubleshooting](docs/backend-setup.md).
+
+## November 2026 upgrade status
+
+The current dashboard runs **one agent per task**. Parallel execution and Bayesian
+consensus remain planned work, not enabled runtime features. See [todo.md](todo.md)
+for the implementation sequence and acceptance criteria for 1-10 agents.
+
+Implemented features include live model/tool activity, cancellation, protected local
+API routes, native encrypted credential storage, provider Maintenance, model price
+comparison, and actionable provider setup diagnostics. Provider switches retain
+separate model selections. Together uses `https://api.together.ai/v1`; Azure uses
+the form's actual resource endpoint and deployment name. Catalogs, example names,
+and published prices do not prove inference access or remaining account credits.
+
+### Nimble Search Lite and basic extraction
+
+1. Create a key in [Nimble API Keys](https://online.nimbleway.com/settings/api-keys).
+2. In Playpen, open **Maintenance**, choose **Nimble**, and save `NIMBLE_API_KEY`.
+   Keys go to the native encrypted OS credential store, not a committed file.
+3. Select **Nimble Search Lite (explicit selection)** in Web search provider.
+4. Leave ordinary `fetch` enabled for source reading. Enable `nimble_extract` only
+   when you want Nimble's basic extraction to consume account credits.
+5. Review Live activity and the Nimble Usage/Billing screens after a small test.
+
+Search explicitly requests `search_depth=lite`, `full_content=false`, and general
+focus. Nimble is excluded from automatic search fallback even if its key is saved.
+Basic extraction requests Markdown using `vx6` with JavaScript rendering disabled.
+There are no automatic rendering upgrades, document-parsing add-ons, crawls,
+research-agent runs, or retries. Both tools cache repeated successful responses
+(including completed empty searches) for their instance and allow at most **5 network
+attempts each per run**. A run with both tools can therefore make up to 10 Nimble
+requests. Cache hits do not use another network request. Extraction returns at most
+12,000 content characters. These are local request bounds, **not account-wide dollar
+limits**; repeated runs have fresh limits. Existing Live activity records calls and
+observations, but provider-wide usage/credit reconciliation is still TODO.
+
+Published planning rates reviewed November 1, 2026: Lite search $1.10/1,000 inputs,
+basic extraction $1/1,000 URLs. Trial allowance renewal, credit conversion, and
+exhaustion behavior must be verified in your account; the application does not
+claim it can read your balance. No live Nimble call is made by saving a key.
+Maintenance's explicit search test can consume one search request.
+See [Nimble setup and limits](docs/nimble.md) for contracts and sources.
+
+The CLI and YAML tool registry also recognize `nimble_extract`; it is disabled in
+`config/tools.yaml` by default. For example, after securely configuring credentials:
+
+```powershell
+$env:WEB_SEARCH_PROVIDER = 'nimble'
+python -m core.runner --backend lm_studio --task "Find the official source for a research paper and cite its URL" --tools web_search fetch
+```
+
+You.com remains deferred as requested. Nimble Map, Crawl, templates, rendering,
+and delegated research are also tracked individually in [todo.md](todo.md).
+
+### Local setup and verification
+
+From the project folder in VS Code's PowerShell terminal:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[web-tools,dev]"
+python -m debugging.dashboard.server
+```
+
+Use the local address printed by the server. After updating an existing checkout,
+restart the server and refresh the browser with Ctrl+F5. If dependencies such as
+`dotenv` are missing, run the editable install above using the same environment.
+See the existing installation sections for platform-specific prerequisites.
+
+Regression checks use isolated credentials and mocked providers; they do not
+validate live billing or consume real API credits:
+
+```powershell
+python -m pytest -q
+ruff check .
+```
+
+Optional DOM checks: `node tests/dashboard_ui.cjs`, plus the Maintenance and model
+price DOM scripts after rendering their fixtures. Install the optional local jsdom
+fixture dependency as described at the top of those scripts.
