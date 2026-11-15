@@ -33,6 +33,7 @@ class OpenRouterBackend(BaseBackend):
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
+        self.record_usage(response)
         if not response.choices:
             raise ValueError("OpenRouter returned no completion choices. Retry or choose another model.")
         choice = response.choices[0]

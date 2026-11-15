@@ -35,6 +35,7 @@ class TogetherBackend(BaseBackend):
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
+        self.record_usage(response)
         return response.choices[0].message.content
 
     def stream(self, messages: list[dict]):

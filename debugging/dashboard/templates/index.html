@@ -768,6 +768,14 @@
         setStatus('error', 'A task is required before running the agent.');
         return;
       }
+      if (window.playpenSecrets) {
+        try {
+          if (!await window.playpenSecrets.preflight(payload)) return;
+        } catch (error) {
+          setStatus('error', 'API readiness check failed: ' + error.message);
+          return;
+        }
+      }
       const controller = new AbortController();
       activeRun = controller;
       runButton.disabled = true;
@@ -804,6 +812,7 @@
         } else {
           setStatus('error', record.status === 'cancelled' ? 'Run stopped' : 'Execution failed');
           resultOutput.textContent = record.message || 'The run did not finish.';
+          if (record.api_setup_required && window.playpenSecrets) window.playpenSecrets.open(payload);
         }
         metaOutput.textContent = 'Session: ' + (record.session_id || sessionId) + (record.trace_path ? ' | Trace: ' + record.trace_path : '') + (record.trace_save_error ? ' | ' + record.trace_save_error : '') + (record.dropped_events ? ' | Some live events were omitted; inspect the saved trace.' : '');
       }
@@ -1412,5 +1421,6 @@
       loadModels(true);
     });
   </script>
+{% include 'credential_widget.html' %}
 </body>
 </html>

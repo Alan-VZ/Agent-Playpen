@@ -30,6 +30,7 @@ class OllamaBackend(BaseBackend):
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
+        self.record_usage(response)
         return response.choices[0].message.content
 
     def stream(self, messages: list[dict]):
@@ -44,4 +45,4 @@ class OllamaBackend(BaseBackend):
             delta = chunk.choices[0].delta
             if delta.content:
                 yield delta.content
-                
+

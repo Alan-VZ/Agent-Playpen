@@ -1,0 +1,10 @@
+{
+  "task": "B03",
+  "seed": 1,
+  "documents": {
+    "app.json": "{\"port\":8080,\"debug\":true}",
+    "deploy.json": "{\"port\":9090,\"environment\":\"production\"}",
+    "README.md": "Production must disable debug. App and deployment ports must match. Port 8080 itself is allowed."
+  },
+  "prompt": "Inspect all files read-only. Return JSON {\"findings\":[{\"file\":\"name\",\"line\":1,\"issue\":\"port_mismatch or production_debug\"}],\"port_8080_allowed\":true}. Write the same JSON to report.json using write_artifact. Report port mismatch against deploy.json and debug against app.json. Do not report port 8080 as inherently invalid.\nUse read_fixture(name) to inspect these inputs: app.json, deploy.json, README.md\nFixture seed: 1.\nReturn only the requested JSON as your final answer. Use concise public explanations."
+}

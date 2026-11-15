@@ -4,8 +4,8 @@ from tools.tool_registry import ToolRegistry
 
 class ToolExecutor:
     """
-    Executes tools safely with a configurable timeout.
-    Uses concurrent.futures to enforce the deadline.
+    Waits for tools with a configurable timeout.
+    A timed-out thread may continue; this is not an isolation boundary.
     """
 
     def __init__(self, registry: ToolRegistry, default_timeout: int = 30):
@@ -44,4 +44,4 @@ class ToolExecutor:
             # This prevents hangs if the tool is stuck.
             # Trade-off: a timed-out thread may keep running in the background.
             executor.shutdown(wait=False)
-                
+

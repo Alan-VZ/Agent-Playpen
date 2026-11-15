@@ -26,6 +26,17 @@
 
 ## Unreleased
 
+- Added a hamburger-menu Secrets/API inventory dialog with provider accordions,
+  secure entry and replacement, required-credential preflight, dated access checks,
+  review dates, explicit search verification, and distinct authentication/quota/network states.
+- Added five versioned objective baseline tasks, seeded repetitions, bounded
+  1–10-agent teams with critique/synthesis, shared usage reservations, spawned
+  attempt workers, live attributed activity, resumable CLI experiments, comparison
+  dashboard, and escaped HTML/CSV/JSON reports. Live provider/model qualification
+  remains distinct from offline scripted harness validation.
+- Record available non-streaming provider token usage without inventing missing data;
+  clarify ordinary tool-timeout and Python-tool isolation limitations.
+
 - Added token prices to model choices and a cross-backend comparison screen:
   provider catalog/official-page rates, labeled reference fallback, cache rates,
   source/freshness, cost sorting, base text estimates, and explicit unknown prices.

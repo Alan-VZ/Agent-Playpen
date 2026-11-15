@@ -47,6 +47,7 @@ class AnthropicBackend(BaseBackend):
             system=system,
             messages=turns,
         )
+        self.record_usage(response)
         return response.content[0].text
 
     def stream(self, messages: list[dict]):

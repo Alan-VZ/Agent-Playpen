@@ -145,7 +145,11 @@ async def local_session_boundary(request: Request, call_next):
             return JSONResponse(status_code=400, content={"message": "Credentials are not accepted in URLs. Use the credential manager."})
         # Register all available secrets so accidental echoes are redacted.
         for name in MANAGED_KEYS:
-            get_credential(name)
+            try:
+                get_credential(name)
+            except CredentialError:
+                # Inventory and repair routes must remain usable when the vault fails.
+                pass
     try:
         response = await call_next(request)
         if request.url.path.startswith("/api/") and "application/json" in response.headers.get("content-type", ""):
@@ -525,6 +529,14 @@ def _execute_run(config: AgentConfig, on_event=None, cancel_event=None):
         message = _run_error(exc)
         tracer.on_error(RuntimeError(message))
         payload.update(status="error", message=message, error_type=type(exc).__name__, result="")
+        code = getattr(exc, "status_code", None)
+        if code in {401, 402, 403, 429} and config.backend in maintenance.CATALOG:
+            from debugging.dashboard.readiness import Inventory, classify
+            try:
+                Inventory(ROOT).update(config.backend, status=classify(code), checked_at=maintenance.now_iso(), scope="operation test")
+            except OSError:
+                pass
+            payload["api_setup_required"] = code == 401
     finally:
         payload["warning_count"] = sum(event.type == "warning" for event in tracer.events)
         try:
@@ -708,6 +720,11 @@ def _persist_key(name, value):
             provider = "google"
         if provider:
             _maintenance_event(provider, "key_saved" if value else "key_cleared")
+            from debugging.dashboard.readiness import Inventory
+            try:
+                Inventory(ROOT).invalidate(provider)
+            except OSError:
+                pass
         _write_env_file({name: None})
         os.environ.pop(name, None)
 
@@ -776,6 +793,11 @@ def maintenance_review(payload: MaintenanceReview):
                                next_review=payload.next_review.isoformat() if payload.next_review else None)
     if not saved:
         return JSONResponse(status_code=503, content={"message": "Could not save maintenance metadata. Check the traces directory permissions. Credentials were not changed."})
+    from debugging.dashboard.readiness import Inventory
+    try:
+        Inventory(ROOT).update(payload.provider, next_review=payload.next_review.isoformat() if payload.next_review else None)
+    except OSError:
+        pass
     return {"status": "saved", "message": "Checklist saved. Portal completion is self-reported; API access is checked separately."}
 
 
@@ -924,6 +946,11 @@ async def save_env(request: Request):
         "path": str(ENV_PATH),
         "message": "Settings merged into .env. Existing values were preserved.",
     }
+
+
+from debugging.dashboard import experiments  # noqa: E402
+import sys  # noqa: E402
+experiments.install(sys.modules[__name__])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,12 @@
+{
+  "name": "team-local",
+  "agents": [
+    {"backend": "lm_studio", "model": "local-model", "role": "Independent researcher: inspect all evidence."},
+    {"backend": "lm_studio", "model": "local-model", "role": "Independent verifier: look for contradictions and missing facts."},
+    {"backend": "lm_studio", "model": "local-model", "role": "Critic and synthesizer: verify reports and preserve evidence-backed dissent."}
+  ],
+  "max_concurrency": 2,
+  "timeout_seconds": 180,
+  "token_reservation_limit": 300000,
+  "tool_request_limit": 120
+}

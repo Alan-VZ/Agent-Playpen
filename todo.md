@@ -1,5 +1,20 @@
 # Upgrade roadmap
 
+## November 15: baseline evaluation and credential inventory
+
+- [x] Provider inventory with hamburger-menu accordions, key-site links, masked
+  secure entry, required-key preflight, distinct failure states, and review dates.
+- [x] Five frozen synthetic tasks with objective scoring and 1/5/20-repeat modes.
+- [x] Benchmark-only 1–10-agent teams with independent research, critique/synthesis,
+  concurrency control, shared reservations, attributed evidence, and worker supervision.
+- [x] Dashboard configuration builder, comparison/evidence views, CLI resume, and
+  HTML/CSV/JSON exports. See [usage and boundaries](docs/baseline-tests.md).
+- [ ] Real-model five-repeat qualification and matched-budget model/team comparison.
+- [ ] Real-user credential-vault persistence and opt-in live provider/billing checks.
+
+The older sections below remain the broader roadmap. Benchmark-only team support
+does not complete general-purpose parallel task execution or account-wide budgets.
+
 Updated: 2026-11-01. Checked items are implemented. Unchecked items are future work;
 research proposals and provider marketing are not runtime capabilities.
 

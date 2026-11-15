@@ -2,14 +2,13 @@ import re
 from planner.base_planner import BasePlanner, Plan, Step, Thought
 
 COT_SYSTEM_PROMPT = """You are an expert problem solver.
-Given a task, first write out your complete chain of thought —
-explain every reasoning step clearly. Then list the concrete
-actions to take as a numbered plan.
+Given a task, provide a concise public rationale and list the concrete
+actions to take as a numbered plan. Do not disclose private internal reasoning.
 
 Format your response as:
 
 ## Reasoning
-<your full chain of thought>
+<brief rationale, assumptions, and verifiable checks>
 
 ## Plan
 1. <first action>

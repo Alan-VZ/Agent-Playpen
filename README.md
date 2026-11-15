@@ -157,7 +157,7 @@ The CLI uses the ReAct planner by default.
 
 Each tool extends `tools/base_tool.py` and implements a `run(self, **kwargs) -> str` method. Tools are converted into OpenAI-style function schemas via `to_openai_schema()` so the model can call them using structured arguments.
 
-The tool registry keeps a set of available tools and the executor runs them in a safe thread with a timeout.
+The tool registry keeps a set of available tools and the executor waits for a worker thread with a timeout. A timed-out operation may continue; this is not process termination or filesystem isolation.
 
 Built-in tools currently include:
 
@@ -165,7 +165,7 @@ Built-in tools currently include:
 - fetch web page content
 - read a file from allowed directories
 - write a file
-- Python REPL sandbox
+- Python subprocess tool (pattern filtering is not a security sandbox; unavailable in the dashboard)
 - calculator
 - datetime utilities
 
@@ -670,9 +670,15 @@ see [Backend setup and troubleshooting](docs/backend-setup.md).
 
 ## November 2026 upgrade status
 
-The current dashboard runs **one agent per task**. Parallel execution and Bayesian
-consensus remain planned work, not enabled runtime features. See [todo.md](todo.md)
-for the implementation sequence and acceptance criteria for 1-10 agents.
+The ordinary workspace runs **one agent per task**. The new **Baseline tests** page
+supports bounded 1–10-agent benchmark configurations, independent research followed
+by critique/synthesis, repeated objective scoring, shared reservations, and HTML/CSV/JSON
+comparisons. Bayesian consensus and general-purpose parallel task execution remain
+future work. See [baseline tests and API inventory](docs/baseline-tests.md).
+
+Use **☰ Menu → Secrets & API inventory** for expandable provider sections, secure
+key entry, key-site links, explicit access checks, missing/rejected-key launch repair,
+and dated inventory reviews. This extends Maintenance and uses the same native OS vault.
 
 Implemented features include live model/tool activity, cancellation, protected local
 API routes, native encrypted credential storage, provider Maintenance, model price
