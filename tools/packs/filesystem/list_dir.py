@@ -1,3 +1,4 @@
+from config.security import check_sensitive_path
 # list_dir.py
 from pathlib import Path
 from tools.base_tool import BaseTool
@@ -26,6 +27,7 @@ class ListDirTool(BaseTool):
         ]
 
     def _check_allowed(self, path: Path):
+        check_sensitive_path(path)
         resolved = path.resolve()
         for allowed in self.allowed_dirs:
             try:
@@ -47,4 +49,3 @@ class ListDirTool(BaseTool):
             for e in entries
         ]
         return "\n".join(lines) if lines else "(empty directory)"
-    

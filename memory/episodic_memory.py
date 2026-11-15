@@ -12,7 +12,7 @@ class Episode:
     summary: str = ""
     tags: list = field(default_factory=list)
     timestamp: str = field(
-        default_factory=lambda: datetime.datetime.utcnow().isoformat()
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
     )
     embedding: list = field(default_factory=list)
 
@@ -47,4 +47,4 @@ class EpisodicMemory(BaseMemory):
 
     def retrieve(self, query: str, top_k: int = 5) -> list:
         return [ep.summary for ep in self.retrieve_similar(query, top_k)]
-    
+

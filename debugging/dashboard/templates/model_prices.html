@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Model price comparison · Agent Playpen</title>
+<style>
+  :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0c1118;color:#e5edf7}body{margin:0;line-height:1.5}main{max-width:1380px;margin:auto;padding:28px 22px 60px}a{color:#79baff}h1{margin-bottom:8px}.note{color:#b7c9dd;font-size:.9rem}.warning{border-left:3px solid #e0b75c;padding:10px 16px;background:#302714}.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:end;margin:22px 0}label{display:flex;flex-direction:column;gap:6px}input,select,button{font:inherit;color:inherit;background:#202e40;border:1px solid #41566e;border-radius:6px;padding:8px 11px}button{cursor:pointer}button:disabled{opacity:.5}input[type=number]{width:150px}#query{min-width:230px}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #79baff;outline-offset:3px}.table-wrap{overflow:auto;max-height:68vh;border:1px solid #334155;border-radius:8px}table{border-collapse:collapse;width:100%;font-size:.88rem}th,td{text-align:left;padding:12px;vertical-align:top;border-bottom:1px solid #334155}th{position:sticky;top:0;background:#1a2636;z-index:1}td small{display:block;color:#b7c9dd;margin-top:6px;max-width:38ch}code{overflow-wrap:anywhere}#status{min-height:25px}#table-body tr:hover{background:#152638}.rates{white-space:nowrap}summary{cursor:pointer;color:#b7c9dd}details{margin-top:8px}footer{margin-top:22px}@media(max-width:700px){main{padding:20px 12px}input[type=number]{width:130px}}
+</style></head><body><main>
+<nav><a href="/">← Agent workspace</a> · <a href="/setup">Account and search costs</a> · <a href="/maintenance">Maintenance</a></nav>
+<h1>Model prices across backends</h1>
+<p>Compare <strong>USD per 1 million text tokens</strong>. Input and output have separate prices. Model IDs and rates belong to the selected backend; the same model can cost differently on different sites.</p>
+<p class="warning">Provider catalogs and official pricing pages are used where an exact model match is available. Fallbacks from LiteLLM's community registry are labeled <strong>Reference estimate</strong>; they may be out of date or unavailable to your account. Open the source before buying. Azure needs your deployment/region quote; local infrastructure costs are separate.</p>
+<div class="controls">
+  <label>Backend<select id="backend"><option value="all">All supported backends</option>{% for backend in backends %}<option value="{{ backend }}">{{ backend }}</option>{% endfor %}</select></label>
+  <label>Find a model<input id="query" type="search" placeholder="Model ID or backend"></label>
+  <label>Price source<select id="source"><option value="all">All sources</option><option value="published">Published provider prices</option><option value="reference">Reference estimates</option><option value="other">Unknown / account-specific / local</option></select></label>
+  <label>Sort<select id="sort"><option value="model">Backend / model</option><option value="input">Input price, low first</option><option value="output">Output price, low first</option><option value="estimate">Base text estimate, low first</option></select></label>
+  <button id="refresh" type="button">Refresh public prices</button>
+  <button id="load-account" type="button" disabled>Load selected backend's model list</button>
+</div>
+<div class="controls">
+  <label>Assumed input tokens<input id="input-tokens" type="number" min="0" max="1000000000" value="1000"></label>
+  <label>Assumed output tokens<input id="output-tokens" type="number" min="0" max="1000000000" value="1000"></label>
+</div>
+<p class="note">The estimate multiplies the displayed base rates by these token counts. It excludes long-context tier adjustments, cache effects, additional reasoning tokens, tool/search/media charges, tax, top-up fees, discounts, and contracts. This is not a monthly bill or spending limit. Retrieval time is not a reference price's review date.</p>
+<p id="status" role="status" aria-live="polite">Loading public price data…</p><p id="sources" class="note"></p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Model prices; scroll to see all columns"><table>
+  <thead><tr><th>Backend / model ID</th><th>Input / 1M</th><th>Output / 1M</th><th>Cached input / 1M</th><th>Cache write / 1M</th><th>Base text estimate</th><th>Source and limitations</th></tr></thead>
+  <tbody id="table-body"></tbody>
+</table></div>
+<footer class="note">Public comparison uses no API keys. Loading an account's model list uses that backend's existing credentials, never a model completion. No key is sent to the public reference registry. Selecting a row here does not run an agent or change its configuration.</footer>
+<script nonce="{{ session_token }}">
+  const byId = id => document.getElementById(id);
+  const sessionToken = '{{ session_token }}';
+  let models = []; let busy = false; let loadMessage = '';
+  function money(value) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? '$' + (value > 0 && value < 1e-10 ? value.toExponential(3) : value.toLocaleString('en-US', { maximumFractionDigits: 10 })) : 'Unavailable'; }
+  function tokenCount(id) { const text = byId(id).value.trim(); const value = Number(text); return text !== '' && Number.isFinite(value) && value >= 0 && value <= 1e9 ? value : null; }
+  function estimate(price) { const input = tokenCount('input-tokens'); const output = tokenCount('output-tokens'); return input !== null && output !== null && typeof price.input_per_million === 'number' && typeof price.output_per_million === 'number' ? (input * price.input_per_million + output * price.output_per_million) / 1e6 : null; }
+  function link(parent, label, target) { try { const url = new URL(target); if (url.protocol !== 'https:' || url.username || url.password) return; const a = document.createElement('a'); a.textContent = label; a.href = url.href; a.target = '_blank'; a.rel = 'noopener noreferrer'; parent.append(a); } catch {} }
+  function cell(row, text, className) { const td = document.createElement('td'); td.textContent = text; if (className) td.className = className; row.append(td); return td; }
+  function render() {
+    const backend = byId('backend').value; const query = byId('query').value.trim().toLowerCase(); const source = byId('source').value;
+    let rows = models.filter(row => (backend === 'all' || row.backend === backend) && `${row.backend} ${row.id}`.toLowerCase().includes(query) &&
+      (source === 'all' || source === 'other' && !['published', 'reference'].includes(row.pricing.status) || row.pricing.status === source));
+    const sort = byId('sort').value;
+    rows.sort((a, b) => {
+      if (sort !== 'model') { const x = sort === 'estimate' ? estimate(a.pricing) : a.pricing[sort + '_per_million']; const y = sort === 'estimate' ? estimate(b.pricing) : b.pricing[sort + '_per_million'];
+        const difference = (typeof x === 'number' ? x : Infinity) - (typeof y === 'number' ? y : Infinity); if (difference) return difference; }
+      return (a.backend + '/' + a.id).localeCompare(b.backend + '/' + b.id);
+    });
+    const body = byId('table-body'); body.replaceChildren();
+    const fragment = document.createDocumentFragment();
+    for (const item of rows) {
+      const row = document.createElement('tr'); const price = item.pricing;
+      const identity = cell(row, item.backend); const model = document.createElement('code'); model.textContent = item.id; identity.append(document.createElement('br'), model);
+      for (const field of ['input_per_million', 'output_per_million', 'cache_read_per_million', 'cache_write_per_million']) cell(row, money(price[field]), 'rates');
+      cell(row, money(estimate(price)), 'rates');
+      const sourceCell = cell(row, price.status === 'reference' ? 'Reference estimate' : price.source_label);
+      if (price.stale) sourceCell.append(document.createTextNode(' · STALE'));
+      const stamp = document.createElement('small'); stamp.textContent = price.fetched_at ? 'Retrieved ' + price.fetched_at : 'No published numeric quote'; sourceCell.append(stamp);
+      sourceCell.append(document.createElement('br')); link(sourceCell, 'Source ↗', price.source_url);
+      sourceCell.append(document.createTextNode(' · ')); link(sourceCell, 'Official pricing ↗', price.official_url);
+      const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Notes / tier rates'; details.append(summary);
+      for (const text of price.notes || []) { const p = document.createElement('small'); p.textContent = text; details.append(p); }
+      for (const tier of price.tiers || []) { const p = document.createElement('small'); p.textContent = `${tier.field}: ${money(tier.per_million)} / 1M`; details.append(p); }
+      sourceCell.append(details); fragment.append(row);
+    }
+    body.append(fragment);
+    byId('status').textContent = `${rows.length} shown of ${models.length} entries. ${loadMessage}`;
+    byId('load-account').disabled = busy || backend === 'all';
+  }
+  async function api(url) { const response = await fetch(url, { headers: { 'X-Playpen-Token': sessionToken }, credentials: 'same-origin' }); const data = await response.json(); if (!response.ok) throw new Error(data.message || data.detail || 'Price request failed.'); return data; }
+  async function run(fn) { if (busy) return; busy = true; byId('refresh').disabled = true; byId('load-account').disabled = true; byId('backend').disabled = true;
+    try { await fn(); } catch (error) { loadMessage = error.message || 'Prices unavailable.'; } finally { busy = false; byId('refresh').disabled = false; byId('backend').disabled = false; render(); } }
+  async function loadPublic(refresh) { await run(async () => { byId('status').textContent = 'Loading public catalogs…'; const data = await api('/api/model-prices' + (refresh ? '?refresh=true' : '')); models = data.models || []; loadMessage = data.message || '';
+    byId('sources').textContent = Object.entries(data.sources || {}).map(([name, source]) => `${name}: ${source.fetched_at || 'unavailable'}${source.stale ? ' · stale or unavailable' : ''}`).join(' | '); }); }
+  byId('refresh').addEventListener('click', () => loadPublic(true));
+  byId('load-account').addEventListener('click', () => run(async () => { const backend = byId('backend').value; if (backend === 'all') return; byId('status').textContent = 'Loading the selected backend model list…';
+    const data = await api('/api/models?' + new URLSearchParams({ backend }));
+    const details = data.model_details || [];
+    if (details.length) models = models.filter(row => row.backend !== backend).concat(details);
+    loadMessage = `${backend}: ${data.message || ''} Availability source: ${data.source || 'unknown'}. Price provenance is shown per row.`;
+  }));
+  for (const id of ['query', 'input-tokens', 'output-tokens']) byId(id).addEventListener('input', render);
+  for (const id of ['backend', 'source', 'sort']) byId(id).addEventListener('change', render);
+  loadPublic(false);
+</script></main></body></html>

@@ -1,0 +1,14 @@
+{
+  "suite": "baseline-v1",
+  "rubric": "1.0",
+  "generator": "benchmarks.tasks.fixture",
+  "seed_policy": "Fresh attempt state; repetition index plus one. Input and contract hashes stored in every experiment.",
+  "tasks": [
+    {"id":"B01","title":"Orders reconciliation","inputs":["orders.csv"],"scorer":"exact numeric and structural checks"},
+    {"id":"B02","title":"Dated research evidence","inputs":["archive","notice","catalog"],"scorer":"facts and curated supporting sentences"},
+    {"id":"B03","title":"Read-only project inspection","inputs":["app.json","deploy.json","README.md"],"artifact":"report.json","scorer":"findings, non-issue, file/line evidence and matching artifact"},
+    {"id":"B04","title":"Recovery and empty evidence","inputs":["primary","empty","backup"],"fault":"first primary read fails for each independent worker","scorer":"answer, observed failure, empty response and bounded per-worker requests"},
+    {"id":"B05","title":"Conflicting evidence and unknowns","inputs":["vote-a","vote-b","authority"],"scorer":"authoritative constraint, cited decision and explicit unknown"}
+  ],
+  "answer_key_policy": "Evaluator-only expected() function; never registered as an agent tool or placed in fixture documents. Expected values appear only in completed evaluation evidence."
+}

@@ -4,7 +4,7 @@
 2. Import and subclass BaseBackend from backends.base_backend
 3. Implement __init__(self, **config), chat(self, messages) -> str, and optionally stream(self, messages)
 4. Register in BackendFactory.REGISTRY: "my_backend": MyBackend
-5. Add settings to config/settings.py and .env.example
+5. Add non-secret settings to config/settings.py and .env.example; register credential names in config/credentials.py and the dashboard manager.
 6. Add a preset block to config/backends.yaml
 7. Test the new backend:
 
@@ -23,6 +23,8 @@ Minimal template:
             """Minimal backend template — replace with real API calls."""
 
             def __init__(self, api_key: str = "", model: str = "default-model"):
+                # Resolve registered keys using config.credentials.require_credential.
+                # Never log keys, export them, or copy them into child environments.
                 self.api_key = api_key
                 self.model = model
 
@@ -103,3 +105,9 @@ Minimal template with JSON Schema parameters:
 3. Add it to the Guardrails.check_input() loop: for fn in [check_prompt_injection, check_pii, check_my_rule]
 4. For output guardrails: similarly add to Guardrails.check_output()
 5. Add any configurable thresholds or pattern lists to config/settings.py and .env.example
+Credential/security extension rules
+
+See docs/credentials-and-openrouter.md and docs/testing.md. Use native encrypted
+storage and explicit trusted provider endpoints. Agent-accessible arbitrary-code
+tools invalidate credential isolation; the dashboard therefore excludes them.
+Do not expose secret values through status, errors, traces, or config exports.

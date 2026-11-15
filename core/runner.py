@@ -1,5 +1,9 @@
 import argparse
 import sys
+from pathlib import Path
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backends.backend_factory import BackendFactory
 from core.agent import Agent
@@ -12,6 +16,7 @@ from planner.tree_planner import TreePlanner
 from tools.tool_registry import ToolRegistry
 from tools.packs.web.search_tool import WebSearchTool
 from tools.packs.web.fetch_tool import FetchTool
+from tools.packs.web.nimble_extract import NimbleExtractTool
 from tools.packs.filesystem.read_file import ReadFileTool
 from tools.packs.filesystem.write_file import WriteFileTool
 from tools.packs.code.python_repl import PythonReplTool
@@ -28,6 +33,7 @@ PLANNERS = {
 TOOL_MAP = {
     "web_search": WebSearchTool,
     "fetch": FetchTool,
+    "nimble_extract": NimbleExtractTool,
     "read_file": ReadFileTool,
     "write_file": WriteFileTool,
     "python_repl": PythonReplTool,
@@ -50,6 +56,9 @@ def parse_args():
         default="lm_studio",
         choices=list(BackendFactory.REGISTRY.keys()),
         help="Which LLM backend to use (default: lm_studio)",
+    )
+    parser.add_argument(
+        "--model", default=None, help="Provider model ID, for example an OpenRouter model slug",
     )
     parser.add_argument(
         "--planner",
@@ -76,7 +85,7 @@ def main():
     args = parse_args()
 
     # --- Backend ---
-    backend = BackendFactory.create(args.backend)
+    backend = BackendFactory.create(args.backend, **({"model": args.model} if args.model else {}))
 
     # --- Planner ---
     planner_cls = PLANNERS[args.planner]

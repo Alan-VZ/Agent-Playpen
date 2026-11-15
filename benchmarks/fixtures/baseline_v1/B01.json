@@ -1,0 +1,8 @@
+{
+  "task": "B01",
+  "seed": 1,
+  "documents": {
+    "orders.csv": "id,category,status,amount\nA,parts,paid,37\nA,parts,paid,37\nB,parts,refund,5\nC,service,paid,12\nD,parts,cancelled,99\n"
+  },
+  "prompt": "Read orders.csv. Deduplicate by id keeping the first row; count paid/refund orders, subtract positive refunds, exclude cancelled. Return JSON {\"net_total\":number,\"valid_orders\":integer,\"duplicate_ids\":[strings],\"category_totals\":{\"parts\":number,\"service\":number}}.\nUse read_fixture(name) to inspect these inputs: orders.csv\nFixture seed: 1.\nReturn only the requested JSON as your final answer. Use concise public explanations."
+}

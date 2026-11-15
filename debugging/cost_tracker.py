@@ -1,5 +1,5 @@
 # Cost Tracker (cost_tracker.py)
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 PRICE_TABLE = {

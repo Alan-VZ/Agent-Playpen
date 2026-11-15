@@ -7,10 +7,18 @@
 __pycache__/
 *.py[cod]
 .venv/
+.venv-test/
+.test-tmp/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
 venv/
 
 # Agent Playpen runtime output
 traces/
+benchmark-results/
 chroma_data/
 config/web_agent_config.json
 

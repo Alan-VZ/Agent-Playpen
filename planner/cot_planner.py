@@ -2,14 +2,13 @@ import re
 from planner.base_planner import BasePlanner, Plan, Step, Thought
 
 COT_SYSTEM_PROMPT = """You are an expert problem solver.
-Given a task, first write out your complete chain of thought —
-explain every reasoning step clearly. Then list the concrete
-actions to take as a numbered plan.
+Given a task, provide a concise public rationale and list the concrete
+actions to take as a numbered plan. Do not disclose private internal reasoning.
 
 Format your response as:
 
 ## Reasoning
-<your full chain of thought>
+<brief rationale, assumptions, and verifiable checks>
 
 ## Plan
 1. <first action>
@@ -55,10 +54,17 @@ class CoTPlanner(BasePlanner):
         if not steps:
             steps = [Step(index=0, description=task)]
 
-        return Plan(task=task, steps=steps, rationale=rationale)
+        plan = Plan(task=task, steps=steps, rationale=rationale)
+        ctx.metadata["cot_plan"] = plan
+        return plan
 
-    def next_step(self, ctx) -> Step:
-        return Step(index=ctx.iteration, description=ctx.task)
+    def next_step(self, ctx) -> Step | None:
+        plan = ctx.metadata.get("cot_plan")
+        if plan is None:
+            return Step(index=ctx.iteration, description=ctx.task)
+        if ctx.iteration >= len(plan.steps):
+            return None
+        return plan.steps[ctx.iteration]
 
     def format_thought_prompt(self, step: Step, ctx) -> list[dict]:
         """For CoT, each step gets its own focused prompt."""
@@ -69,6 +75,8 @@ class CoTPlanner(BasePlanner):
                 "content": (
                     f"Task: {ctx.task}\n"
                     f"Current step {step.index}: {step.description}\n"
+                    f"Observations: {ctx.observation_history}\n"
+                    f"Available tools: {getattr(self, 'tool_descriptions', '')}\n"
                     "State the tool to use and its arguments, "
                     "or write FINISH and the final answer."
                 ),
@@ -90,4 +98,4 @@ class CoTPlanner(BasePlanner):
         except json.JSONDecodeError:
             tool_args = {}
         return Thought(reasoning=raw, tool_name=tool_name, tool_args=tool_args)
-    
+

@@ -1,6 +1,6 @@
 # Memory Manager (memory_manager.py)
 import os
-from memory.in_memory import InMemoryStore
+import uuid
 from memory.conversation_buffer import ConversationBuffer
 from memory.vector_store import VectorStoreMemory
 from memory.episodic_memory import EpisodicMemory
@@ -44,7 +44,7 @@ class MemoryManager:
         """Store text in the named memory store."""
         if memory_type not in self.stores:
             raise KeyError(f"Memory store '{memory_type}' is not enabled.")
-        self.stores[memory_type].store(key="auto", value=text)
+        self.stores[memory_type].store(key=uuid.uuid4().hex, value=text)
 
     def retrieve(self, query: str, memory_type: str = None, top_k: int = 5) -> list:
         """
@@ -60,4 +60,4 @@ class MemoryManager:
         for store in self.stores.values():
             results.extend(store.retrieve(query, top_k))
         return results[:top_k]
-    
+

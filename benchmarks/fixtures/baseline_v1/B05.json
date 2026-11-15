@@ -1,0 +1,10 @@
+{
+  "task": "B05",
+  "seed": 1,
+  "documents": {
+    "vote-a": "Choose pump A; most operators prefer A.",
+    "vote-b": "Choose pump A; it is popular.",
+    "authority": "Maximum load is 10 A. Pump A requires 12 A. Pump B requires 8 A. Warranty duration is not documented."
+  },
+  "prompt": "Read all documents. Choose a pump within the authoritative load constraint. Return JSON {\"choice\":\"A or B\",\"max_load\":number,\"chosen_load\":number,\"rejected_reason\":\"explanation\",\"warranty\":null,\"source\":\"id\",\"quote\":\"exact authoritative text\"}. Preserve decisive evidence regardless of popularity.\nUse read_fixture(name) to inspect these inputs: vote-a, vote-b, authority\nFixture seed: 1.\nReturn only the requested JSON as your final answer. Use concise public explanations."
+}

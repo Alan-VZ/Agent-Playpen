@@ -28,7 +28,7 @@ echo.
 
 start "" /min powershell -NoProfile -ExecutionPolicy Bypass -Command "for($i=0;$i -lt 120;$i++){try{$c=New-Object Net.Sockets.TcpClient;$c.Connect('127.0.0.1',8765);$c.Close();Start-Process '%URL%';break}catch{Start-Sleep -Milliseconds 500}}"
 
-"%PY%" -m uvicorn debugging.dashboard.server:app --host 127.0.0.1 --port 8765
+"%PY%" -m uvicorn debugging.dashboard.server:app --host 127.0.0.1 --port 8765 --no-access-log
 
 echo.
 echo Server stopped.

@@ -1,0 +1,10 @@
+{
+  "task": "B02",
+  "seed": 1,
+  "documents": {
+    "archive": "2025-01-01: The library opens at 09:00. Superseded by notice.",
+    "notice": "2026-10-01: The library opens at 10:00. Closed on Sundays.",
+    "catalog": "The library lends books for 21 days."
+  },
+  "prompt": "Read sources. Prefer current notice over archive. Return JSON {\"opens\":\"HH:MM\",\"closed\":\"day\",\"loan_days\":integer,\"citations\":{\"opens\":{\"source\":\"id\",\"quote\":\"exact supporting sentence\"},\"closed\":{...},\"loan_days\":{...}}}. Cite each fact.\nUse read_fixture(name) to inspect these inputs: archive, notice, catalog\nFixture seed: 1.\nReturn only the requested JSON as your final answer. Use concise public explanations."
+}

@@ -1,4 +1,4 @@
-import os
+from config.credentials import require_credential
 import openai
 from backends.base_backend import BaseBackend
 
@@ -10,7 +10,7 @@ class TogetherBackend(BaseBackend):
                     mistralai/Mixtral-8x7B-Instruct-v0.1
     """
 
-    TOGETHER_BASE_URL = "https://api.together.xyz/v1"
+    TOGETHER_BASE_URL = "https://api.together.ai/v1"
 
     def __init__(
         self,
@@ -20,8 +20,9 @@ class TogetherBackend(BaseBackend):
         max_tokens: int = 4096,
     ):
         self.client = openai.OpenAI(
+            http_client=openai.DefaultHttpxClient(follow_redirects=False),
             base_url=self.TOGETHER_BASE_URL,
-            api_key=api_key or os.environ["TOGETHER_API_KEY"],
+            api_key=require_credential("TOGETHER_API_KEY", api_key or ""),
         )
         self.model = model
         self.temperature = temperature
@@ -34,6 +35,7 @@ class TogetherBackend(BaseBackend):
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
+        self.record_usage(response)
         return response.choices[0].message.content
 
     def stream(self, messages: list[dict]):
@@ -48,4 +50,3 @@ class TogetherBackend(BaseBackend):
             delta = chunk.choices[0].delta
             if delta.content:
                 yield delta.content
-                

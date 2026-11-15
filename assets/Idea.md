@@ -1,4 +1,9 @@
-﻿# Ideas for Agent Playpen Inspired by Sim
+> Historical concept notes. Current behavior is documented in
+> [the credential guide](../docs/credentials-and-openrouter.md) and
+> [the testing guide](../docs/testing.md). Keys are now saved in encrypted OS
+> storage; references below to plaintext key saves describe the older concept.
+
+# Ideas for Agent Playpen Inspired by Sim
 
 This note captures product ideas inspired by the public positioning and README of [simstudioai/sim](https://github.com/simstudioai/sim), adapted for Agent Playpen's simpler, local-first direction.
 
@@ -37,7 +42,7 @@ Agent Playpen should have a first-run wizard in the web UI that:
 
 - checks whether LM Studio or Ollama is reachable
 - helps the user select a backend
-- helps save API keys safely into `.env`
+- helps save API keys in encrypted OS storage
 - loads available models for the selected provider
 - suggests safe default tools
 - writes initial config automatically

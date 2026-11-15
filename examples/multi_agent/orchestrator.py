@@ -49,7 +49,7 @@ def main():
     )
     print("[Orchestrator] Routing to WriterWorker...")
     write_output = writer.run(write_task)
-    print(f"[WriterWorker] Done.\n")
+    print("[WriterWorker] Done.\n")
 
     print(f"[Orchestrator] Pipeline complete. Report at: {args.output}")
     print(f"[Final output]\n{write_output}")
@@ -57,4 +57,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connect OpenRouter · Agent Playpen</title>
+<style>:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0c1118;color:#e5edf7}main{max-width:700px;margin:50px auto;padding:24px;line-height:1.6}a{color:#79baff}</style></head>
+<body><main><h1>Connect OpenRouter</h1><p id="result" role="status" aria-live="polite">Finishing the authorized connection…</p><a href="/maintenance">Return to Maintenance</a></main>
+<script nonce="{{ session_token }}">
+  (async () => {
+    const parameters = new URLSearchParams(window.location.search);
+    const state = parameters.get('state'); const code = parameters.get('code');
+    history.replaceState(null, '', '/maintenance/oauth-callback');
+    const output = document.getElementById('result');
+    if (!state || !code) { output.textContent = 'Authorization was declined or incomplete. Start again from Maintenance if you want to connect.'; return; }
+    try {
+      const response = await fetch('/api/maintenance/openrouter/finish', { method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-Playpen-Token': '{{ session_token }}' }, body: JSON.stringify({ state, code }) });
+      const result = await response.json();
+      output.textContent = result.message || 'Connection could not be completed. Review Maintenance and the provider portal.';
+    } catch { output.textContent = 'Connection could not be completed. Check the Maintenance screen and OpenRouter portal before retrying.'; }
+  })();
+</script></body></html>

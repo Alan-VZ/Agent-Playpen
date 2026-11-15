@@ -6,10 +6,11 @@
 - For local models: LM Studio or Ollama running on your machine
 - For cloud APIs: API keys from your chosen provider
 
-## Create the project directory and enter it
+## Clone the complete repository and enter it
 
 ```bash
-mkdir agent-playpen && cd agent-playpen
+git clone https://github.com/Alan-VZ/Agent-Playpen.git
+cd Agent-Playpen
 ```
 
 ## Create and activate a virtual environment
@@ -24,27 +25,27 @@ source .venv/bin/activate        # Linux / macOS
 
 ```bash
 pip install -U pip
-pip install openai anthropic pydantic pydantic-settings structlog rich
+pip install -e ".[web-tools,dashboard,dev]"
 ```
 
 ## Install optional dependency groups
 
 | Group | Install Command | What It Enables |
-|-------|-----------------|-----------------|
-| web-tools | `pip install requests markdownify beautifulsoup4 duckduckgo-search` | WebSearchTool, FetchTool, ScraperTool |
-| code-tools | `pip install ruff` | LinterTool (PythonReplTool and ShellExecTool need no extra deps) |
-| vector-memory | `pip install chromadb sentence-transformers tiktoken` | ChromaDB vector store and local embeddings |
-| faiss-memory | `pip install faiss-cpu` | FAISS alternative to ChromaDB |
-| data-tools | `pip install pandas` | Enhanced CSV and data processing |
-| dashboard | `pip install fastapi uvicorn jinja2 python-dotenv` | Debug dashboard server and web UI |
-| groq | `pip install groq` | Groq backend |
-| together | `pip install together` | Together AI backend |
-| dev | `pip install pytest pytest-asyncio ruff mypy` | Test suite and linting tools |
+| --- | --- | --- |
+| web-tools | `python -m pip install -e ".[web-tools]"` | Supported search, page/PDF reading, and scraping dependencies |
+| code-tools | `python -m pip install -e ".[code-tools]"` | LinterTool; arbitrary Python/shell tools are not benchmark sandbox tools |
+| vector-memory | `python -m pip install -e ".[vector-memory]"` | ChromaDB vector store and local embeddings |
+| faiss-memory | `python -m pip install -e ".[faiss-memory]"` | FAISS and its embedding dependencies |
+| data-tools | `python -m pip install -e ".[data-tools]"` | Enhanced CSV and data processing |
+| dashboard | `python -m pip install -e ".[dashboard]"` | Dashboard server, templates, and retrieval dependencies |
+| groq | `python -m pip install -e ".[groq]"` | Optional Groq SDK dependencies |
+| together | `python -m pip install -e ".[together]"` | Optional Together SDK dependencies |
+| dev | `python -m pip install -e ".[dev]"` | Test suite, coverage, and linting tools |
 
 ## Install with all recommended extras
 
 ```bash
-pip install -e .[web-tools,dashboard,dev]
+python -m pip install -e ".[web-tools,dashboard,dev]"
 ```
 
 ## Copy and configure the environment file
@@ -53,13 +54,18 @@ pip install -e .[web-tools,dashboard,dev]
 cp .env.example .env
 ```
 
-Open `.env` in your editor and fill in:
+Use `.env` for non-secret settings, including local URLs and Azure deployment
+information. Save API keys using the dashboard credential manager or a hidden CLI
+prompt:
 
-- **LM_STUDIO_URL** — typically `http://localhost:1234/v1` (if running LM Studio locally)
-- **OPENAI_API_KEY** — if using OpenAI
-- **ANTHROPIC_API_KEY** — if using Anthropic
-- **GROQ_API_KEY** — if using Groq
-- **TAVILY_API_KEY**, **SERPAPI_API_KEY**, or **GOOGLE_API_KEY** + **GOOGLE_CSE_ID** — for web search (if enabled)
+```bash
+python -m config.credentials set OPENROUTER_API_KEY
+```
+
+Keys are stored in Windows Credential Locker, macOS Keychain, or Linux Secret
+Service, outside the repository. Saving fails if native encrypted storage is
+unavailable. Existing `.env` keys can be moved with **Migrate Legacy Keys**.
+See the [complete credential guide](docs/credentials-and-openrouter.md).
 
 ## Start LM Studio for local inference (optional)
 
@@ -67,6 +73,7 @@ Open `.env` in your editor and fill in:
 2. Download a model — **Mistral 7B Instruct** or **Qwen 2.5** are recommended for beginners
 3. Go to the **Local Server** tab and click **Start Server**
 4. Verify the server is running:
+
    ```bash
    curl http://localhost:1234/v1/models
    ```
@@ -76,10 +83,11 @@ Open `.env` in your editor and fill in:
 ### Start the web dashboard
 
 ```bash
-python -m debugging.dashboard.server --port 8765
+python -m debugging.dashboard.server
 ```
 
 Or use the **desktop shortcut** on Windows:
+
 - **Start Agent Playpen.cmd** — Located in the project root or on your desktop
 - Auto-detects if the server is already running
 - Opens the browser automatically
@@ -90,20 +98,44 @@ Open your browser to: `http://localhost:8765`
 
 ### Using the web dashboard
 
-1. **Select Backend** — Choose "lm_studio" (local) or a cloud provider
+1. **Select Backend** — Choose "lm_studio" (local) or a cloud provider such as "openrouter"; save its key with the credential manager before running
 2. **Load Models** — Click the **Load** button to discover available models
 3. **Select a Model** — Pick from the dropdown (filters as you type)
 4. **Configure Tools** — Check which tools to enable (web_search, fetch, read_file, etc.)
 5. **Enter Your Task** — Describe what you want the agent to do
-6. **Run Agent** — Click the button and watch it think
-7. **View Results** — See the final answer, reasoning steps, and execution trace
+6. **Run Agent** — Click the button and watch model/tool activity
+7. **View Results** — See the final answer, public action summaries, and execution trace
 
 **Features:**
+
 - Contextual help on every field (click the `?` icon)
-- API keys stored securely in `.env` (never sent to browser)
+- API keys saved in native encrypted OS storage; status does not return their values
 - Model discovery with live backend queries
-- Web search provider `auto` falls back through Google, Tavily, SerpAPI, then DuckDuckGo
+- Web search provider `auto` can use saved authenticated providers and key-free fallback; see [search providers](docs/search-providers.md) for ordering and cost implications
 - Save configurations as JSON for reuse
+
+### VS Code launch and tests
+
+Open this repository folder in VS Code after installing the Python and Python
+Debugger extensions. Create/install `.venv` as above. The Windows workspace
+settings select `.venv/Scripts/python.exe` and enable pytest discovery in `tests`.
+Choose **Agent Playpen: Local Dashboard** in Run and Debug and press F5. The launch
+configuration starts the dashboard from this repository and opens its local URL
+when Uvicorn reports readiness. Stop an existing server on port 8765 first.
+On other platforms, select the appropriate interpreter and adjust the Windows
+interpreter path in the shared settings/launch configuration.
+
+### API inventory and repeated baseline comparisons
+
+Use **☰ Menu → Secrets & API inventory** to expand a provider, open its key website,
+save its key in encrypted OS storage, check access, and record a review date.
+Saving a key does not trigger paid verification. Missing credentials required by
+the selected configuration open setup before a run; unused providers do not block it.
+
+Use **☰ Menu → Baseline tests** to compare single agents or 1–10-agent benchmark
+teams across five objective tasks, with 1/5/20 repeats and HTML/CSV/JSON exports.
+The ordinary task workspace remains single-agent. See [baseline tests and inventory](docs/baseline-tests.md)
+for configuration, CLI commands, execution boundaries, and live-validation limits.
 
 ## Option 2: CLI (For power users)
 
@@ -126,8 +158,10 @@ python core/runner.py \
 ```
 
 **CLI Arguments:**
+
 - `--task` — The task to solve
-- `--backend` — Backend name (lm_studio, openai, anthropic, groq, together, ollama, azure_openai)
+- `--backend` — Backend name (lm_studio, openrouter, openai, anthropic, groq, together, ollama, azure_openai)
+- `--model` — Provider model ID, including OpenRouter model slugs
 - `--planner` — Planning strategy (react, cot, tree)
 - `--tools` — Space-separated tool names
 - `--max-iter` — Max reasoning iterations (default: 10)
@@ -135,23 +169,35 @@ python core/runner.py \
 ## Troubleshooting
 
 ### LM Studio server won't start
+
 - Ensure you have a model downloaded in LM Studio
 - Check that port 1234 is not in use: `netstat -an | findstr 1234` (Windows) or `lsof -i :1234` (Mac/Linux)
 - Try restarting the LM Studio application
 
 ### Model dropdown shows 0 models
+
 - Verify LM Studio is running and the model is loaded
 - Check the Base URL is correct: `http://localhost:1234/v1`
 - The status message will show if using a fallback list vs. live query
 
 ### Web UI won't open
+
 - Ensure port 8765 is free: `netstat -an | findstr 8765` (Windows)
-- Try starting manually: `python -m debugging.dashboard.server --port 8765`
+- Try starting manually: `python -m debugging.dashboard.server`
 - Check that FastAPI is installed: `pip install fastapi uvicorn jinja2`
 
 ### Tool execution times out
-- Default timeout is 30 seconds; adjust `TOOL_TIMEOUT_SECONDS` in `.env`
+
+- The ordinary executor waits 30 seconds by default; a timed-out thread may continue running
 - Long fetches or large file operations may exceed the timeout
+- Benchmark task deadlines and worker-process supervision are configured separately on the Baseline tests page
+
+## Security and testing
+
+Unrestricted Python tools are disabled in the credential-enabled dashboard. The
+trusted CLI retains them; same-user arbitrary code can access your credentials.
+Run `python -m pytest -q` and `ruff check .` after installing the dev extras.
+See [testing](docs/testing.md) and [credential security](docs/credentials-and-openrouter.md).
 
 ## Next Steps
 

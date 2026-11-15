@@ -1,6 +1,7 @@
 # python_repl.py
 import subprocess
 import sys
+from config.credentials import subprocess_environment
 from tools.base_tool import BaseTool
 
 FORBIDDEN_IMPORTS = [
@@ -44,6 +45,7 @@ class PythonReplTool(BaseTool):
                 capture_output=True,
                 text=True,
                 timeout=timeout,
+                env=subprocess_environment(),
             )
             output = result.stdout or ""
             errors = result.stderr or ""
@@ -54,4 +56,4 @@ class PythonReplTool(BaseTool):
             return f"[TIMEOUT] Code execution exceeded {timeout} seconds."
         except Exception as e:
             return f"[ERROR] {e}"
-        
+

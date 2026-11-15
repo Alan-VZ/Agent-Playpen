@@ -1,4 +1,20 @@
 # Agent Playpen
+
+Before buying API access, open the dashboard's **Keys, costs & maintenance guide**
+or read [the setup and budget plan](docs/keys-costs-maintenance.md). It explains
+key counts, account URLs, free allowances, upfront payments, recurring charges,
+and a manual maintenance checklist, with dated primary-source pricing.
+
+Use **Maintenance: connect accounts & manage keys** to follow provider setup,
+save keys in encrypted OS storage, check access, and track review dates.
+OpenRouter supports direct secure authorization; other providers have guided
+portal setup. See [the Maintenance screen guide](docs/maintenance-screen.md).
+
+The model picker now displays input/output token prices, cache rates where
+listed, source, and retrieval time. **Compare model prices across backends**
+opens a searchable table with published provider rates, clearly labeled
+reference estimates, and base text-cost calculations. Unknown prices remain
+unavailable. See [model pricing](docs/model-pricing.md) for coverage and limits.
 <!-- cSpell:ignore Ollama, Groq -->
 
 <p align="center">
@@ -17,7 +33,7 @@ This repo is intentionally extensible. You can:
 - add memory layers for conversation history or vector retrieval
 - trace execution and track estimated token cost
 
-To add a new provider, create a backend class in the `backends/` package and register it in `backends/backend_factory.py` under `BackendFactory.REGISTRY`. The common pattern is to add provider-specific settings to `config/settings.py`, add example variables to `.env.example`, and then read them from the environment or the local `.env` file.
+To add a new provider, create a backend class in the `backends/` package and register it in `backends/backend_factory.py` under `BackendFactory.REGISTRY`. The common pattern is to add provider-specific settings to `config/settings.py`, add example variables to `.env.example`, and resolve secrets through `config/credentials.py`. See the [credential and OpenRouter guide](docs/credentials-and-openrouter.md).
 
 ## Why this project exists
 
@@ -118,6 +134,7 @@ Current built-in backends:
 
 - `lm_studio` — local OpenAI-compatible API served by LM Studio
 - `ollama` — local Ollama models
+- `openrouter` — OpenRouter through its official OpenAI-compatible endpoint
 - `openai` — OpenAI API
 - `anthropic` — Anthropic Claude API
 - `azure_openai` — Azure OpenAI
@@ -140,7 +157,7 @@ The CLI uses the ReAct planner by default.
 
 Each tool extends `tools/base_tool.py` and implements a `run(self, **kwargs) -> str` method. Tools are converted into OpenAI-style function schemas via `to_openai_schema()` so the model can call them using structured arguments.
 
-The tool registry keeps a set of available tools and the executor runs them in a safe thread with a timeout.
+The tool registry keeps a set of available tools and the executor waits for a worker thread with a timeout. A timed-out operation may continue; this is not process termination or filesystem isolation.
 
 Built-in tools currently include:
 
@@ -148,7 +165,7 @@ Built-in tools currently include:
 - fetch web page content
 - read a file from allowed directories
 - write a file
-- Python REPL sandbox
+- Python subprocess tool (pattern filtering is not a security sandbox; unavailable in the dashboard)
 - calculator
 - datetime utilities
 
@@ -226,8 +243,11 @@ Agent Playpen/
 │   ├── lm_studio.py
 │   ├── ollama.py
 │   ├── openai_backend.py
+│   ├── openrouter.py
 │   └── together_backend.py
 ├── config/
+│   ├── credentials.py
+│   ├── security.py
 │   ├── settings.py
 │   └── web_agent_config.json
 ├── core/
@@ -357,17 +377,17 @@ Copy it to `.env` and customize as needed:
 cp .env.example .env
 ```
 
-Example settings include:
+Keep `.env` for non-secret settings such as model IDs, local URLs, tool choices,
+and Azure deployment information. New credentials belong in encrypted OS storage:
 
-- `LM_STUDIO_URL`
-- `LM_STUDIO_MODEL`
-- `OPENAI_API_KEY`
-- `ANTHROPIC_API_KEY`
-- `GROQ_API_KEY`
-- `TOGETHER_API_KEY`
-- `TOOLS_ENABLED`
-- `TOOL_TIMEOUT_SECONDS`
-- `MAX_CONVERSATION_TOKENS`
+```bash
+python -m config.credentials set OPENROUTER_API_KEY
+```
+
+Alternatively use the dashboard's **Credential manager** and **Save** controls for
+all cloud and search providers. Use **Migrate Legacy Keys** for existing plaintext
+`.env` entries. See [OpenRouter and encrypted credentials](docs/credentials-and-openrouter.md)
+for provider names, migration, export protections, and security limits.
 
 ## Quick start with LM Studio
 
@@ -410,7 +430,7 @@ Agent Playpen includes a modern browser-based dashboard for configuration, execu
 Start the UI with:
 
 ```bash
-python -m debugging.dashboard.server --port 8765
+python -m debugging.dashboard.server
 ```
 
 Or use the **desktop shortcut** (`Start Agent Playpen.cmd`) on Windows.
@@ -421,10 +441,10 @@ Then open `http://localhost:8765` in your browser.
 
 **Configuration & Execution:**
 
-- Choose backend (LM Studio, Ollama, OpenAI, Anthropic, Groq, Together, Azure)
+- Choose backend (LM Studio, Ollama, OpenRouter, OpenAI, Anthropic, Groq, Together, Azure)
 - **Live model discovery** — Load available models from your backend in real time
-- **API key storage** — Save keys to `.env` securely (no re-entry needed)
-- **Auto search provider** — `web_search` can fall back through saved Google, Tavily, SerpAPI, and DuckDuckGo sources
+- **API key storage** — Enter/save/clear keys in native encrypted OS storage; no key-export endpoint
+- **Auto search provider** — `web_search` can fall back through configured search APIs, DDGS free engines, and scholarly Crossref metadata; see [provider setup](docs/search-providers.md)
 - Pick planner (ReAct, CoT, Tree-of-Thought) and enable tools
 - Configure temperature, max iterations, and token limits
 - Save configurations as JSON for reuse
@@ -437,8 +457,14 @@ Then open `http://localhost:8765` in your browser.
 
 **Observability:**
 
+- **Live activity** — Model status, tool calls/results, elapsed time, final answers,
+  and redacted errors appear while the run executes. Failed traces are retained.
+- **Stop Run** — Stops scheduling new steps; an in-flight call may finish.
+- **Single-agent workspace** — This page runs one agent per task. See the
+  [live activity guide](docs/live-activity.md) for diagnostics and streaming API details.
+
 - Run the agent and view the final answer in real time
-- Inspect the execution trace with full thought/action/observation history
+- Inspect action summaries, tool requests/results, and final responses in the live feed and saved trace
 - See which tools were called and what they returned
 
 This keeps the core implementation in Python while allowing non-technical users to configure and orchestrate agents entirely in the browser.
@@ -532,6 +558,14 @@ This enables a consistent pattern for dynamically registered functions. To add a
 
 This design makes it easy to extend the agent with domain-specific actions.
 
+## Research search and source retrieval
+
+Auto search uses saved search-provider credentials when available, then explicit
+DDGS free engines. Paper/journal/DOI queries can fall back to Crossref metadata.
+PDF sources are extracted as text; repeated identical search/fetch calls are
+cached within a run and stopped on the third attempt. A finished run is not a
+verified answer. See [search reliability](docs/search-reliability.md).
+
 ## Proposed multi-agent consensus
 
 The [Bayesian aggregation concept](docs/bayesian-agent-consensus.md) describes a
@@ -543,6 +577,9 @@ bounded peer review, and evaluation against voting
 baselines. This is a design proposal; the consensus engine is not implemented.
 
 ## Development workflow
+
+See the [testing guide](docs/testing.md) for dependency setup, coverage, package
+build checks, and the scope of offline versus live integration testing.
 
 Run static checks and tests if available:
 
@@ -557,6 +594,10 @@ ruff check .
 ```
 
 ## Security and safety notes
+
+Read the [credential security guide](docs/credentials-and-openrouter.md). The
+dashboard disables unrestricted Python execution and binds to loopback. Encryption
+protects stored keys but does not isolate malicious code running as your OS user.
 
 Because the project includes tools like filesystem access and Python execution, use this repository carefully:
 
@@ -583,8 +624,8 @@ Because the project includes tools like filesystem access and Python execution, 
 **Web UI enhancements:**
 
 - 🎯 **Live model discovery** — Load available models directly from LM Studio, Ollama, OpenAI, etc.
-- 🔐 **Persistent API keys** — Store keys securely in `.env`; the browser never sees them
-- 🔎 **Auto search fallback** — `web_search` can automatically try saved Google, Tavily, and SerpAPI credentials, then DuckDuckGo
+- 🔐 **Encrypted API keys** — Native OS credential storage, legacy migration, protected local API, and filtered exports
+- 🔎 **Auto search fallback** — `web_search` can automatically try configured search APIs, then the DDGS free-engine fallback; see [all providers](docs/search-providers.md)
 - ❓ **Comprehensive help** — Context-sensitive `?` buttons on every field with examples
 - 🎨 **Custom dropdown** — Functional model selector (replaces broken HTML5 datalist)
 
@@ -614,3 +655,102 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 Copyright © 2026 Alan Van Zandt
 
 You are free to use, modify, and distribute this software in accordance with the terms of the MIT License.
+
+### Additional search APIs
+
+The dashboard supports Serper, Brave Search API, Exa, Firecrawl Search, and OpenWeb
+Ninja alongside Tavily and SerpAPI. Choose a provider and click **Set search API
+key** to save its separate credential in native encrypted OS storage. These are
+direct API adapters; a generic MCP client is not included. See the
+[search API and MCP guide](docs/search-providers.md) for setup, provider contracts,
+automatic fallback costs, and the distinction between search and source reading.
+
+For provider accounts, endpoint addresses, local servers, and Azure deployment setup,
+see [Backend setup and troubleshooting](docs/backend-setup.md).
+
+## November 2026 upgrade status
+
+The ordinary workspace runs **one agent per task**. The new **Baseline tests** page
+supports bounded 1–10-agent benchmark configurations, independent research followed
+by critique/synthesis, repeated objective scoring, shared reservations, and HTML/CSV/JSON
+comparisons. Bayesian consensus and general-purpose parallel task execution remain
+future work. See [baseline tests and API inventory](docs/baseline-tests.md).
+
+Use **☰ Menu → Secrets & API inventory** for expandable provider sections, secure
+key entry, key-site links, explicit access checks, missing/rejected-key launch repair,
+and dated inventory reviews. This extends Maintenance and uses the same native OS vault.
+
+Implemented features include live model/tool activity, cancellation, protected local
+API routes, native encrypted credential storage, provider Maintenance, model price
+comparison, and actionable provider setup diagnostics. Provider switches retain
+separate model selections. Together uses `https://api.together.ai/v1`; Azure uses
+the form's actual resource endpoint and deployment name. Catalogs, example names,
+and published prices do not prove inference access or remaining account credits.
+
+### Nimble Search Lite and basic extraction
+
+1. Create a key in [Nimble API Keys](https://online.nimbleway.com/settings/api-keys).
+2. In Playpen, open **Maintenance**, choose **Nimble**, and save `NIMBLE_API_KEY`.
+   Keys go to the native encrypted OS credential store, not a committed file.
+3. Select **Nimble Search Lite (explicit selection)** in Web search provider.
+4. Leave ordinary `fetch` enabled for source reading. Enable `nimble_extract` only
+   when you want Nimble's basic extraction to consume account credits.
+5. Review Live activity and the Nimble Usage/Billing screens after a small test.
+
+Search explicitly requests `search_depth=lite`, `full_content=false`, and general
+focus. Nimble is excluded from automatic search fallback even if its key is saved.
+Basic extraction requests Markdown using `vx6` with JavaScript rendering disabled.
+There are no automatic rendering upgrades, document-parsing add-ons, crawls,
+research-agent runs, or retries. Both tools cache repeated successful responses
+(including completed empty searches) for their instance and allow at most **5 network
+attempts each per run**. A run with both tools can therefore make up to 10 Nimble
+requests. Cache hits do not use another network request. Extraction returns at most
+12,000 content characters. These are local request bounds, **not account-wide dollar
+limits**; repeated runs have fresh limits. Existing Live activity records calls and
+observations, but provider-wide usage/credit reconciliation is still TODO.
+
+Published planning rates reviewed November 1, 2026: Lite search $1.10/1,000 inputs,
+basic extraction $1/1,000 URLs. Trial allowance renewal, credit conversion, and
+exhaustion behavior must be verified in your account; the application does not
+claim it can read your balance. No live Nimble call is made by saving a key.
+Maintenance's explicit search test can consume one search request.
+See [Nimble setup and limits](docs/nimble.md) for contracts and sources.
+
+The CLI and YAML tool registry also recognize `nimble_extract`; it is disabled in
+`config/tools.yaml` by default. For example, after securely configuring credentials:
+
+```powershell
+$env:WEB_SEARCH_PROVIDER = 'nimble'
+python -m core.runner --backend lm_studio --task "Find the official source for a research paper and cite its URL" --tools web_search fetch
+```
+
+You.com remains deferred as requested. Nimble Map, Crawl, templates, rendering,
+and delegated research are also tracked individually in [todo.md](todo.md).
+
+### Local setup and verification
+
+From the project folder in VS Code's PowerShell terminal:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[web-tools,dev]"
+python -m debugging.dashboard.server
+```
+
+Use the local address printed by the server. After updating an existing checkout,
+restart the server and refresh the browser with Ctrl+F5. If dependencies such as
+`dotenv` are missing, run the editable install above using the same environment.
+See the existing installation sections for platform-specific prerequisites.
+
+Regression checks use isolated credentials and mocked providers; they do not
+validate live billing or consume real API credits:
+
+```powershell
+python -m pytest -q
+ruff check .
+```
+
+Optional DOM checks: `node tests/dashboard_ui.cjs`, plus the Maintenance and model
+price DOM scripts after rendering their fixtures. Install the optional local jsdom
+fixture dependency as described at the top of those scripts.

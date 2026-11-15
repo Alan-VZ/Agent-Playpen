@@ -1,0 +1,34 @@
+<style>.baseline-builder{border:1px solid #40536d;border-radius:8px;padding:18px;margin:14px 0}.baseline-builder .fields{display:flex;flex-wrap:wrap;gap:14px}.baseline-builder label{display:flex;flex-direction:column;gap:6px}.baseline-builder input{font:inherit;padding:9px;background:#131f30;color:#e4efff;border:1px solid #53667e;border-radius:5px;max-width:100%;box-sizing:border-box}.baseline-builder select{margin:0}.baseline-member{padding:14px;background:#162337;margin:12px 0;border-radius:6px}.baseline-member .model-input{min-width:240px}.baseline-builder h2{font-size:19px;margin-top:0}</style>
+<div id="baseline-builder"></div><button id="baseline-add-config" type="button">Add comparison configuration</button>
+<script nonce="{{ session_token }}">
+// Builders use the canonical non-secret JSON configuration so CLI and UI stay compatible.
+window.installBaselineBuilder=function(input){
+ const root=document.getElementById('baseline-builder');
+ const backends=['lm_studio','ollama','openrouter','openai','anthropic','groq','together','azure_openai'];
+ const element=(tag,text)=>{const e=document.createElement(tag);if(text)e.textContent=text;return e;};
+ function render(){let configs;try{configs=JSON.parse(input.value);}catch{return;}if(!Array.isArray(configs))return;root.replaceChildren();
+  const save=()=>{input.value=JSON.stringify(configs,null,2);};
+  function field(parent,label,value,change,type='text'){const l=element('label',label),i=document.createElement('input');i.type=type;i.value=value;i.addEventListener('change',()=>{change(type==='number'?Number(i.value):i.value);save();});l.append(i);parent.append(l);return i;}
+  function select(parent,label,value,choices,change){const l=element('label',label),s=document.createElement('select');for(const option of choices){const o=element('option',option);o.value=option;s.append(o);}s.value=value;s.addEventListener('change',()=>{change(s.value);save();});l.append(s);parent.append(l);return s;}
+  for(const [index,config] of configs.entries()){
+   const section=element('section');section.className='baseline-builder';section.append(element('h2','Configuration '+(index+1)));const fields=element('div');fields.className='fields';section.append(fields);
+   field(fields,'Name',config.name,v=>config.name=v);
+   const count=field(fields,'Number of agents',config.agents.length,v=>{v=Math.max(1,Math.min(10,Math.floor(v)||1));while(config.agents.length<v)config.agents.push({...config.agents[0],role:'Independent researcher'});config.agents.length=v;if(v>1)config.agents[v-1].role='Critic and synthesizer: preserve evidence-backed dissent.';save();render();},'number');count.min='1';count.max='10';
+   const concurrency=field(fields,'Maximum simultaneous agents',config.max_concurrency||1,v=>config.max_concurrency=v,'number');concurrency.min='1';concurrency.max='10';
+   const seconds=field(fields,'Time limit per task (seconds)',config.timeout_seconds||180,v=>config.timeout_seconds=v,'number');seconds.min='1';seconds.max='1800';
+   field(fields,'Shared token reservation limit',config.token_reservation_limit||300000,v=>config.token_reservation_limit=v,'number');field(fields,'Shared tool request limit',config.tool_request_limit||120,v=>config.tool_request_limit=v,'number');
+   for(const [memberIndex,member] of config.agents.entries()){
+    const panel=element('div');panel.className='baseline-member';panel.append(element('strong',config.agents.length>1&&memberIndex===config.agents.length-1?'Agent '+(memberIndex+1)+' · critic / synthesizer':'Agent '+(memberIndex+1)+' · independent researcher'));const row=element('div');row.className='fields';panel.append(row);
+    select(row,'Model provider',member.backend,backends,v=>{member.backend=v;member.model=v==='lm_studio'?'local-model':v==='ollama'?'mistral':'';save();render();});
+    const model=field(row,member.backend==='azure_openai'?'Azure deployment name':'Model',member.model,v=>member.model=v);model.className='model-input';model.setAttribute('list','baseline-models-'+index+'-'+memberIndex);const datalist=element('datalist');datalist.id='baseline-models-'+index+'-'+memberIndex;panel.append(datalist);
+    select(row,'Planner',member.planner||'react',['react','cot','tree'],v=>member.planner=v);
+    field(panel,'Role',member.role||'Independent researcher',v=>member.role=v);
+    if(['lm_studio','ollama','azure_openai'].includes(member.backend))field(panel,member.backend==='azure_openai'?'Azure resource endpoint':'Local server URL (optional)',member.base_url||'',v=>member.base_url=v||null,'url');
+    const load=element('button','Load available models');load.type='button';load.addEventListener('click',async()=>{load.disabled=true;try{const params=new URLSearchParams({backend:member.backend,base_url:member.base_url|| (member.backend==='ollama'?'http://localhost:11434/v1':'http://localhost:1234/v1')});const response=await fetch('/api/models?'+params,{headers:{'X-Playpen-Token':{{ session_token | tojson }}}});const data=await response.json();if(!response.ok)throw new Error(data.message||'Model discovery failed.');datalist.replaceChildren();for(const id of data.models||[]){const option=element('option');option.value=id;datalist.append(option);}if(data.source!=='live'&&data.message)document.getElementById('baseline-message').textContent=data.message;else document.getElementById('baseline-message').textContent=(data.models||[]).length+' model choices loaded. Choose an available model in the Model field.';}catch(e){document.getElementById('baseline-message').textContent=e.message;}finally{load.disabled=false;}});panel.append(load);section.append(panel);
+   }
+   if(configs.length>1){const remove=element('button','Remove configuration');remove.type='button';remove.addEventListener('click',()=>{configs.splice(index,1);save();render();});section.append(remove);}root.append(section);
+  }
+ }
+ document.getElementById('baseline-add-config').addEventListener('click',()=>{const configs=JSON.parse(input.value);if(configs.length>=8)return;const copy=JSON.parse(JSON.stringify(configs[0]));copy.name='comparison-'+(configs.length+1);configs.push(copy);input.value=JSON.stringify(configs,null,2);render();});input.addEventListener('change',render);return render;
+};
+</script>

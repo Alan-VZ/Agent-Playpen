@@ -41,6 +41,7 @@ class LMStudioBackend(BaseBackend):
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
             )
+            self.record_usage(response)
             content = response.choices[0].message.content
             if content is None:
                 raise ValueError("LM Studio returned an empty assistant response")

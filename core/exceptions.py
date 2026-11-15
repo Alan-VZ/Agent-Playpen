@@ -2,6 +2,10 @@ class AgentError(Exception):
     """Base exception for agent runtime failures."""
 
 
+class AgentCancelledError(AgentError):
+    """The caller stopped the run; no further operations should be scheduled."""
+
+
 class AgentMaxIterationsError(AgentError):
     """Raised when the agent exceeds its iteration limit."""
 

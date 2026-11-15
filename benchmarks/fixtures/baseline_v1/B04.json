@@ -1,0 +1,10 @@
+{
+  "task": "B04",
+  "seed": 1,
+  "documents": {
+    "primary": "Temporary failure on first read; use backup if unavailable.",
+    "empty": "",
+    "backup": "Release 1.7 is approved. Source: backup."
+  },
+  "prompt": "Retrieve primary, empty and backup; recover from primary error without looping. Return JSON {\"release\":\"version\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}. Cite backup; do not claim an empty response proves absence.\nUse read_fixture(name) to inspect these inputs: primary, empty, backup\nFixture seed: 1.\nReturn only the requested JSON as your final answer. Use concise public explanations."
+}

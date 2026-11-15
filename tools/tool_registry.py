@@ -34,6 +34,7 @@ class ToolRegistry:
         """
         from tools.packs.web.search_tool import WebSearchTool
         from tools.packs.web.fetch_tool import FetchTool
+        from tools.packs.web.nimble_extract import NimbleExtractTool
         from tools.packs.filesystem.read_file import ReadFileTool
         from tools.packs.filesystem.write_file import WriteFileTool
         from tools.packs.code.python_repl import PythonReplTool
@@ -41,6 +42,7 @@ class ToolRegistry:
         TOOL_CLASSES = {
             "web_search": WebSearchTool,
             "fetch": FetchTool,
+            "nimble_extract": NimbleExtractTool,
             "read_file": ReadFileTool,
             "write_file": WriteFileTool,
             "python_repl": PythonReplTool,
