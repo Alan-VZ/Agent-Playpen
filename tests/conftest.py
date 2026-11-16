@@ -23,6 +23,8 @@ def isolated_runtime(monkeypatch, tmp_path):
     """Never use saved credentials, live services, or project runtime files."""
     monkeypatch.chdir(tmp_path)
     from debugging.dashboard import model_sources
+    monkeypatch.setattr(model_sources, "_LOCK_DIRECTORY", tmp_path / "model-leases")
+    monkeypatch.setattr(model_sources, "_LOCKS", {})
     # Lifecycle behavior has dedicated mocks/loopback tests. Never touch the
     # user's running model servers during ordinary application regressions.
     monkeypatch.setattr(model_sources,"_activate",lambda backend,model,base_url=None:{"model":model,"loaded":True})

@@ -471,3 +471,36 @@ def test_dashboard_launch_runs_only_checked_tasks(tmp_path, monkeypatch):
     assert result["selected_tasks"] == ["B01", "B05"]
     assert result["progress"]["scheduled"] == 2
     assert [r["task"] for r in result["attempts"]] == ["B01", "B05"]
+
+
+def test_search_check_returns_bounded_redacted_preview_without_saving_response(tmp_path, monkeypatch):
+    credentials.store.set("NIMBLE_API_KEY", "private-test-key-never-display")
+    tool = Mock()
+    tool.run.return_value = "Result private-test-key-never-display " + "x" * 4000
+    monkeypatch.setattr(maintenance, "WebSearchTool", Mock(return_value=tool))
+    inventory = Inventory(tmp_path)
+    result = inventory.check("nimble", True)
+    assert result["status"] == "verified"
+    assert len(result["test_result"]) <= 2500
+    assert "private-test-key-never-display" not in result["test_result"]
+    assert "test_result" not in inventory.read()["nimble"]
+    assert "Result" not in json.dumps(inventory.read())
+    tool.run.return_value = "[ERROR] provider operation failed"
+    result = inventory.check("nimble", True)
+    assert result["status"] != "verified" and result["test_result"] is None
+
+
+def test_history_distinguishes_finished_attempts_from_passes(tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "ROOT", tmp_path)
+    root = tmp_path / "benchmark-results"
+    for name, passed in [("a" * 32, False), ("b" * 32, True)]:
+        path = root / name
+        path.mkdir(parents=True)
+        record = {"created_at":"2026-11-16T12:00:00+00:00", "status":"completed", "scheduled":1,
+                  "attempts":[{"status":"completed", "evaluation":{"passed":passed}}]}
+        (path / "experiment.json").write_text(json.dumps(record), encoding="utf-8")
+    client = TestClient(server.app, base_url="http://127.0.0.1", headers={"X-Playpen-Token":server.API_TOKEN})
+    rows = {row["id"]:row for row in client.get("/api/benchmarks").json()}
+    assert rows["a" * 32]["status"] == rows["b" * 32]["status"] == "completed"
+    assert rows["a" * 32]["completed"] == rows["b" * 32]["completed"] == 1
+    assert rows["a" * 32]["passed"] == 0 and rows["b" * 32]["passed"] == 1

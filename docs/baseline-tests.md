@@ -165,3 +165,30 @@ The Node check uses the existing optional `.test-tmp/ui-test/node_modules/jsdom`
 ## Implementation verification record
 
 November 15, 2026: 360 offline tests passed; Ruff passed; inventory/baseline, ordinary dashboard, Maintenance, and pricing DOM checks passed; wheel/source builds passed. A fresh virtual environment installed the wheel without dependencies and verified packaged fixtures/templates outside the source checkout; this was a packaging check, not a full clean runtime installation. The actual SDK/process transport test used a loopback fake model. A five-repeat scripted reference compared one and three agents: 25/25 strict passes each. The earlier scripted comparison that exposed the team read-limit rubric defect was retained as separate evidence. Neither result is a real-model evaluation.
+
+## Run feedback and saved results
+
+Click **Run baseline tests** to acknowledge the request immediately and show
+setup checking, starting, and running states. A setup block explicitly says no
+experiment was launched. A status panel at the top shows attempt progress and
+separate pass/fail counts; its results link leads to the comparison table, agent
+answers, failed checks, live activity, and exports below the launch controls.
+
+The latest saved or active run opens automatically. The URL records the viewed
+run ID so a refresh can reopen it; saved results do not change the next run's
+configuration unless **Use these settings for a new run** is selected. An
+experiment marked completed finished processing; it passes only when all
+scheduled attempts passed their required checks. Connection failures remain
+visible and retry status retrieval without launching duplicate experiments.
+Saved activity is reconstructed from recorded traces after a dashboard restart.
+
+The API inventory's one-search check is separate from baseline execution. It
+shows a bounded, redacted result preview in the open window. The preview is not
+saved in the credential ledger. Running this provider check can consume credits
+and still requires its explicit checkbox; baseline fixtures use no live search.
+
+November 16, 2026 feedback verification: 424 offline Python tests, seven browser
+checks, lint, and package builds passed. A real local B01 smoke run visibly
+progressed through tool/model activity and ended with a model request timeout;
+the UI displayed the failure and failed output check. This verified run feedback,
+not baseline qualification. Existing run evidence was preserved.

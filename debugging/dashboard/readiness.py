@@ -138,13 +138,18 @@ class Inventory:
         if provider not in maintenance.CATALOG:
             raise ValueError("Unknown provider")
         billable_attempted = False
+        test_result = None
         scope = "account endpoint"
         try:
             credentials.store.get(maintenance.CATALOG[provider]["key_name"])
             if allow_billable and maintenance.CATALOG[provider]["search_test"] and credentials.get_credential(maintenance.CATALOG[provider]["key_name"]):
                 billable_attempted = True
                 scope = "operation test"
-                maintenance.WebSearchTool(provider).run(query="API access check", num_results=1)
+                returned = maintenance.WebSearchTool(provider).run(query="API access check", num_results=1)
+                if isinstance(returned,str):
+                    test_result = credentials.redact(returned)[:2500]
+                    if returned.strip().lower().startswith(("[error]", "search error")):
+                        raise maintenance.MaintenanceError("The provider returned a search error. Review its configuration before testing again.")
                 response = {"status": "verified", "message": "One search request completed. It may consume credits; this does not verify other operations or remaining balance."}
             elif provider in MODEL_CHECKS:
                 scope = "authenticated model listing"
@@ -185,7 +190,8 @@ class Inventory:
                                 "status": status, "actual_cost": None})
                 self.update(provider, verification_usage=history[-100:])
         return {"provider": provider, "status": status, "message": message, "checked_at": stamp,
-                "scope": scope, "billable_test_requested": allow_billable}
+                "scope": scope, "billable_test_requested": allow_billable,
+                "test_result":test_result if status == "verified" else None}
 
 
 def preflight(root, config):

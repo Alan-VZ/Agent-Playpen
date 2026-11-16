@@ -26,6 +26,13 @@
 
 ## Unreleased
 
+- Added immediate baseline launch acknowledgement, setup/running/error states,
+  progress and explicit pass/fail outcomes. Restore saved results automatically,
+  show answers and failed checks, retry lost status connections, and preserve
+  run links and recorded activity across refreshes/restarts.
+- API search checks now show a bounded redacted result preview and distinguish
+  provider verification from baseline execution; previews are not persisted.
+
 - Replaced separate model discovery/status/load controls with one shared Choose
   model picker across every provider and the baseline builder. Single-model local
   fields follow the actual active model; local selection unloads and verifies before

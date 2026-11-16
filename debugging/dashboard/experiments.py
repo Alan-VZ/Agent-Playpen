@@ -151,7 +151,8 @@ def install(server):
                 state = record["status"]
                 if state == "running" and path.parent.name not in JOBS:
                     state = "interrupted"
-                items.append({"id": path.parent.name, "created_at": record["created_at"], "status": state, "scheduled": record["scheduled"], "completed": len(record["attempts"])})
+                items.append({"id": path.parent.name, "created_at": record["created_at"], "status": state, "scheduled": record["scheduled"], "completed": len(record["attempts"]),
+                              "passed":sum(bool(a.get("evaluation",{}).get("passed")) for a in record["attempts"])})
             except (OSError, ValueError, KeyError):
                 continue
         return items
