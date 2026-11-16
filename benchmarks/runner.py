@@ -268,6 +268,7 @@ def run_member(member, config, data, budget, agent_id, peers=None, backend_facto
             task += "\nCritique these independent reports; verify against inputs, preserve decisive dissent, then produce the required final JSON:\n" + json.dumps(peers)[:24000]
         answer = agent.run(task)
         return {"agent_id": agent_id, "status": agent.completion_status, "answer": answer,
+                "message": agent.stop_reason if agent.completion_status != "success" else "",
                 "trace": [asdict(e) for e in tracer.events]}
     except Exception as exc:
         code = getattr(exc, "status_code", None)

@@ -504,3 +504,18 @@ def test_history_distinguishes_finished_attempts_from_passes(tmp_path, monkeypat
     assert rows["a" * 32]["status"] == rows["b" * 32]["status"] == "completed"
     assert rows["a" * 32]["completed"] == rows["b" * 32]["completed"] == 1
     assert rows["a" * 32]["passed"] == 0 and rows["b" * 32]["passed"] == 1
+
+
+def test_baseline_format_correction_does_not_execute_empty_fixture_call():
+    backend = Mock()
+    backend.chat.side_effect = [
+        'Thought: read\nAction: read_fixture',
+        'Thought: read\nAction: read_fixture\nAction Input: {"name":"orders.csv"}',
+        'Thought: finish\nAction: FINISH\nAction Input: ' + json.dumps(expected('B01', 1)),
+    ]
+    result = attempt(ExperimentConfig(max_iterations=4), 'B01', seed=1, backend_factory=lambda m,c:backend)
+    assert result['status'] == 'completed' and result['evaluation']['passed']
+    assert len(result['tool_events']) == 1
+    assert result['tool_events'][0]['name'] == 'orders.csv'
+    assert result['tool_events'][0]['status'] == 'ok'
+    assert 'no tool was executed' in backend.chat.call_args_list[1].args[0][-1]['content']

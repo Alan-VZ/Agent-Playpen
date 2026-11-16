@@ -15,7 +15,7 @@ function showTable(result){
 }
 function failureReason(attempt){
  if(attempt.status==='timeout')return 'The task reached its time limit before finishing.';
- const agent=(attempt.agents||[]).find(a=>a.error_type||a.status==='error');
+ const agent=(attempt.agents||[]).find(a=>a.error_type||a.status==='error'||(a.status==='incomplete'&&a.message));
  if(agent){
   const messages={APITimeoutError:'The model request timed out before a response arrived. Check the model server and its response time.',TimeoutError:'Execution reached its time limit.',APIConnectionError:'Playpen could not connect to the model server. Check that it is running and reachable.'};
   const codes={401:'The model provider rejected the API credential.',402:'The model provider reported insufficient credit.',403:'The model provider denied model access.',429:'The model provider rate limit was reached.'};

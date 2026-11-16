@@ -132,6 +132,11 @@ def test_cancel_does_not_schedule_another_model_call(monkeypatch, tmp_path):
 
 @pytest.mark.parametrize("raw_input", ['```json\n{"query":"paper"}\n```', '[{"query":"paper"}]', 'null'])
 def test_model_action_shapes_are_recoverable(raw_input):
+    from core.exceptions import AgentResponseFormatError
+    if not raw_input.startswith('```'):
+        with pytest.raises(AgentResponseFormatError):
+            ReActPlanner(Mock()).parse_thought('Thought: search\nAction: web_search\nAction Input: ' + raw_input)
+        return
     thought = ReActPlanner(Mock()).parse_thought('Thought: search\nAction: web_search\nAction Input: ' + raw_input)
     assert isinstance(thought.tool_args, dict)
     if raw_input.startswith('```'):

@@ -1,4 +1,6 @@
 import re
+import json
+from core.exceptions import AgentResponseFormatError
 from planner.base_planner import BasePlanner, Plan, Step, Thought
 
 REACT_SYSTEM_PROMPT = """You are an AI agent that solves tasks step by step.
@@ -15,6 +17,10 @@ Rules:
 - Never skip the Thought / Action / Action Input structure.
 - Use FINISH as the Action when you have the final answer.
 - Action Input must be valid JSON.
+- Return exactly ONE action per response, then wait for its real observation.
+- Never invent an Observation or continue with additional actions in that response.
+- Include every required tool argument. An arithmetic calculator accepts an
+  arithmetic expression, not a script or program.
 - Do not repeat identical unsuccessful searches or fetches. Change the query,
   use a known source URL, or finish with the limitation clearly stated.
 - Search snippets can be irrelevant. Check title, URL, and source content.
@@ -58,7 +64,8 @@ class ReActPlanner(BasePlanner):
     def format_thought_prompt(self, step: Step, ctx) -> list[dict]:
         """Build the messages array for the Think phase."""
         history = "\n".join(
-            [f"Thought: {t.reasoning}\nAction: {t.tool_name}\nObservation: {o}"
+            [f"Thought: {t.reasoning}\nAction: {t.tool_name}\nAction Input: {json.dumps(t.tool_args)}\n{o}"
+             if t.tool_name else f"Format correction (no tool executed): {o}"
              for t, o in zip(ctx.thought_history, ctx.observation_history)]
         )
         user_content = REACT_USER_TEMPLATE.format(
@@ -82,7 +89,6 @@ class ReActPlanner(BasePlanner):
         Extract Thought / Action / Action Input from LLM output.
         Falls back to marking terminal if Action is FINISH.
         """
-        import json
 
         def final_answer(text):
             cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=re.IGNORECASE)
@@ -98,15 +104,24 @@ class ReActPlanner(BasePlanner):
 
 
         if not re.search(r"^\s*Action:\s*", raw, re.MULTILINE):
+            if re.search(r"^\s*(Thought|Action Input|Observation):", raw, re.MULTILINE):
+                raise AgentResponseFormatError("Missing Action. Return one Action and its Action Input, or Action: FINISH with the final answer.")
             return Thought(reasoning=raw, is_terminal=True, answer=final_answer(raw))
 
+        if len(re.findall(r"^[ \t]*Action:", raw, re.MULTILINE)) != 1 or re.search(r"^[ \t]*Observation:", raw, re.MULTILINE):
+            raise AgentResponseFormatError("Return exactly one action and wait. Do not invent observations or include additional actions. No tool was executed.")
+
         thought_match = re.search(r"Thought:\s*(.+?)(?=Action:|$)", raw, re.DOTALL)
-        action_match = re.search(r"^\s*Action:\s*([^\r\n]+)", raw, re.MULTILINE)
-        input_match = re.search(r"Action Input:\s*(.+?)$", raw, re.DOTALL)
+        action_match = re.search(r"^[ \t]*Action:[ \t]*([^\r\n]+)", raw, re.MULTILINE)
+        if not action_match:
+            raise AgentResponseFormatError("Action must name a tool or FINISH on the same line.")
+        input_match = re.search(r"^[ \t]*Action Input:[ \t]*(.*)$", raw[action_match.end():], re.DOTALL | re.MULTILINE)
 
         reasoning = thought_match.group(1).strip() if thought_match else raw
         action = action_match.group(1).strip() if action_match else "FINISH"
-        raw_input = input_match.group(1).strip() if input_match else "{}"
+        if not input_match or not input_match.group(1).strip():
+            raise AgentResponseFormatError("Missing Action Input. Supply one JSON object containing the tool's required arguments, or the final answer for FINISH. No tool was executed.")
+        raw_input = input_match.group(1).strip()
 
         if action.upper() == "FINISH":
             return Thought(
@@ -116,14 +131,12 @@ class ReActPlanner(BasePlanner):
             )
 
         try:
-            # Some models fence JSON or append another action. Execute only the
-            # first object, then let the next round use the real observation.
-            cleaned_input = re.sub(r"^```(?:json)?\s*", "", raw_input, flags=re.IGNORECASE)
-            tool_args, _ = json.JSONDecoder().raw_decode(cleaned_input)
+            cleaned_input = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_input, flags=re.IGNORECASE)
+            tool_args = json.loads(cleaned_input)
             if not isinstance(tool_args, dict):
-                tool_args = {"input": raw_input}
+                raise AgentResponseFormatError("Tool Action Input must be a JSON object with named arguments. No tool was executed.")
         except json.JSONDecodeError:
-            tool_args = {"input": raw_input}
+            raise AgentResponseFormatError("Invalid Action Input JSON. Return one JSON object, without additional actions or observations. No tool was executed.") from None
 
         return Thought(
             reasoning=reasoning,

@@ -1,8 +1,8 @@
 from core.context import AgentContext
-from core.exceptions import AgentCancelledError
+from core.exceptions import AgentCancelledError, AgentResponseFormatError
 from config.credentials import redact
 from backends.base_backend import BaseBackend
-from planner.base_planner import BasePlanner
+from planner.base_planner import BasePlanner, Thought
 from tools.tool_executor import ToolExecutor
 from tools.tool_registry import ToolRegistry
 from memory.memory_manager import MemoryManager
@@ -50,6 +50,7 @@ class Agent:
         self.stop_reason = "The iteration budget or planned steps ended."
         cached_reads = {}
         read_attempts = {}
+        format_errors = 0
         ctx = AgentContext(
             session_id=str(uuid.uuid4()),
             task=task,
@@ -60,7 +61,7 @@ class Agent:
 
         # Expose registered tool contracts for every entry point, including CLI.
         self.planner.tool_descriptions = "\n".join(
-            str(schema["function"]) for schema in self.executor.registry.to_openai_schemas()
+            json.dumps(schema["function"]) for schema in self.executor.registry.to_openai_schemas()
         ) or "No tools available."
 
         self.tracer.on_status("Preparing the task and planning the next action.")
@@ -77,7 +78,24 @@ class Agent:
                 break
 
             # THINK: call backend to produce a structured Thought
-            thought = self._think(step, ctx)
+            try:
+                thought = self._think(step, ctx)
+            except AgentResponseFormatError as exc:
+                format_errors += 1
+                feedback = redact(str(exc))
+                self.tracer.on_status("Model response rejected: " + feedback, "warning")
+                if format_errors >= 3:
+                    self.completion_status = "incomplete"
+                    self.stop_reason = "Three consecutive invalid model responses. " + feedback
+                    self.tracer.on_status("Stopped before a final answer: " + self.stop_reason, "warning")
+                    return ""
+                observation = "Observation: Response format error; no tool was executed. " + feedback
+                ctx.thought_history.append(Thought(reasoning="Response format correction"))
+                ctx.observation_history.append(observation)
+                self.tracer.on_observe(observation)
+                ctx.iteration += 1
+                continue
+            format_errors = 0
             self.tracer.on_think(thought)
             ctx.thought_history.append(thought)
 
@@ -152,7 +170,14 @@ class Agent:
             if isinstance(stats, dict) and stats.get("finish_reason") == "length":
                 raise ValueError("The model hit the output-token limit before producing an answer. Increase Max tokens or choose a model that fits the current budget; reasoning tokens may consume the output allowance.")
             raise ValueError("The model returned an empty text response. Try another model or increase the output token limit.")
-        return self.planner.parse_thought(raw)
+        thought = self.planner.parse_thought(raw)
+        if not thought.is_terminal and thought.tool_name in self.executor.registry.list_all():
+            tool = self.executor.registry.get(thought.tool_name)
+            parameters = tool.to_openai_schema()["function"].get("parameters", {})
+            missing = [name for name in parameters.get("required", []) if name not in thought.tool_args]
+            if missing:
+                raise AgentResponseFormatError("Tool " + thought.tool_name + " is missing required arguments: " + ", ".join(missing) + ". Supply them in Action Input. No tool was executed.")
+        return thought
 
     def _act(self, thought, ctx):
         """Execute the tool named in the thought.

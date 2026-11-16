@@ -196,3 +196,22 @@ checks, lint, and package builds passed. A real local B01 smoke run visibly
 progressed through tool/model activity and ended with a model request timeout;
 the UI displayed the failure and failed output check. This verified run feedback,
 not baseline qualification. Existing run evidence was preserved.
+
+## Invalid model response handling
+
+ReAct accepts one action per response. Missing/invalid Action Input, non-object
+arguments, multiple actions, invented observations, and missing required tool
+arguments are rejected before any tool runs. The model receives a corrective
+observation within the existing iteration/token/time budgets. Three consecutive
+invalid responses stop the agent as incomplete with a visible reason. Valid tool
+calls reset that consecutive-error count. History contains the actual arguments
+and real tool observations; invented response content is not added as evidence.
+Tool contracts are presented as JSON. Plain final answers remain supported;
+correctness and required JSON fields are still checked by the unchanged scorer.
+
+Parser-repair verification (November 16, 2026): 433 offline tests passed. A local
+Qwen B01 rerun at temperature 0.7 rejected invented action/observation sequences,
+recovered to a valid input read, then ended with APITimeoutError on its sixth
+model request after 91.6 seconds overall. There were no denied tool operations;
+this verifies defensive handling, not model qualification. Earlier failed runs
+remain intact. No scoring criteria or expected fixture answers were changed.

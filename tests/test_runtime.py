@@ -156,3 +156,38 @@ def test_trace_persistence(tmp_path):
     from pathlib import Path
     events = json.loads(Path(tracer.save()).read_text())
     assert [e["type"] for e in events] == ["act", "observe"]
+
+
+@pytest.mark.parametrize('response', [
+    'Thought: inspect\nAction: calculator',
+    'Thought: inspect\nAction: calculator\nAction Input:',
+    'Thought: inspect\nAction: calculator\nAction Input: not-json',
+    'Thought: inspect\nAction: calculator\nAction Input: []',
+    'Thought: inspect\nAction: calculator\nAction Input: {}',
+    'Thought: inspect\nAction: calculator\nAction Input: {"expression":"1+1"}\nObservation: 99\nAction: FINISH\nAction Input: 99',
+    'Thought: inspect\nAction: calculator\nAction: FINISH\nAction Input: 99',
+])
+def test_invalid_model_action_is_corrected_before_tool_execution(tmp_path, response):
+    agent, backend = make_agent(tmp_path, [response,
+        'Thought: calculate\nAction: calculator\nAction Input: {"expression":"6*7"}',
+        'Thought: done\nAction: FINISH\nAction Input: 42'])
+    execute = Mock(wraps=agent.executor.run)
+    agent.executor.run = execute
+    assert agent.run('calculate') == '42'
+    execute.assert_called_once_with('calculator', {'expression':'6*7'})
+    correction = backend.chat.call_args_list[1].args[0][-1]['content']
+    assert 'no tool was executed' in correction
+    assert '99' not in correction
+    history = backend.chat.call_args_list[2].args[0][-1]['content']
+    assert 'Action Input: {"expression": "6*7"}' in history
+    assert 'Observation: 42' in history
+
+
+def test_repeated_model_format_errors_stop_without_any_tool_calls(tmp_path):
+    agent, backend = make_agent(tmp_path, ['Action: calculator'] * 3, max_iterations=10)
+    agent.executor.run = Mock()
+    assert agent.run('calculate') == ''
+    assert agent.completion_status == 'incomplete'
+    assert 'Three consecutive invalid' in agent.stop_reason
+    assert backend.chat.call_count == 3
+    agent.executor.run.assert_not_called()

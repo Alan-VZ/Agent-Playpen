@@ -26,6 +26,11 @@
 
 ## Unreleased
 
+- Reject malformed ReAct action inputs, invented observations, multi-action
+  responses, and missing required tool arguments before tool execution. Added
+  bounded corrective feedback and a visible stop reason after repeated invalid
+  responses. Preserve actual arguments in history and expose JSON tool contracts.
+
 - Run Agent now starts checked baseline tasks directly and opens the new run’s
   live results. Added workspace repetition selection and protected the results
   handoff before a new experiment appears in saved history.

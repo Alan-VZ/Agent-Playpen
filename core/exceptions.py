@@ -6,6 +6,10 @@ class AgentCancelledError(AgentError):
     """The caller stopped the run; no further operations should be scheduled."""
 
 
+class AgentResponseFormatError(AgentError):
+    """A model response cannot safely be executed as one tool action."""
+
+
 class AgentMaxIterationsError(AgentError):
     """Raised when the agent exceeds its iteration limit."""
 
