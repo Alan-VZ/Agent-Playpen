@@ -1,0 +1,56 @@
+// Render first: python tests/render_baseline_ui.py
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const {JSDOM,VirtualConsole}=require(path.resolve('.test-tmp/ui-test/node_modules/jsdom'));
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function waitFor(fn){for(let n=0;n<100;n++){if(fn())return;await sleep(15);}throw new Error('UI state timed out');}
+async function check(page){
+ const errors=[],launches=[];
+ const console=new VirtualConsole();console.on('jsdomError',error=>errors.push(error.message));
+ const url=page==='baselines'?'http://127.0.0.1:8765/baselines?tasks=B01,B05&backend=lm_studio&model=chosen-model&temperature=0&max_iterations=12&max_output_tokens=1024':'http://127.0.0.1:8765/';
+ const dom=new JSDOM(fs.readFileSync('.test-tmp/baseline_'+page+'.html','utf8'),{url,runScripts:'dangerously',virtualConsole:console,beforeParse(window){
+  window.Headers=Headers;window.TextDecoder=TextDecoder;window.AbortController=AbortController;
+  window.fetch=async(resource,options={})=>{const route=new URL(resource,url).pathname;let value;
+   if(route==='/api/defaults')value={backend:'lm_studio',model:'chosen-model',tools:['calculator'],temperature:0};
+   else if(route==='/api/models')value={models:['chosen-model'],source:'live'};
+   else if(route==='/api/keys')value={};
+   else if(route==='/api/readiness')value={ready:true,providers:[],blocking:[]};
+   else if(route==='/api/benchmarks'&&options.method==='POST'){launches.push(JSON.parse(options.body));value={id:'b'.repeat(32),status:'running'};}
+   else if(route==='/api/benchmarks')value=[];
+   else if(route==='/api/benchmarks/'+'b'.repeat(32))value={status:'completed',progress:{completed:2,scheduled:2},summaries:[],attempts:[],configs:launches[0].configs,repeats:1,selected_tasks:launches[0].tasks,events:[]};
+   else throw new Error('Unexpected API '+route);
+   return {ok:true,json:async()=>value};
+  };
+ }});
+ try{
+  const d=dom.window.document,picker=dom.window.playpenBaselineTasks;
+  assert.equal(d.querySelectorAll('input[name=baseline_tasks]').length,5);
+  if(page==='index'){
+   await waitFor(()=>d.getElementById('backend').options.length>0);
+   assert.equal(picker.ids().length,0);
+   d.querySelector('input[name=baseline_tasks][value=B01]').click();assert.ok(d.getElementById('task').value.includes('B01 · Data reconciliation'));
+   d.querySelector('input[name=baseline_tasks][value=B01]').click();assert.equal(d.getElementById('task').value,'');
+   d.getElementById('task').value='My custom task';
+   d.querySelector('input[name=baseline_tasks][value=B01]').click();d.querySelector('input[name=baseline_tasks][value=B05]').click();
+   assert.equal(d.getElementById('task').value,'My custom task','checking boxes should not overwrite a custom task');
+   d.getElementById('baseline-load-tasks').click();
+   assert.ok(d.getElementById('task').value.includes('B01 · Data reconciliation'));
+   assert.ok(d.getElementById('task').value.includes('B05 · Conflicting evidence'));
+   assert.ok(!d.getElementById('task').value.includes('B02 · Research'));
+   assert.equal(picker.runLoaded(),true);
+   const destination=new URL(picker.destination(),url);
+   assert.equal(destination.searchParams.get('tasks'),'B01,B05');assert.equal(destination.searchParams.get('model'),'chosen-model');assert.equal(destination.searchParams.has('api_key'),false);
+   d.getElementById('task').value='An edited custom task';assert.equal(picker.runLoaded(),false);
+   d.getElementById('baseline-clear-selection').click();assert.equal(d.getElementById('baseline-load-tasks').disabled,true);
+  }else{
+   assert.deepEqual(Array.from(picker.ids()),['B01','B05']);
+   const config=JSON.parse(d.getElementById('baseline-config').value)[0];assert.equal(config.agents[0].model,'chosen-model');assert.equal(config.max_iterations,12);assert.equal(config.max_output_tokens,1024);
+   d.getElementById('baseline-clear-selection').click();d.getElementById('baseline-run').click();await waitFor(()=>d.getElementById('baseline-message').textContent.includes('at least one'));assert.equal(launches.length,0);
+   picker.select(['B01','B05']);d.getElementById('baseline-repeats').value='1';d.getElementById('baseline-run').click();await waitFor(()=>launches.length===1);assert.deepEqual(launches[0].tasks,['B01','B05']);
+   await waitFor(()=>d.getElementById('baseline-exports').children.length===4);
+   picker.select(['B02']);Array.from(d.querySelectorAll('#baseline-exports button')).find(b=>b.textContent.includes('Use these settings')).click();assert.deepEqual(Array.from(picker.ids()),['B01','B05']);
+  }
+  assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+}
+(async()=>{await check('index');await check('baselines');process.stdout.write('Baseline checkboxes, task loading, workspace transfer, empty-selection guard, selected-run payload, and rerun restoration passed.\n');})().catch(error=>{process.stderr.write(error.stack+'\n');process.exitCode=1;});

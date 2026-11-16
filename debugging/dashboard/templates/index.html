@@ -474,6 +474,9 @@
               <textarea id="task" name="task" placeholder="Describe the task to complete..."></textarea>
             </div>
 
+            {% set baseline_picker_mode = 'workspace' %}
+            {% include 'baseline_task_picker.html' %}
+
             <div class="field">
               <label for="allowed_dirs">Allowed directories</label>
               <input id="allowed_dirs" name="allowed_dirs" value="." />
@@ -759,6 +762,14 @@
     document.getElementById('agent-form').addEventListener('submit', async function (event) {
       event.preventDefault();
       if (activeRun) return;
+      if (window.playpenBaselineTasks?.runLoaded()) {
+        if (!window.playpenBaselineTasks.ids().length) {
+          setStatus('error', 'Select at least one baseline task.');
+          return;
+        }
+        window.playpenBaselineTasks.transfer();
+        return;
+      }
       const payload = collectConfig();
       if (apiKeyInput.value.trim() || searchCseInput.value.trim()) {
         setStatus('error', 'Save entered credentials before running.');

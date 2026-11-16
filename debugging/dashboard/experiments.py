@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from benchmarks.runner import ExperimentConfig, run_experiment, summaries, atomic_json
 from benchmarks.report import render_report
+from benchmarks.tasks import TASKS, selected_tasks, task_catalog
 from debugging.dashboard.readiness import Inventory, preflight
 
 JOBS = {}
@@ -33,10 +34,16 @@ class LaunchRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     configs: list[ExperimentConfig] = Field(min_length=1, max_length=8)
     repeats: int = 5
+    tasks: list[str] = Field(default_factory=lambda: list(TASKS), min_length=1, max_length=5)
 
 
 def install(server):
     app = server.app
+    server.templates.env.globals["baseline_tasks"] = task_catalog()
+
+    @app.get("/api/benchmark-tasks")
+    def baseline_tasks():
+        return {"suite": "baseline-v1", "tasks": task_catalog()}
 
     @app.get("/api-inventory")
     def inventory_page(request: Request):
@@ -89,7 +96,7 @@ def install(server):
             raise HTTPException(404, "Unknown experiment")
         return server.ROOT / "benchmark-results" / job_id
 
-    def worker(job_id, configs, repeats, output, stop):
+    def worker(job_id, configs, repeats, output, stop, tasks):
         try:
             def progress(value):
                 with LOCK:
@@ -98,7 +105,7 @@ def install(server):
                         JOBS[job_id]["events"] = JOBS[job_id]["events"][-200:]
                     else:
                         JOBS[job_id]["progress"] = value
-            record = run_experiment(configs, output, repeats, stopped=stop, on_progress=progress)
+            record = run_experiment(configs, output, repeats, stopped=stop, on_progress=progress, tasks=tasks)
             render_report(record, output)
             with LOCK:
                 JOBS[job_id]["status"] = record["status"]
@@ -115,6 +122,10 @@ def install(server):
 
     @app.post("/api/benchmarks")
     def launch(payload: LaunchRequest):
+        try:
+            tasks = selected_tasks(payload.tasks)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from None
         if payload.repeats not in {1, 5, 20}:
             raise HTTPException(400, "Select 1, 5, or 20 repeats")
         for config in payload.configs:
@@ -134,9 +145,9 @@ def install(server):
                 JOBS.pop(next(iter(JOBS)))
             job_id = uuid.uuid4().hex
             stop = threading.Event()
-            JOBS[job_id] = {"status": "running", "stop": stop, "events": [], "progress": {"completed": 0, "scheduled": len(payload.configs) * payload.repeats * 5}}
+            JOBS[job_id] = {"status": "running", "stop": stop, "events": [], "progress": {"completed": 0, "scheduled": len(payload.configs) * payload.repeats * len(tasks)}}
             output = experiment_path(job_id)
-            threading.Thread(target=worker, args=(job_id, payload.configs, payload.repeats, output, stop), daemon=True).start()
+            threading.Thread(target=worker, args=(job_id, payload.configs, payload.repeats, output, stop, tasks), daemon=True).start()
         return {"id": job_id, "status": "running"}
 
     @app.get("/api/benchmarks/{job_id}")
@@ -155,7 +166,7 @@ def install(server):
             if not job and state == "running":
                 state = "interrupted"
             return {"id": job_id, "status": state, "progress": job["progress"] if job else {"completed": len(record["attempts"]), "scheduled": record["scheduled"]},
-                    "summaries": summaries(record) if record else [], "configs": record["configs"] if record else [], "repeats": record["repeats"] if record else 5, "attempts": record["attempts"] if record else [], "events": list(job["events"]) if job else []}
+                    "summaries": summaries(record) if record else [], "configs": record["configs"] if record else [], "repeats": record["repeats"] if record else 5, "selected_tasks": record.get("selected_tasks", list(TASKS)) if record else list(TASKS), "attempts": record["attempts"] if record else [], "events": list(job["events"]) if job else []}
 
     @app.post("/api/benchmarks/{job_id}/stop")
     def stop(job_id: str):

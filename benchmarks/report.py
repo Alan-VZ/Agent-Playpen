@@ -11,11 +11,12 @@ def render_report(record, output):
     output.mkdir(parents=True, exist_ok=True)
     rows = summaries(record)
     atomic_json(output / "summary.json", rows)
-    fields = ["name", "agents", "B01", "B02", "B03", "B04", "B05", "passed", "attempted", "scheduled", "minimum_quality", "mean_quality", "median_seconds", "p95_seconds", "actual_tokens", "reserved_tokens", "tool_requests", "estimated_reserved_usd", "violations", "qualified"]
+    fields = ["name", "agents", "selected_tasks", "B01", "B02", "B03", "B04", "B05", "passed", "attempted", "scheduled", "minimum_quality", "mean_quality", "median_seconds", "p95_seconds", "actual_tokens", "reserved_tokens", "tool_requests", "estimated_reserved_usd", "violations", "selection_passed", "qualified"]
     flat = []
     for row in rows:
         flat.append({**{k: v for k, v in row.items() if k != "tasks"},
-                     **{key: f'{value["passed"]}/{value["scheduled"]}' for key, value in row["tasks"].items()}})
+                     "selected_tasks": ", ".join(row["selected_tasks"]),
+                     **{key: f'{value["passed"]}/{value["scheduled"]}' if value["selected"] else "Not selected" for key, value in row["tasks"].items()}})
     with (output / "comparison.csv").open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()

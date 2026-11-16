@@ -41,6 +41,23 @@ Correctness comes from deterministic validators, not an LLM judge. The rubric is
 
 ## Run from the dashboard
 
+The main workspace now has **Repeatable baseline tasks** checkboxes directly below
+the Task field. Select any of B01–B05 and click **Load selected tasks** to preview
+their fixed instructions and inputs in the Task field. Checking a task automatically
+fills an empty Task field and keeps generated task text synchronized with the selection;
+it does not overwrite a custom task. **Load selected tasks** explicitly replaces
+custom text. **Run Agent** on loaded baseline text, or **Compare
+using this agent**, opens the scored baseline page with your current provider,
+model, planner, temperature, iteration limit, and output-token limit. Launch there
+after reviewing the configuration; this does not start paid calls automatically.
+
+The baseline page has the same checkboxes, **Select all**, **Clear selection**, and
+task previews. Every configuration receives the same selected task IDs and fixture
+seed for a given repetition. Unchecked tasks do not execute and display **Not
+selected** in reports. Selection is saved with results and restored by **Use these
+settings for a new run**. Resume rejects a changed selection. Passing a subset is
+recorded separately from qualifying on the full five-task suite.
+
 Open `/baselines`. Use the form to name a configuration, select 1–10 agents, set each provider/model/planner/role, and set shared time, token-reservation, and tool-request limits. **Load available models** is an explicit provider request, not proof of inference access. Use **Add comparison configuration** or the single-versus-team preset. The last member of a team is the critic/synthesizer; preceding members work independently before synthesis. Two agents mean one researcher and one synthesizer. The ordinary workspace remains a single-agent workspace.
 
 Choose one repeat for a smoke run, five for the baseline, or twenty for extended evidence. Five repeats give 25 attempts per configuration. Team configurations share the same aggregate limits as single agents when comparing matched budgets. Critic and synthesis calls count too. Requests and reports carry agent IDs; team memory and tool state are separate. The concurrency setting limits active agents independently of team size.
@@ -56,6 +73,7 @@ From the project root, with the usual environment installed:
 ```powershell
 python -m benchmarks run --config benchmarks/configs/single-local.json --repeats 5
 python -m benchmarks compare --config benchmarks/configs/single-local.json benchmarks/configs/team-local.json --repeats 5
+python -m benchmarks run --config single-local --tasks B01 B05 --repeats 5
 python -m benchmarks report --experiment benchmark-results/EXPERIMENT_DIRECTORY
 ```
 
@@ -78,6 +96,7 @@ python -m pytest -q
 ruff check .
 python tests/render_baseline_ui.py
 node tests/baseline_ui.cjs
+node tests/baseline_tasks_ui.cjs
 python -m build --no-isolation
 ```
 

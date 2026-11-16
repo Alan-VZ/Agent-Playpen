@@ -29,7 +29,7 @@ from planner.tree_planner import TreePlanner
 from tools.base_tool import BaseTool
 from tools.packs.utils.calculator_tool import CalculatorTool
 from tools.tool_registry import ToolRegistry
-from benchmarks.tasks import SUITE, TASKS, fixture, score, expected
+from benchmarks.tasks import SUITE, TASKS, fixture, score, expected, selected_tasks
 
 
 class Member(BaseModel):
@@ -393,7 +393,16 @@ def atomic_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps(redact(value), indent=2), encoding="utf-8")
-    temporary.replace(path)
+    # Windows may briefly deny replacement while a dashboard poll reads the
+    # previous snapshot. Keep the old complete file and retry the atomic swap.
+    for retry in range(10):
+        try:
+            temporary.replace(path)
+            break
+        except PermissionError:
+            if retry == 9:
+                raise
+            time.sleep(.02 * (retry + 1))
 
 
 def provenance():
@@ -414,7 +423,8 @@ def provenance():
             "python": platform.python_version(), "dependencies": dependencies, "cache": "cold", "memory": "fresh"}
 
 
-def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, backend_factory=make_backend, resume=False):
+def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, backend_factory=make_backend, resume=False, tasks=None):
+    task_ids = selected_tasks(tasks)
     if repeats not in {1, 5, 20}:
         raise ValueError("Repeats must be 1 (smoke), 5 (baseline), or 20 (extended)")
     if not configs:
@@ -428,7 +438,7 @@ def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, b
     output.mkdir(parents=True, exist_ok=True)
     path = output / "experiment.json"
     serialized = [c.model_dump() for c in configs]
-    fixture_hashes = {f"{task}:{seed}": digest(fixture(task, seed)) for task in TASKS for seed in range(1, repeats + 1)}
+    fixture_hashes = {f"{task}:{seed}": digest(fixture(task, seed)) for task in task_ids for seed in range(1, repeats + 1)}
     contract_hash = hashlib.sha256((Path(__file__).parent / "tasks.py").read_bytes()).hexdigest()
     identity = digest({"configs": serialized, "suite": SUITE, "repeats": repeats, "fixtures": fixture_hashes, "contract": contract_hash})
     if resume:
@@ -441,15 +451,16 @@ def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, b
         record = {"id": uuid.uuid4().hex, "suite": SUITE, "rubric": "1.0", "identity": identity,
                   "created_at": datetime.now(timezone.utc).isoformat(), "configs": serialized,
                   "config_hashes": [digest(c) for c in serialized], "repeats": repeats,
+                  "selected_tasks": list(task_ids),
                   "fixture_hashes": fixture_hashes,
                   "contract_hash": contract_hash, "evidence_type": "model experiment" if backend_factory is make_backend else "scripted harness check; not model performance",
-                  "scheduled": len(configs) * repeats * len(TASKS), "provenance": provenance(), "attempts": [], "status": "running"}
+                  "scheduled": len(configs) * repeats * len(task_ids), "provenance": provenance(), "attempts": [], "status": "running"}
     stop = stopped or threading.Event()
     completed = {(r["config_index"], r["task"], r["repetition"]) for r in record["attempts"]}
     atomic_json(path, record)
     try:
         for repetition in range(repeats):
-            for task in TASKS:
+            for task in task_ids:
                 # Rotate configuration order so persistent providers are not always first/last.
                 for offset in range(len(configs)):
                     index = (offset + repetition) % len(configs)
@@ -504,6 +515,7 @@ def wilson(passes, n):
 
 def summaries(record):
     rows = []
+    task_ids = selected_tasks(record.get("selected_tasks"))
     for index, config in enumerate(record["configs"]):
         attempts = [r for r in record["attempts"] if r["config_index"] == index]
         times = sorted(r["elapsed_seconds"] for r in attempts)
@@ -512,12 +524,13 @@ def summaries(record):
         for task in TASKS:
             group = [r for r in attempts if r["task"] == task]
             passed = sum(r["evaluation"]["passed"] for r in group)
-            tasks[task] = {"passed": passed, "attempted": len(group), "scheduled": record["repeats"], "wilson95": wilson(passed, len(group))}
+            tasks[task] = {"passed": passed, "attempted": len(group), "selected": task in task_ids, "scheduled": record["repeats"] if task in task_ids else 0, "wilson95": wilson(passed, len(group))}
         costs = [r["usage"]["estimated_reserved_usd"] for r in attempts]
         actuals = [r["usage"]["actual_tokens"] for r in attempts]
         rows.append({"name": config["name"], "agents": len(config["agents"]), "tasks": tasks,
                      "passed": sum(r["evaluation"]["passed"] for r in attempts), "attempted": n,
-                     "scheduled": record["repeats"] * len(TASKS),
+                     "scheduled": record["repeats"] * len(task_ids),
+                     "selected_tasks": list(task_ids),
                      "minimum_quality": min((r["evaluation"]["score"] for r in attempts), default=None),
                      "mean_quality": round(sum(r["evaluation"]["score"] for r in attempts)/n, 2) if n else None,
                      "median_seconds": ((times[(n-1)//2] + times[n//2])/2) if n else None,
@@ -527,5 +540,6 @@ def summaries(record):
                      "tool_requests": sum(r["usage"]["tool_requests"] for r in attempts),
                      "estimated_reserved_usd": sum(costs) if costs and all(v is not None for v in costs) else None,
                      "violations": sum(e.get("status") == "denied" for r in attempts for e in r["tool_events"]),
-                     "qualified": record["repeats"] >= 5 and all(t["passed"] == record["repeats"] for t in tasks.values())})
+                     "qualified": len(task_ids) == len(TASKS) and record["repeats"] >= 5 and all(t["passed"] == record["repeats"] for t in tasks.values()),
+                     "selection_passed": record["repeats"] >= 5 and all(tasks[t]["passed"] == record["repeats"] for t in task_ids)})
     return rows

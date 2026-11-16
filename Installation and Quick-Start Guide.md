@@ -134,6 +134,10 @@ the selected configuration open setup before a run; unused providers do not bloc
 
 Use **☰ Menu → Baseline tests** to compare single agents or 1–10-agent benchmark
 teams across five objective tasks, with 1/5/20 repeats and HTML/CSV/JSON exports.
+You can also select baseline-task checkboxes below the workspace Task field and
+click **Load selected tasks** or **Compare using this agent**. The comparison page
+retains those tasks and the current model settings; every configuration runs the
+same selected fixtures. Unchecked tasks are excluded from execution and scoring.
 The ordinary task workspace remains single-agent. See [baseline tests and inventory](docs/baseline-tests.md)
 for configuration, CLI commands, execution boundaries, and live-validation limits.
 

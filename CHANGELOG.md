@@ -26,6 +26,11 @@
 
 ## Unreleased
 
+- Added baseline-task checkboxes beside the workspace Task field and on the
+  comparison page, with fixed task previews, workspace-model transfer, selected
+  task scheduling, saved selections/reruns, CLI --tasks, and explicit Not selected
+  report cells. A subset pass does not claim full-suite qualification.
+
 - Added a hamburger-menu Secrets/API inventory dialog with provider accordions,
   secure entry and replacement, required-credential preflight, dated access checks,
   review dates, explicit search verification, and distinct authentication/quota/network states.

@@ -6,6 +6,26 @@ from decimal import Decimal
 
 SUITE = "baseline-v1"
 TASKS = ("B01", "B02", "B03", "B04", "B05")
+TASK_LABELS = {
+    "B01": ("Data reconciliation", "Deduplicate orders and check totals, refunds, and exclusions."),
+    "B02": ("Research with evidence", "Resolve dated sources and provide supporting citations."),
+    "B03": ("Project inspection", "Find configuration defects and produce a checked report."),
+    "B04": ("Tool recovery", "Recover from a failed source without repeated retrieval loops."),
+    "B05": ("Conflicting evidence", "Follow authoritative constraints and identify unknown facts."),
+}
+
+
+def selected_tasks(values=None):
+    if values is None:
+        return TASKS
+    if not isinstance(values, (list, tuple)) or not values or any(not isinstance(v, str) or v not in TASKS for v in values) or len(set(values)) != len(values):
+        raise ValueError("Select one or more distinct baseline task IDs: B01–B05")
+    return tuple(task for task in TASKS if task in values)
+
+
+def task_catalog():
+    return [{"id": task, "title": TASK_LABELS[task][0], "description": TASK_LABELS[task][1],
+             "prompt": fixture(task, 1)["prompt"], "documents": fixture(task, 1)["documents"]} for task in TASKS]
 
 
 def fixture(task, seed=1):

@@ -1,0 +1,39 @@
+<style>
+  .pp-task-picker{border:1px solid #40536d;border-radius:8px;padding:16px;margin:16px 0;font:14px/1.5 system-ui;color:#e5edf7;background:#142031;min-width:0}
+  .pp-task-picker legend{font-weight:600;padding:0 6px}.pp-task-options{display:grid;gap:8px}.pp-task-picker .pp-task-option{display:flex;align-items:flex-start;gap:10px;padding:10px;border:1px solid #34465e;border-radius:6px;background:#1b293b;cursor:pointer;margin:0}
+  .pp-task-picker input[type=checkbox]{width:17px;height:17px;flex:0 0 auto;margin:3px 0 0;accent-color:#78b7ff}.pp-task-picker small{display:block;color:#b2c6df;font-weight:normal}.pp-task-picker button{font:inherit;color:#e5edf7;background:#253b56;border:1px solid #53667e;padding:8px 12px;border-radius:5px;margin:10px 7px 4px 0;cursor:pointer}.pp-task-picker button:disabled{opacity:.5;cursor:default}.pp-task-picker pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:300px;overflow:auto;font:12px/1.6 monospace}.pp-task-picker .pp-task-summary{color:#b8d6fa;margin:10px 0 0}.pp-task-picker :focus-visible{outline:2px solid #9fccff;outline-offset:3px}
+</style>
+<fieldset class="pp-task-picker" id="baseline-task-picker" data-mode="{{ baseline_picker_mode | default('benchmark') }}">
+  <legend>Repeatable baseline tasks</legend>
+  <p>Choose the same tasks for every agent configuration. Each task runs separately with the same fixture seed for each repetition.</p>
+  <div class="pp-task-options">
+  {% for task in baseline_tasks %}
+    <label class="pp-task-option"><input type="checkbox" name="baseline_tasks" value="{{ task.id }}" {% if baseline_picker_mode != 'workspace' %}checked{% endif %}><span><strong>{{ task.id }} · {{ task.title }}</strong><small>{{ task.description }}</small></span></label>
+  {% endfor %}
+  </div>
+  <button type="button" id="baseline-select-all">Select all</button><button type="button" id="baseline-clear-selection">Clear selection</button>
+  {% if baseline_picker_mode == 'workspace' %}<button type="button" id="baseline-load-tasks">Load selected tasks</button><button type="button" id="baseline-open-comparison">Compare using this agent</button>{% endif %}
+  <p class="pp-task-summary" id="baseline-selection-summary" role="status" aria-live="polite"></p>
+  <details><summary>Preview selected task instructions</summary><pre id="baseline-task-preview"></pre></details>
+</fieldset>
+<script nonce="{{ session_token }}">
+(() => {
+  const catalog={{ baseline_tasks | tojson }}, picker=document.getElementById('baseline-task-picker');
+  const boxes=Array.from(picker.querySelectorAll('input[name=baseline_tasks]'));
+  let loadedText=null;
+  function ids(){return boxes.filter(b=>b.checked).map(b=>b.value);}
+  function preview(){return catalog.filter(t=>ids().includes(t.id)).map(t=>t.id+' · '+t.title+'\n'+t.prompt+'\n\nFixed inputs for repetition 1:\n'+Object.entries(t.documents).map(([name,content])=>'['+name+']\n'+content).join('\n\n')).join('\n\n────────────────────────\n\n');}
+  function update(){const count=ids().length;const task=document.getElementById('task');if(task&&(!task.value.trim()||(loadedText!==null&&task.value===loadedText))){loadedText=count?preview():null;task.value=loadedText||'';}document.getElementById('baseline-selection-summary').textContent=count?count+' task'+(count===1?'':'s')+' selected · same inputs and scoring for each configuration.':'Select at least one baseline task.';document.getElementById('baseline-task-preview').textContent=count?preview():'No baseline tasks selected.';for(const id of ['baseline-load-tasks','baseline-open-comparison']){const b=document.getElementById(id);if(b)b.disabled=!count;}}
+  function select(values){if(!Array.isArray(values)||!values.length||values.some(id=>!catalog.some(t=>t.id===id)))throw new Error('Choose valid baseline task IDs.');for(const b of boxes)b.checked=values.includes(b.value);update();}
+  function destination(){const config=collectConfig();const params=new URLSearchParams({tasks:ids().join(','),backend:config.backend,model:config.model,planner:config.planner,temperature:String(config.temperature),max_iterations:String(config.max_iterations),max_output_tokens:String(config.max_tokens)});if(['lm_studio','ollama','azure_openai'].includes(config.backend))params.set('base_url',config.base_url);return '/baselines?'+params;}
+  function transfer(){if(ids().length)window.location.assign(destination());}
+  for(const box of boxes)box.addEventListener('change',update);
+  document.getElementById('baseline-select-all').addEventListener('click',()=>{for(const b of boxes)b.checked=true;update();});
+  document.getElementById('baseline-clear-selection').addEventListener('click',()=>{for(const b of boxes)b.checked=false;update();});
+  const load=document.getElementById('baseline-load-tasks');
+  if(load)load.addEventListener('click',()=>{if(!ids().length)return;loadedText=preview();const task=document.getElementById('task');task.value=loadedText;task.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('baseline-selection-summary').textContent=ids().length+' baseline tasks loaded. Run Agent will open the scored baseline runner with your selected model settings. Custom task text can be edited separately.';});
+  const compare=document.getElementById('baseline-open-comparison');if(compare)compare.addEventListener('click',transfer);
+  window.playpenBaselineTasks={ids,select,update,transfer,destination,runLoaded:()=>loadedText!==null&&document.getElementById('task')?.value===loadedText};
+  update();
+})();
+</script>

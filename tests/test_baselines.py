@@ -7,7 +7,7 @@ from unittest.mock import Mock
 import pytest
 from fastapi.testclient import TestClient
 
-from benchmarks.tasks import TASKS, expected, fixture, score
+from benchmarks.tasks import TASKS, expected, fixture, score, selected_tasks, task_catalog
 from benchmarks.runner import (ExperimentConfig, Member, Budget, ReadFixture, WriteArtifact,
                                attempt, run_experiment, summaries, wilson, BoundedCalculator, isolated_attempt)
 from benchmarks.report import render_report
@@ -382,3 +382,84 @@ def test_five_repeats_use_distinct_seeded_inputs_and_qualify(tmp_path):
     assert len(record["attempts"]) == 25
     assert summaries(record)[0]["qualified"]
     assert len({r["fixture_hash"] for r in record["attempts"] if r["task"] == "B01"}) == 5
+
+
+@pytest.mark.parametrize("values", [[], ["B06"], ["B01", "B01"], [None], "B01"])
+def test_invalid_task_selections_are_rejected(values):
+    with pytest.raises(ValueError):
+        selected_tasks(values)
+
+
+def test_task_subset_is_shared_recorded_and_reports_unselected_tasks(tmp_path):
+    configs = [ExperimentConfig(name="single"), ExperimentConfig(name="team", agents=[Member(), Member(), Member()])]
+    record = run_experiment(configs, tmp_path / "subset", repeats=1, tasks=["B04", "B01"], backend_factory=scripted)
+    assert record["selected_tasks"] == ["B01", "B04"]
+    assert record["scheduled"] == 4
+    assert len(record["attempts"]) == 4
+    assert {r["task"] for r in record["attempts"]} == {"B01", "B04"}
+    for task in ["B01", "B04"]:
+        assert len({r["fixture_hash"] for r in record["attempts"] if r["task"] == task}) == 1
+    rows = render_report(record, tmp_path / "subset")
+    assert all(row["scheduled"] == 2 for row in rows)
+    assert all(row["tasks"]["B02"]["scheduled"] == 0 for row in rows)
+    assert "Not selected" in (tmp_path / "subset" / "comparison.csv").read_text()
+    resumed = run_experiment(configs, tmp_path / "subset", repeats=1, tasks=["B01", "B04"], backend_factory=scripted, resume=True)
+    assert len(resumed["attempts"]) == 4
+    with pytest.raises(ValueError, match="Resume configuration"):
+        run_experiment(configs, tmp_path / "subset", repeats=1, tasks=["B01"], backend_factory=scripted, resume=True)
+
+
+def test_subset_pass_does_not_claim_full_suite_qualification(tmp_path):
+    record = run_experiment([ExperimentConfig()], tmp_path / "subset-five", repeats=5, tasks=["B01"], backend_factory=scripted)
+    row = summaries(record)[0]
+    assert row["selection_passed"]
+    assert not row["qualified"]
+    assert row["passed"] == row["scheduled"] == 5
+
+
+def test_task_catalog_and_checkbox_pages_are_available_without_answer_keys(tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "ROOT", tmp_path)
+    client = TestClient(server.app, base_url="http://127.0.0.1")
+    assert client.get("/api/benchmark-tasks").status_code == 403
+    client.headers["X-Playpen-Token"] = server.API_TOKEN
+    catalog = client.get("/api/benchmark-tasks").json()["tasks"]
+    assert [t["id"] for t in catalog] == list(TASKS)
+    assert catalog == task_catalog()
+    assert all("expected" not in task for task in catalog)
+    for page in ["/", "/baselines"]:
+        html = client.get(page).text
+        assert html.count('name="baseline_tasks"') == 5
+        assert "Load selected tasks" in html if page == "/" else "Select all" in html
+    invalid = {"configs":[{}],"tasks":["B99"],"repeats":1}
+    assert client.post("/api/benchmarks", json=invalid).status_code == 400
+    invalid["tasks"] = []
+    assert client.post("/api/benchmarks", json=invalid).status_code == 422
+
+
+def test_dashboard_launch_runs_only_checked_tasks(tmp_path, monkeypatch):
+    from debugging.dashboard import experiments
+    monkeypatch.setattr(server, "ROOT", tmp_path)
+    monkeypatch.setattr(experiments, "JOBS", {})
+    errors = []
+    def offline(configs, output, repeats, **kwargs):
+        try:
+            return run_experiment(configs, output, repeats, backend_factory=scripted, **kwargs)
+        except Exception as exc:
+            errors.append(repr(exc))
+            raise
+    monkeypatch.setattr(experiments, "run_experiment", offline)
+    client = TestClient(server.app, base_url="http://127.0.0.1", headers={"X-Playpen-Token": server.API_TOKEN})
+    response = client.post("/api/benchmarks", json={"configs":[{}],"tasks":["B01","B05"],"repeats":1})
+    assert response.status_code == 200
+    job = response.json()["id"]
+    result = None
+    for _ in range(100):
+        result = client.get("/api/benchmarks/" + job).json()
+        if result["status"] != "running":
+            break
+        time.sleep(.02)
+    assert not errors, errors
+    assert result["status"] == "completed", result
+    assert result["selected_tasks"] == ["B01", "B05"]
+    assert result["progress"]["scheduled"] == 2
+    assert [r["task"] for r in result["attempts"]] == ["B01", "B05"]
