@@ -6,6 +6,8 @@ class BaseBackend(ABC):
 
     def record_usage(self, response):
         """Keep only numeric provider usage; missing data is explicitly unknown."""
+        identity = getattr(response, "model", None)
+        self.last_model_identity = identity if isinstance(identity, str) and len(identity) <= 500 else None
         usage = getattr(response, "usage", None)
         def number(name):
             value = getattr(usage, name, None)

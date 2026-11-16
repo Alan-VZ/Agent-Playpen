@@ -41,6 +41,21 @@ Correctness comes from deterministic validators, not an LLM judge. The rubric is
 
 ## Run from the dashboard
 
+**Refresh model list** discovers model IDs; it does not load a model into LM
+Studio. For `lm_studio`, choose an exact ID and use **Check loaded status** or
+**Load selected model in LM Studio**. The load action uses the native local API,
+then verifies the exact loaded instance before updating the selected ID. It does
+not automatically download models or explicitly unload other models; LM Studio's
+own memory policies still apply. A timed-out load may continue in LM Studio, so
+check status before trying again. Local API authentication, unsupported native
+API versions, and insufficient-memory failures produce actionable messages.
+The management integration targets LM Studio 0.4+ on HTTP loopback servers.
+
+These operations follow LM Studio's official [load API](https://lmstudio.ai/docs/developer/rest/load)
+and [native model list](https://lmstudio.ai/docs/developer/rest/list), reviewed
+November 15, 2026. Model-list and status checks are read-only; memory loading
+requires the explicit load button.
+
 The main workspace now has **Repeatable baseline tasks** checkboxes directly below
 the Task field. Select any of B01–B05 and click **Load selected tasks** to preview
 their fixed instructions and inputs in the Task field. Checking a task automatically
@@ -57,6 +72,20 @@ seed for a given repetition. Unchecked tasks do not execute and display **Not
 selected** in reports. Selection is saved with results and restored by **Use these
 settings for a new run**. Resume rejects a changed selection. Passing a subset is
 recorded separately from qualifying on the full five-task suite.
+
+Baseline selection now automatically sets **ReAct** and the required fixture
+tools: **Read baseline inputs** for every task, **Calculator** for B01, and
+**Write baseline report** for B03. The workspace shows those checked tools and
+temporarily locks its planner; clearing baseline selection restores the custom
+planner and ordinary tools. On the comparison page every agent uses the selected
+task setup automatically, and the backend records that effective setup in the
+experiment. For deliberate planner/tool comparisons, uncheck **Automatically
+select the baseline planner and required tools** in a configuration. CLI callers
+can set `auto_baseline_setup` to false for the same explicit override.
+
+An explicit model ID is now required before a real benchmark starts;
+`local-model` is rejected as a placeholder. Provider-reported model identities
+are retained in individual model-call usage records when supplied.
 
 Open `/baselines`. Use the form to name a configuration, select 1–10 agents, set each provider/model/planner/role, and set shared time, token-reservation, and tool-request limits. **Load available models** is an explicit provider request, not proof of inference access. Use **Add comparison configuration** or the single-versus-team preset. The last member of a team is the critic/synthesizer; preceding members work independently before synthesis. Two agents mean one researcher and one synthesizer. The ordinary workspace remains a single-agent workspace.
 
@@ -97,6 +126,7 @@ ruff check .
 python tests/render_baseline_ui.py
 node tests/baseline_ui.cjs
 node tests/baseline_tasks_ui.cjs
+node tests/local_models_ui.cjs
 python -m build --no-isolation
 ```
 

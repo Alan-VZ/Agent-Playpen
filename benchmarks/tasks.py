@@ -25,7 +25,18 @@ def selected_tasks(values=None):
 
 def task_catalog():
     return [{"id": task, "title": TASK_LABELS[task][0], "description": TASK_LABELS[task][1],
-             "prompt": fixture(task, 1)["prompt"], "documents": fixture(task, 1)["documents"]} for task in TASKS]
+             "prompt": fixture(task, 1)["prompt"], "documents": fixture(task, 1)["documents"],
+             "planner": "react", "tools": baseline_setup([task])["tools"]} for task in TASKS]
+
+
+def baseline_setup(tasks=None):
+    ids = selected_tasks(tasks)
+    tools = ["read_fixture"]
+    if "B01" in ids:
+        tools.append("calculator")
+    if "B03" in ids:
+        tools.append("write_artifact")
+    return {"planner": "react", "tools": tools}
 
 
 def fixture(task, seed=1):

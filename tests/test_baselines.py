@@ -449,7 +449,7 @@ def test_dashboard_launch_runs_only_checked_tasks(tmp_path, monkeypatch):
             raise
     monkeypatch.setattr(experiments, "run_experiment", offline)
     client = TestClient(server.app, base_url="http://127.0.0.1", headers={"X-Playpen-Token": server.API_TOKEN})
-    response = client.post("/api/benchmarks", json={"configs":[{}],"tasks":["B01","B05"],"repeats":1})
+    response = client.post("/api/benchmarks", json={"configs":[{"agents":[{"model":"fixture-model"}]}],"tasks":["B01","B05"],"repeats":1})
     assert response.status_code == 200
     job = response.json()["id"]
     result = None

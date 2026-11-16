@@ -420,12 +420,13 @@
               <div class="input-row">
                 <input id="model" name="model" value="local-model"
                        autocomplete="off" placeholder="Type to search, or pick from the list" />
-                <button type="button" id="load-models" class="inline-btn">Load</button>
+                <button type="button" id="load-models" class="inline-btn">Refresh model list</button>
               </div>
               <div id="model-dropdown" class="custom-dropdown" style="display: none;">
                 <div id="model-options" class="dropdown-list" role="listbox" aria-label="Models with prices"></div>
               </div>
               <div id="model-note" class="field-note"></div>
+              <div id="local-model-controls"></div>
               <div id="model-price-note" class="field-note" aria-live="polite"></div>
               <p class="field-note"><a id="model-price-source" target="_blank" rel="noopener noreferrer" hidden>Price source ↗</a>
                 <a href="/model-prices" target="_blank" rel="noopener" style="color: var(--accent, #79baff);">Compare model prices across backends ↗</a></p>
@@ -556,6 +557,7 @@
     </div>
   </div>
 
+  {% include 'local_model_controls.html' %}
   <script nonce="{{ session_token }}">
     // Credentials never travel in query strings or general configuration payloads.
     const originalFetch = window.fetch.bind(window);
@@ -677,6 +679,7 @@
 
       syncBackendDefaults();
       applyToolTooltips();
+      window.playpenBaselineTasks?.update();
     }
 
     function collectConfig() {
@@ -762,6 +765,10 @@
     document.getElementById('agent-form').addEventListener('submit', async function (event) {
       event.preventDefault();
       if (activeRun) return;
+      if (window.playpenBaselineTasks?.ids().length && !window.playpenBaselineTasks.runLoaded()) {
+        setStatus('error', 'Baseline tasks are selected. Load the selected tasks or use Compare using this agent; clear the baseline selection to run your custom task.');
+        return;
+      }
       if (window.playpenBaselineTasks?.runLoaded()) {
         if (!window.playpenBaselineTasks.ids().length) {
           setStatus('error', 'Select at least one baseline task.');
@@ -1334,6 +1341,7 @@
           item.addEventListener('click', () => {
             modelInput.value = name;
             renderSelectedModelPrice();
+            modelInput.dispatchEvent(new Event('change', {bubbles: true}));
             document.getElementById('model-dropdown').style.display = 'none';
           });
           item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); item.click(); } });
@@ -1427,7 +1435,17 @@
     initHelp();
     initHelpToggle();
     initModelAndKeys();
+    const localModelControls = window.playpenLocalModels?.mount(document.getElementById('local-model-controls'), {
+      backend: () => backendSelect.value, model: () => modelInput.value,
+      baseUrl: () => document.getElementById('base_url').value,
+      loaded: name => { modelInput.value = name; renderSelectedModelPrice(); }
+    });
+    backendSelect.addEventListener('change', () => localModelControls?.refresh());
+    modelInput.addEventListener('input', () => localModelControls?.refresh());
+    modelInput.addEventListener('change', () => { localModelControls?.refresh(); if (backendSelect.value === 'lm_studio') localModelControls?.check(); });
+    document.getElementById('base_url').addEventListener('change', () => localModelControls?.refresh());
     loadDefaults().then(() => {
+      localModelControls?.refresh();
       refreshKeyStatus();
       loadModels(true);
     });

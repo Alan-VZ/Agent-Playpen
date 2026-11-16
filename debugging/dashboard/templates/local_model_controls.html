@@ -1,0 +1,17 @@
+<script nonce="{{ session_token }}">
+window.playpenLocalModels = {
+  mount(parent, options) {
+    const token={{ session_token | tojson }};
+    const status=document.createElement('p');status.className='model-note';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+    const check=document.createElement('button'),load=document.createElement('button');
+    check.type=load.type='button';check.textContent='Check loaded status';load.textContent='Load selected model in LM Studio';check.className=load.className='inline-btn';
+    parent.append(check,load,status);
+    let context='',busy=false;
+    const current=()=>JSON.stringify([options.backend(),options.model(),options.baseUrl()]);
+    function refresh(){parent.hidden=options.backend()!=='lm_studio';parent.style.display=parent.hidden?'none':'';const next=current();if(next!==context){context=next;status.textContent='Selecting a name or refreshing the list does not load the model into LM Studio.';}const invalid=!options.model().trim()||options.model()==='local-model';load.disabled=check.disabled=busy||invalid;}
+    async function request(action){if(busy||options.backend()!=='lm_studio')return;const snapshot=current();busy=true;refresh();status.textContent=action==='load'?'Loading the selected model into LM Studio; waiting for verified loaded status…':'Checking the selected model in LM Studio…';try{const response=await fetch('/api/local-models/'+action,{method:'POST',headers:{'Content-Type':'application/json','X-Playpen-Token':token},body:JSON.stringify({model:options.model(),base_url:options.baseUrl()||'http://localhost:1234/v1'})});const data=await response.json();if(!response.ok)throw new Error(data.detail||data.message||'LM Studio model operation failed.');if(snapshot!==current())return;status.textContent=data.message;if(action==='load'&&data.loaded){options.loaded(data.model);context=current();}}catch(error){if(snapshot===current())status.textContent=error.message;}finally{busy=false;refresh();}}
+    check.addEventListener('click',()=>request('status'));load.addEventListener('click',()=>request('load'));refresh();
+    return {refresh,check:()=>request('status')};
+  }
+};
+</script>

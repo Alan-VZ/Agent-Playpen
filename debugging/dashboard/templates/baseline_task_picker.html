@@ -5,7 +5,7 @@
 </style>
 <fieldset class="pp-task-picker" id="baseline-task-picker" data-mode="{{ baseline_picker_mode | default('benchmark') }}">
   <legend>Repeatable baseline tasks</legend>
-  <p>Choose the same tasks for every agent configuration. Each task runs separately with the same fixture seed for each repetition.</p>
+  <p>Choose the same tasks for every agent configuration. Each task runs separately with the same fixture seed for each repetition. ReAct and the required baseline tools are selected automatically; clear the selection to return to your custom setup.</p>
   <div class="pp-task-options">
   {% for task in baseline_tasks %}
     <label class="pp-task-option"><input type="checkbox" name="baseline_tasks" value="{{ task.id }}" {% if baseline_picker_mode != 'workspace' %}checked{% endif %}><span><strong>{{ task.id }} · {{ task.title }}</strong><small>{{ task.description }}</small></span></label>
@@ -20,10 +20,13 @@
 (() => {
   const catalog={{ baseline_tasks | tojson }}, picker=document.getElementById('baseline-task-picker');
   const boxes=Array.from(picker.querySelectorAll('input[name=baseline_tasks]'));
-  let loadedText=null;
+  let loadedText=null,customSetup=null;
+  function setup(){const tools=new Set();for(const task of catalog.filter(t=>ids().includes(t.id)))for(const tool of task.tools||['read_fixture'])tools.add(tool);return {planner:'react',tools:Array.from(tools)};}
+  function configureWorkspace(){const planner=document.getElementById('planner'),ordinary=document.getElementById('tool-list');if(!planner||!ordinary)return;const active=ids().length>0;if(active&&!planner.options.length)return;let panel=document.getElementById('baseline-selected-tools');if(!panel){panel=document.createElement('div');panel.id='baseline-selected-tools';panel.className='tools';ordinary.after(panel);}if(active){if(!customSetup)customSetup={planner:planner.value};const selected=setup();planner.value=selected.planner;planner.disabled=true;ordinary.style.display='none';panel.style.display='grid';panel.replaceChildren();const names={read_fixture:'Read baseline inputs',calculator:'Calculator',write_artifact:'Write baseline report'};for(const name of selected.tools){const label=document.createElement('label');label.className='tool-item';const input=document.createElement('input');input.type='checkbox';input.name='baseline_tools';input.value=name;input.checked=true;input.disabled=true;label.append(input,document.createTextNode(names[name]||name));panel.append(label);}}else{if(customSetup){planner.value=customSetup.planner;customSetup=null;}planner.disabled=false;ordinary.style.display='';panel.style.display='none';}}
+
   function ids(){return boxes.filter(b=>b.checked).map(b=>b.value);}
   function preview(){return catalog.filter(t=>ids().includes(t.id)).map(t=>t.id+' · '+t.title+'\n'+t.prompt+'\n\nFixed inputs for repetition 1:\n'+Object.entries(t.documents).map(([name,content])=>'['+name+']\n'+content).join('\n\n')).join('\n\n────────────────────────\n\n');}
-  function update(){const count=ids().length;const task=document.getElementById('task');if(task&&(!task.value.trim()||(loadedText!==null&&task.value===loadedText))){loadedText=count?preview():null;task.value=loadedText||'';}document.getElementById('baseline-selection-summary').textContent=count?count+' task'+(count===1?'':'s')+' selected · same inputs and scoring for each configuration.':'Select at least one baseline task.';document.getElementById('baseline-task-preview').textContent=count?preview():'No baseline tasks selected.';for(const id of ['baseline-load-tasks','baseline-open-comparison']){const b=document.getElementById(id);if(b)b.disabled=!count;}}
+  function update(){configureWorkspace();const count=ids().length;const task=document.getElementById('task');if(task&&(!task.value.trim()||(loadedText!==null&&task.value===loadedText))){loadedText=count?preview():null;task.value=loadedText||'';}document.getElementById('baseline-selection-summary').textContent=count?count+' task'+(count===1?'':'s')+' selected · same inputs and scoring for each configuration.':'Select at least one baseline task.';document.getElementById('baseline-task-preview').textContent=count?preview():'No baseline tasks selected.';for(const id of ['baseline-load-tasks','baseline-open-comparison']){const b=document.getElementById(id);if(b)b.disabled=!count;}document.dispatchEvent(new CustomEvent('baseline-tasks-changed'));}
   function select(values){if(!Array.isArray(values)||!values.length||values.some(id=>!catalog.some(t=>t.id===id)))throw new Error('Choose valid baseline task IDs.');for(const b of boxes)b.checked=values.includes(b.value);update();}
   function destination(){const config=collectConfig();const params=new URLSearchParams({tasks:ids().join(','),backend:config.backend,model:config.model,planner:config.planner,temperature:String(config.temperature),max_iterations:String(config.max_iterations),max_output_tokens:String(config.max_tokens)});if(['lm_studio','ollama','azure_openai'].includes(config.backend))params.set('base_url',config.base_url);return '/baselines?'+params;}
   function transfer(){if(ids().length)window.location.assign(destination());}
@@ -33,7 +36,7 @@
   const load=document.getElementById('baseline-load-tasks');
   if(load)load.addEventListener('click',()=>{if(!ids().length)return;loadedText=preview();const task=document.getElementById('task');task.value=loadedText;task.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('baseline-selection-summary').textContent=ids().length+' baseline tasks loaded. Run Agent will open the scored baseline runner with your selected model settings. Custom task text can be edited separately.';});
   const compare=document.getElementById('baseline-open-comparison');if(compare)compare.addEventListener('click',transfer);
-  window.playpenBaselineTasks={ids,select,update,transfer,destination,runLoaded:()=>loadedText!==null&&document.getElementById('task')?.value===loadedText};
+  window.playpenBaselineTasks={ids,select,update,setup,transfer,destination,runLoaded:()=>loadedText!==null&&document.getElementById('task')?.value===loadedText};
   update();
 })();
 </script>

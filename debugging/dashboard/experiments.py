@@ -7,10 +7,11 @@ from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from benchmarks.runner import ExperimentConfig, run_experiment, summaries, atomic_json
+from benchmarks.runner import ExperimentConfig, run_experiment, summaries, atomic_json, prepare_baseline_configs
 from benchmarks.report import render_report
 from benchmarks.tasks import TASKS, selected_tasks, task_catalog
 from debugging.dashboard.readiness import Inventory, preflight
+from debugging.dashboard import local_models
 
 JOBS = {}
 LOCK = threading.RLock()
@@ -37,9 +38,29 @@ class LaunchRequest(BaseModel):
     tasks: list[str] = Field(default_factory=lambda: list(TASKS), min_length=1, max_length=5)
 
 
+class LocalModelRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model: str = Field(min_length=1, max_length=500)
+    base_url: str = Field(default="http://localhost:1234/v1", max_length=500)
+
+
 def install(server):
     app = server.app
     server.templates.env.globals["baseline_tasks"] = task_catalog()
+
+    @app.post("/api/local-models/status")
+    def local_model_status(payload: LocalModelRequest):
+        try:
+            return local_models.manage(payload.base_url, payload.model)
+        except local_models.ModelManagementError as exc:
+            raise HTTPException(400, str(exc)) from None
+
+    @app.post("/api/local-models/load")
+    def local_model_load(payload: LocalModelRequest):
+        try:
+            return local_models.manage(payload.base_url, payload.model, load=True)
+        except local_models.ModelManagementError as exc:
+            raise HTTPException(400, str(exc)) from None
 
     @app.get("/api/benchmark-tasks")
     def baseline_tasks():
@@ -126,6 +147,7 @@ def install(server):
             tasks = selected_tasks(payload.tasks)
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from None
+        payload.configs = prepare_baseline_configs(payload.configs, tasks)
         if payload.repeats not in {1, 5, 20}:
             raise HTTPException(400, "Select 1, 5, or 20 repeats")
         for config in payload.configs:
@@ -133,6 +155,8 @@ def install(server):
             if not result["ready"]:
                 raise HTTPException(409, {"message": "Required APIs need setup", "readiness": result})
             for member in config.agents:
+                if member.model.strip() in {"", "local-model"}:
+                    raise HTTPException(400, "Choose an explicit model ID from Refresh model list; local-model is only a placeholder.")
                 if member.backend not in server.BackendFactory.REGISTRY or member.planner not in server.PLANNER_MAP:
                     raise HTTPException(400, "Unsupported backend or planner")
             if config.dollar_limit is not None and (config.usd_per_million_input is None or config.usd_per_million_output is None or not config.rate_source):

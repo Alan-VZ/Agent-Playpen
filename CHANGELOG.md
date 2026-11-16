@@ -26,6 +26,13 @@
 
 ## Unreleased
 
+- Separated model discovery from LM Studio memory loading: explicit load/status
+  controls verify the exact native model instance and report load failures.
+- Automatically select the baseline ReAct planner and required fixture tools,
+  restore custom workspace settings on clear, and provide an explicit comparison
+  override. Reject placeholder model IDs before real benchmark execution and
+  retain provider-reported model identity in model-call evidence.
+
 - Added baseline-task checkboxes beside the workspace Task field and on the
   comparison page, with fixed task previews, workspace-model transfer, selected
   task scheduling, saved selections/reruns, CLI --tasks, and explicit Not selected

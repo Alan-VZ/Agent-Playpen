@@ -99,8 +99,10 @@ Open your browser to: `http://localhost:8765`
 ### Using the web dashboard
 
 1. **Select Backend** — Choose "lm_studio" (local) or a cloud provider such as "openrouter"; save its key with the credential manager before running
-2. **Load Models** — Click the **Load** button to discover available models
+2. **Refresh model list** — Discover available model IDs; this does not load model weights
 3. **Select a Model** — Pick from the dropdown (filters as you type)
+   For LM Studio, use **Load selected model in LM Studio** and wait for verified
+   loaded status. **Check loaded status** checks memory state without loading.
 4. **Configure Tools** — Check which tools to enable (web_search, fetch, read_file, etc.)
 5. **Enter Your Task** — Describe what you want the agent to do
 6. **Run Agent** — Click the button and watch model/tool activity
@@ -138,6 +140,8 @@ You can also select baseline-task checkboxes below the workspace Task field and
 click **Load selected tasks** or **Compare using this agent**. The comparison page
 retains those tasks and the current model settings; every configuration runs the
 same selected fixtures. Unchecked tasks are excluded from execution and scoring.
+ReAct and the required baseline tools are selected automatically; clearing the
+baseline selection restores your custom workspace planner and ordinary tools.
 The ordinary task workspace remains single-agent. See [baseline tests and inventory](docs/baseline-tests.md)
 for configuration, CLI commands, execution boundaries, and live-validation limits.
 

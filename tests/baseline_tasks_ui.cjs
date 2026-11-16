@@ -28,8 +28,12 @@ async function check(page){
   if(page==='index'){
    await waitFor(()=>d.getElementById('backend').options.length>0);
    assert.equal(picker.ids().length,0);
+   d.getElementById('planner').value='cot';
    d.querySelector('input[name=baseline_tasks][value=B01]').click();assert.ok(d.getElementById('task').value.includes('B01 · Data reconciliation'));
+   assert.equal(d.getElementById('planner').value,'react');assert.equal(d.getElementById('planner').disabled,true);
+   assert.deepEqual(Array.from(d.querySelectorAll('input[name=baseline_tools]:checked')).map(i=>i.value),['read_fixture','calculator']);
    d.querySelector('input[name=baseline_tasks][value=B01]').click();assert.equal(d.getElementById('task').value,'');
+   assert.equal(d.getElementById('planner').value,'cot');assert.equal(d.getElementById('planner').disabled,false);
    d.getElementById('task').value='My custom task';
    d.querySelector('input[name=baseline_tasks][value=B01]').click();d.querySelector('input[name=baseline_tasks][value=B05]').click();
    assert.equal(d.getElementById('task').value,'My custom task','checking boxes should not overwrite a custom task');
@@ -45,6 +49,8 @@ async function check(page){
   }else{
    assert.deepEqual(Array.from(picker.ids()),['B01','B05']);
    const config=JSON.parse(d.getElementById('baseline-config').value)[0];assert.equal(config.agents[0].model,'chosen-model');assert.equal(config.max_iterations,12);assert.equal(config.max_output_tokens,1024);
+   assert.equal(config.agents[0].planner,'react');assert.deepEqual(config.agents[0].tools,['read_fixture','calculator']);
+   picker.select(['B03']);assert.deepEqual(JSON.parse(d.getElementById('baseline-config').value)[0].agents[0].tools,['read_fixture','write_artifact']);
    d.getElementById('baseline-clear-selection').click();d.getElementById('baseline-run').click();await waitFor(()=>d.getElementById('baseline-message').textContent.includes('at least one'));assert.equal(launches.length,0);
    picker.select(['B01','B05']);d.getElementById('baseline-repeats').value='1';d.getElementById('baseline-run').click();await waitFor(()=>launches.length===1);assert.deepEqual(launches[0].tasks,['B01','B05']);
    await waitFor(()=>d.getElementById('baseline-exports').children.length===4);

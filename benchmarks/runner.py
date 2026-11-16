@@ -29,7 +29,7 @@ from planner.tree_planner import TreePlanner
 from tools.base_tool import BaseTool
 from tools.packs.utils.calculator_tool import CalculatorTool
 from tools.tool_registry import ToolRegistry
-from benchmarks.tasks import SUITE, TASKS, fixture, score, expected, selected_tasks
+from benchmarks.tasks import SUITE, TASKS, fixture, score, expected, selected_tasks, baseline_setup
 
 
 class Member(BaseModel):
@@ -58,6 +58,20 @@ class ExperimentConfig(BaseModel):
     usd_per_million_output: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     rate_source: str | None = Field(default=None, max_length=500)
     dollar_limit: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    auto_baseline_setup: bool = True
+
+
+def prepare_baseline_configs(configs, tasks):
+    setup = baseline_setup(tasks)
+    result = []
+    for original in configs:
+        config = original.model_copy(deep=True)
+        if config.auto_baseline_setup:
+            for member in config.agents:
+                member.planner = setup["planner"]
+                member.tools = list(setup["tools"])
+        result.append(config)
+    return result
 
 
 class Budget:
@@ -188,6 +202,8 @@ class MeteredBackend:
                 stats = getattr(self.backend, "last_usage", None) or getattr(self.backend, "last_response_stats", {}) or {}
                 total = stats.get("total_tokens")
                 call["actual_tokens"] = total if isinstance(total, int) and total >= 0 else None
+                identity = getattr(self.backend, "last_model_identity", None)
+                call["reported_model"] = identity if isinstance(identity, str) and len(identity) <= 500 else None
                 call["status"] = "completed"
             return value
         except Exception:
@@ -425,11 +441,14 @@ def provenance():
 
 def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, backend_factory=make_backend, resume=False, tasks=None):
     task_ids = selected_tasks(tasks)
+    configs = prepare_baseline_configs(configs, task_ids)
     if repeats not in {1, 5, 20}:
         raise ValueError("Repeats must be 1 (smoke), 5 (baseline), or 20 (extended)")
     if not configs:
         raise ValueError("At least one configuration is required")
     for config in configs:
+        if backend_factory is make_backend and any(member.model.strip() in {"", "local-model"} for member in config.agents):
+            raise ValueError("Choose an explicit model ID from Refresh model list before running benchmarks; local-model is a placeholder.")
         if config.dollar_limit is not None and (config.usd_per_million_input is None or config.usd_per_million_output is None or not config.rate_source):
             raise ValueError("Dollar reservations require declared rates and their source")
         if any(member.backend not in BackendFactory.REGISTRY or member.planner not in {"react", "cot", "tree"} for member in config.agents):
