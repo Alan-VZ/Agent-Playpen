@@ -26,6 +26,11 @@
 
 ## Unreleased
 
+- Model switching now defaults to unloading previous text-model instances and
+  verifying their removal before loading the selection, following ComfyUI's
+  release-before-allocation lifecycle. Added explicit coexistence override,
+  serialized switches, active-benchmark guard, and clearer load-failure outcomes.
+
 - Separated model discovery from LM Studio memory loading: explicit load/status
   controls verify the exact native model instance and report load failures.
 - Automatically select the baseline ReAct planner and required fixture tools,

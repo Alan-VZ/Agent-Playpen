@@ -42,6 +42,7 @@ class LocalModelRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     model: str = Field(min_length=1, max_length=500)
     base_url: str = Field(default="http://localhost:1234/v1", max_length=500)
+    replace_loaded: bool = True
 
 
 def install(server):
@@ -57,8 +58,11 @@ def install(server):
 
     @app.post("/api/local-models/load")
     def local_model_load(payload: LocalModelRequest):
+        with LOCK:
+            if any(job["status"] == "running" for job in JOBS.values()):
+                raise HTTPException(409, "Finish or stop the active benchmark before switching local models.")
         try:
-            return local_models.manage(payload.base_url, payload.model, load=True)
+            return local_models.manage(payload.base_url, payload.model, load=True, replace_loaded=payload.replace_loaded)
         except local_models.ModelManagementError as exc:
             raise HTTPException(400, str(exc)) from None
 

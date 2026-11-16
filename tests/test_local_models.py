@@ -27,10 +27,10 @@ def session_with(monkeypatch, *responses):
     return session
 
 
-def catalog(loaded=False, kind="llm"):
+def catalog(loaded=False, kind="llm", other_loaded=False):
     return {"models": [{"key": "chosen-model", "type": kind,
                         "loaded_instances": [{"id": "chosen-instance"}] if loaded else []},
-                       {"key": "other-model", "type": "llm", "loaded_instances": [{"id":"other-instance"}]}]}
+                       {"key": "other-model", "type": "llm", "loaded_instances": [{"id":"other-instance"}] if other_loaded else []}]}
 
 
 def test_status_does_not_load_or_unload(monkeypatch):
@@ -44,9 +44,9 @@ def test_status_does_not_load_or_unload(monkeypatch):
 
 
 def test_loading_verifies_exact_instance_and_preserves_other_models(monkeypatch):
-    session = session_with(monkeypatch, response(catalog()),
-                           response({"status":"loaded","instance_id":"chosen-instance"}), response(catalog(True)))
-    result = local_models.manage("http://127.0.0.1:1234/v1", "chosen-model", load=True)
+    session = session_with(monkeypatch, response(catalog(other_loaded=True)),
+                           response({"status":"loaded","instance_id":"chosen-instance"}), response(catalog(True, other_loaded=True)))
+    result = local_models.manage("http://127.0.0.1:1234/v1", "chosen-model", load=True, replace_loaded=False)
     assert result["loaded"] and result["model"] == "chosen-instance"
     assert [call.args[0] for call in session.request.call_args_list] == ["GET", "POST", "GET"]
     assert session.request.call_args_list[1].kwargs["json"] == {"model": "chosen-model"}
@@ -104,7 +104,7 @@ def test_management_routes_require_local_session(monkeypatch):
     operation = Mock(return_value={"status":"loaded","model":"chosen-instance","loaded":True})
     monkeypatch.setattr(local_models, "manage", operation)
     assert client.post("/api/local-models/load", json={"model":"chosen-model"}).status_code == 200
-    assert operation.call_args.kwargs == {"load":True}
+    assert operation.call_args.kwargs == {"load":True,"replace_loaded":True}
 
 
 def test_baseline_recommendations_depend_on_selected_tasks_and_are_enforced_without_mutation():
@@ -129,3 +129,84 @@ def test_placeholder_is_rejected_before_starting_an_experiment(tmp_path):
     with pytest.raises(ValueError, match="explicit model"):
         run_experiment([ExperimentConfig()], tmp_path / "invalid", repeats=1)
     assert not (tmp_path / "invalid").exists()
+
+
+def test_switch_unloads_and_verifies_before_loading(monkeypatch):
+    session = session_with(monkeypatch, response(catalog(other_loaded=True)),
+                           response({"instance_id":"other-instance"}), response(catalog()),
+                           response({"status":"loaded","instance_id":"chosen-instance"}), response(catalog(True)))
+    result = local_models.manage("http://localhost:1234/v1", "chosen-model", load=True)
+    calls = session.request.call_args_list
+    assert [(c.args[0],c.args[1].rsplit('/',1)[-1]) for c in calls] == [
+        ("GET","models"),("POST","unload"),("GET","models"),("POST","load"),("GET","models")]
+    assert calls[1].kwargs["json"] == {"instance_id":"other-instance"}
+    assert result["unloaded_instances"] == ["other-instance"]
+    assert "Unloaded 1" in result["message"]
+
+
+def test_switch_clears_multiple_previous_instances_but_preserves_embeddings(monkeypatch):
+    before=catalog(other_loaded=True)
+    before["models"][1]["loaded_instances"].append({"id":"other-instance-2"})
+    before["models"].append({"key":"embed","type":"embedding","loaded_instances":[{"id":"embed-instance"}]})
+    after=catalog()
+    after["models"].append(before["models"][-1])
+    session=session_with(monkeypatch,response(before),response({"instance_id":"other-instance"}),
+                         response({"instance_id":"other-instance-2"}),response(after),
+                         response({"status":"loaded","instance_id":"chosen-instance"}),response(catalog(True)))
+    result=local_models.manage("http://localhost:1234/v1","chosen-model",load=True)
+    assert result["unloaded_instances"]==["other-instance","other-instance-2"]
+    assert all(c.kwargs.get("json",{}).get("instance_id")!="embed-instance" for c in session.request.call_args_list)
+
+
+def test_unload_failure_stops_before_load(monkeypatch):
+    session=session_with(monkeypatch,response(catalog(other_loaded=True)),response({},500))
+    with pytest.raises(local_models.ModelManagementError,match="new model was not loaded"):
+        local_models.manage("http://localhost:1234/v1","chosen-model",load=True)
+    assert not any(c.args[1].endswith('/load') for c in session.request.call_args_list)
+
+
+def test_unload_must_actually_remove_previous_instance(monkeypatch):
+    session=session_with(monkeypatch,response(catalog(other_loaded=True)),response({"instance_id":"other-instance"}),
+                         *[response(catalog(other_loaded=True)) for _ in range(6)])
+    monkeypatch.setattr(local_models.time,"sleep",lambda _:None)
+    with pytest.raises(local_models.ModelManagementError,match="still listed as loaded"):
+        local_models.manage("http://localhost:1234/v1","chosen-model",load=True)
+    assert not any(c.args[1].endswith('/load') for c in session.request.call_args_list)
+
+
+def test_switch_oom_explains_prior_unload_without_raw_paths_or_retry(monkeypatch):
+    session=session_with(monkeypatch,response(catalog(other_loaded=True)),response({"instance_id":"other-instance"}),
+                         response(catalog()),response({"error":{"type":"model_load_failed","message":"private/path CUDA out of memory"}},500))
+    with pytest.raises(local_models.ModelManagementError) as exc:
+        local_models.manage("http://localhost:1234/v1","chosen-model",load=True)
+    assert "Previous model instances unloaded: 1" in str(exc.value)
+    assert "GPU" in str(exc.value) and "No automatic load retry" in str(exc.value)
+    assert "private/path" not in str(exc.value)
+    assert sum(c.args[1].endswith('/load') for c in session.request.call_args_list)==1
+
+
+def test_already_loaded_selection_can_still_release_other_models(monkeypatch):
+    session=session_with(monkeypatch,response(catalog(True,other_loaded=True)),response({"instance_id":"other-instance"}),
+                         response(catalog(True)),response(catalog(True)))
+    result=local_models.manage("http://localhost:1234/v1","chosen-instance",load=True)
+    assert result["unloaded_instances"]==["other-instance"]
+    assert not any(c.args[1].endswith('/load') for c in session.request.call_args_list)
+
+
+def test_switch_requests_are_serialized():
+    local_models.SWITCH_LOCK.acquire()
+    try:
+        with pytest.raises(local_models.ModelManagementError,match="already in progress"):
+            local_models.manage("http://localhost:1234/v1","chosen-model",load=True)
+    finally:
+        local_models.SWITCH_LOCK.release()
+
+
+def test_active_benchmark_blocks_model_switch(monkeypatch):
+    from debugging.dashboard import experiments
+    monkeypatch.setattr(experiments,"JOBS",{"active":{"status":"running"}})
+    operation=Mock()
+    monkeypatch.setattr(local_models,"manage",operation)
+    client=TestClient(server.app,base_url="http://127.0.0.1",headers={"X-Playpen-Token":server.API_TOKEN})
+    assert client.post('/api/local-models/load',json={"model":"chosen-model"}).status_code==409
+    assert not operation.called

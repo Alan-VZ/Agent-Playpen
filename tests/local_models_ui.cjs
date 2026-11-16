@@ -27,7 +27,7 @@ async function waitFor(fn){for(let n=0;n<100;n++){if(fn())return;await sleep(15)
   buttons.find(b=>b.textContent==='Check loaded status').click();await waitFor(()=>d.querySelector('#local-model-controls p').textContent.includes('Available on disk'));
   assert.equal(mutations.length,0);
   buttons.find(b=>b.textContent==='Load selected model in LM Studio').click();await waitFor(()=>d.getElementById('model').value==='chosen-instance');
-  assert.equal(mutations.length,1);assert.ok(d.querySelector('#local-model-controls p').textContent.includes('Loaded in LM Studio'));
+  assert.equal(mutations.length,1);assert.equal(mutations[0].replace_loaded,true);assert.ok(d.querySelector('#local-model-controls input[type=checkbox]').checked);assert.ok(d.querySelector('#local-model-controls p').textContent.includes('Loaded in LM Studio'));
   d.getElementById('backend').value='openrouter';d.getElementById('backend').dispatchEvent(new dom.window.Event('change'));assert.equal(d.getElementById('local-model-controls').hidden,true);
   assert.deepEqual(errors,[]);
  }finally{dom.window.close();}

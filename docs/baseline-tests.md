@@ -44,17 +44,32 @@ Correctness comes from deterministic validators, not an LLM judge. The rubric is
 **Refresh model list** discovers model IDs; it does not load a model into LM
 Studio. For `lm_studio`, choose an exact ID and use **Check loaded status** or
 **Load selected model in LM Studio**. The load action uses the native local API,
-then verifies the exact loaded instance before updating the selected ID. It does
-not automatically download models or explicitly unload other models; LM Studio's
-own memory policies still apply. A timed-out load may continue in LM Studio, so
+then verifies the exact loaded instance before updating the selected ID. By default,
+**Unload other loaded text models first (recommended)** is checked. Playpen unloads
+each previous text-model instance, verifies their removal, and only then loads the
+selection. Embedding models are preserved. A failed or unconfirmed unload stops
+the switch before loading; a failed load reports whether previous instances were
+already unloaded and does not automatically reload them or retry the load request.
+Uncheck the option only when intentionally keeping multiple models resident.
+Switch requests are serialized within Playpen and rejected during an active
+benchmark. This adapts the release-before-allocation lifecycle from ComfyUI's
+`free_memory` and `load_models_gpu`; LM Studio's API releases memory in its own
+process. Clearing a CUDA cache in Playpen would not release LM Studio's allocations.
+The integration does not download models. A timed-out load may continue in LM Studio, so
 check status before trying again. Local API authentication, unsupported native
 API versions, and insufficient-memory failures produce actionable messages.
 The management integration targets LM Studio 0.4+ on HTTP loopback servers.
 
-These operations follow LM Studio's official [load API](https://lmstudio.ai/docs/developer/rest/load)
+These operations follow LM Studio's official [load API](https://lmstudio.ai/docs/developer/rest/load),
+[unload API](https://lmstudio.ai/docs/developer/rest/unload),
 and [native model list](https://lmstudio.ai/docs/developer/rest/list), reviewed
 November 15, 2026. Model-list and status checks are read-only; memory loading
 requires the explicit load button.
+
+The November 15 switching failure log showed CUDA out-of-memory allocating
+6,692 MiB while old models remained resident. After implementing unload-first,
+a live verification unloaded Karma and Dolphin and successfully loaded the
+requested Qwen3-VL-8B Q8 model, confirming its exact instance in LM Studio.
 
 The main workspace now has **Repeatable baseline tasks** checkboxes directly below
 the Task field. Select any of B01–B05 and click **Load selected tasks** to preview

@@ -103,6 +103,9 @@ Open your browser to: `http://localhost:8765`
 3. **Select a Model** — Pick from the dropdown (filters as you type)
    For LM Studio, use **Load selected model in LM Studio** and wait for verified
    loaded status. **Check loaded status** checks memory state without loading.
+   **Unload other loaded text models first** is checked by default to release
+   memory before switching. Uncheck it only when deliberately keeping multiple
+   models loaded. A failed unload prevents the new load from starting.
 4. **Configure Tools** — Check which tools to enable (web_search, fetch, read_file, etc.)
 5. **Enter Your Task** — Describe what you want the agent to do
 6. **Run Agent** — Click the button and watch model/tool activity
