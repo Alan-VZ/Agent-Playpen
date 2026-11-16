@@ -41,30 +41,45 @@ Correctness comes from deterministic validators, not an LLM judge. The rubric is
 
 ## Run from the dashboard
 
-**Refresh model list** discovers model IDs; it does not load a model into LM
-Studio. For `lm_studio`, choose an exact ID and use **Check loaded status** or
-**Load selected model in LM Studio**. The load action uses the native local API,
-then verifies the exact loaded instance before updating the selected ID. By default,
-**Unload other loaded text models first (recommended)** is checked. Playpen unloads
-each previous text-model instance, verifies their removal, and only then loads the
-selection. Embedding models are preserved. A failed or unconfirmed unload stops
-the switch before loading; a failed load reports whether previous instances were
-already unloaded and does not automatically reload them or retry the load request.
-Uncheck the option only when intentionally keeping multiple models resident.
-Switch requests are serialized within Playpen and rejected during an active
-benchmark. This adapts the release-before-allocation lifecycle from ComfyUI's
-`free_memory` and `load_models_gpu`; LM Studio's API releases memory in its own
-process. Clearing a CUDA cache in Playpen would not release LM Studio's allocations.
-The integration does not download models. A timed-out load may continue in LM Studio, so
-check status before trying again. Local API authentication, unsupported native
-API versions, and insufficient-memory failures produce actionable messages.
-The management integration targets LM Studio 0.4+ on HTTP loopback servers.
+Choose a **Backend**, then click **Choose model**. The same picker is used in the
+main workspace and each baseline agent, across all eight supported providers.
+For LM Studio and Ollama, the main single-model field follows the actual loaded
+model automatically. Selecting a different installed model unloads other text
+models first, confirms they are gone, loads the choice, and confirms its exact
+active ID. There are no separate refresh, status, or load buttons. List discovery
+and automatic status polling are read-only; choosing a model performs the switch.
 
-These operations follow LM Studio's official [load API](https://lmstudio.ai/docs/developer/rest/load),
+Hosted providers select the model for subsequent API requests; they manage their
+own loading. Catalog access can depend on saved credentials. The picker also has
+an advanced model/deployment ID entry for providers such as Azure that cannot
+enumerate deployments here. Selection does not verify paid inference access.
+
+Set **Number of models** in the main workspace to 1–10. Each slot has the same
+backend and model picker and may use the same or a different source. Ordinary
+workspace runs give every slot the same task and retain each answer and trace.
+Baseline configurations already support 1–10 members and use their existing
+researcher/synthesizer roles and deterministic scoring. All selected slots transfer
+from the workspace to the baseline builder.
+
+A local server is leased for the entire agent task. Slots sharing that server run
+in turn, switching models automatically before their tasks; different servers and
+hosted providers can run concurrently within configured concurrency limits. A
+multi-slot field keeps its assigned model and explicitly labels whether it is
+**Active** or **Selected · prepared when this slot runs**. This supports ten model
+choices without requiring ten models to fit in GPU memory simultaneously. A
+manual local switch is refused while that server is being used, and during an
+active benchmark. LM Studio management requires its 0.4+ native API and HTTP
+loopback access. Ollama uses its native installed/running model APIs and empty
+requests to load/unload. Models must already be installed; Playpen does not
+download them. Failed or unconfirmed unloads stop the switch before loading.
+A timed-out load is not automatically retried and may still finish in the model
+server; the active model is checked automatically.
+
+The native operations follow the official LM Studio [load API](https://lmstudio.ai/docs/developer/rest/load),
 [unload API](https://lmstudio.ai/docs/developer/rest/unload),
-and [native model list](https://lmstudio.ai/docs/developer/rest/list), reviewed
-November 15, 2026. Model-list and status checks are read-only; memory loading
-requires the explicit load button.
+and [model list](https://lmstudio.ai/docs/developer/rest/list), and Ollama
+[running models](https://docs.ollama.com/api/ps) and
+[generate/load/unload API](https://docs.ollama.com/api/generate).
 
 The November 15 switching failure log showed CUDA out-of-memory allocating
 6,692 MiB while old models remained resident. After implementing unload-first,

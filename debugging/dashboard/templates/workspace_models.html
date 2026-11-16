@@ -1,0 +1,19 @@
+<script nonce="{{ session_token }}">
+(() => {
+ const extra=[],controls=[];
+ function primary(){return {backend:document.getElementById('backend').value,model:document.getElementById('model').value,base_url:document.getElementById('base_url').value,role:'Independent researcher'};}
+ function get(){const count=Math.max(1,Math.min(10,Math.floor(Number(document.getElementById('workspace-model-count').value))||1));while(extra.length<count-1)extra.push({backend:primary().backend,model:'',base_url:primary().base_url,role:'Independent researcher'});return [primary(),...extra.slice(0,count-1)].map(s=>({...s}));}
+ function render(){const root=document.getElementById('workspace-extra-models');if(!root)return;for(const c of controls)c.dispose();controls.length=0;root.replaceChildren();const count=get().length;
+  while(extra.length<count-1)extra.push({backend:primary().backend,model:'',base_url:primary().base_url,role:'Independent researcher'});
+  for(let index=0;index<count-1;index++){const slot=extra[index],panel=document.createElement('section');panel.style.cssText='border:1px solid #40536d;padding:12px;border-radius:7px;margin:12px 0;';const title=document.createElement('h3');title.textContent='Model '+(index+2);panel.append(title);
+   const label=document.createElement('label');label.textContent='Backend';const backend=document.createElement('select');for(const option of document.getElementById('backend').options){const o=document.createElement('option');o.value=option.value;o.textContent=option.textContent;backend.append(o);}backend.value=slot.backend;label.append(backend);panel.append(label);
+   const holder=document.createElement('div');panel.append(holder);root.append(panel);
+   const chooser=window.playpenModelPicker.mount(holder,{backend:()=>slot.backend,model:()=>slot.model,baseUrl:()=>slot.base_url,followActive:false,selected:name=>slot.model=name});controls.push(chooser);
+   backend.addEventListener('change',()=>{slot.backend=backend.value;slot.model='';slot.base_url=slot.backend==='lm_studio'?'http://localhost:1234/v1':slot.backend==='ollama'?'http://localhost:11434/v1':'';chooser.refresh();});
+   const advanced=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Server settings';const endpoint=document.createElement('input');endpoint.value=slot.base_url||'';endpoint.placeholder='Local server or Azure endpoint';endpoint.setAttribute('aria-label','Model '+(index+2)+' server URL');endpoint.addEventListener('change',()=>{slot.base_url=endpoint.value;chooser.refresh();});advanced.append(summary,endpoint);panel.append(advanced);
+  }
+  if(count>1){const note=document.createElement('p');note.className='field-note';note.textContent='Each model receives the same task. Models sharing a local server run in turn; different sources can run together.';root.append(note);}window.playpenModelPicker?.refreshAll();
+ }
+ window.playpenModelSlots={get,init:()=>{document.getElementById('workspace-model-count').addEventListener('change',()=>{const count=document.getElementById('workspace-model-count');count.value=String(Math.max(1,Math.min(10,Math.floor(Number(count.value))||1)));render();});render();}};
+})();
+</script>

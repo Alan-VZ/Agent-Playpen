@@ -21,6 +21,7 @@
      for(const key of ['backend','model','planner','base_url'])if(params.has(key))member[key]=params.get(key);
      if(params.has('temperature'))member.temperature=Number(params.get('temperature'));
      for(const key of ['max_iterations','max_output_tokens'])if(params.has(key))config[key]=Number(params.get(key));
+     if(params.has('models')){const slots=JSON.parse(params.get('models'));if(!Array.isArray(slots)||!slots.length||slots.length>10)throw new Error('Choose between 1 and 10 models.');config.agents=slots.map(slot=>({backend:slot.backend,model:slot.model,base_url:slot.base_url||null,role:slot.role||'Independent researcher',planner:member.planner,temperature:member.temperature}));config.name='workspace-models';config.max_concurrency=3;}
      configInput.value=JSON.stringify([config],null,2);rebuild();
      message.textContent='Selected tasks and current agent settings loaded. Review the choices, add comparison agents if desired, then run.';
    }

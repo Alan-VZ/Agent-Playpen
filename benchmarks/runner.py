@@ -239,10 +239,18 @@ def make_backend(member, config):
 
 def run_member(member, config, data, budget, agent_id, peers=None, backend_factory=make_backend):
     backend = None
+    lease = None
     tracer = Tracer.__new__(Tracer)
     tracer.events, tracer._iteration, tracer.on_event, tracer._rich = [], 0, lambda event: budget.publish({"agent_id": agent_id, **event}), False
     tracer._print = lambda event: None
     try:
+        if backend_factory is make_backend and member.backend in {"lm_studio","ollama"}:
+            from debugging.dashboard.model_sources import model_lease
+            context = model_lease(member.backend,member.model,member.base_url,deadline=budget.deadline,
+                                  stopped=budget.external_stop,on_status=tracer.on_status)
+            actual = context.__enter__()
+            lease = context
+            member = member.model_copy(update={"model":actual})
         backend = backend_factory(member, config)
         metered = MeteredBackend(backend, budget, agent_id)
         registry = ToolRegistry()
@@ -273,6 +281,8 @@ def run_member(member, config, data, budget, agent_id, peers=None, backend_facto
                 client.close()
             except Exception:
                 pass
+        if lease is not None:
+            lease.__exit__(None,None,None)
 
 
 def attempt(config, task, seed=1, stopped=None, backend_factory=make_backend, on_event=None):

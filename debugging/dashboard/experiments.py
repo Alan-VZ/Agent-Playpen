@@ -11,7 +11,7 @@ from benchmarks.runner import ExperimentConfig, run_experiment, summaries, atomi
 from benchmarks.report import render_report
 from benchmarks.tasks import TASKS, selected_tasks, task_catalog
 from debugging.dashboard.readiness import Inventory, preflight
-from debugging.dashboard import local_models
+from debugging.dashboard import local_models, model_sources
 
 JOBS = {}
 LOCK = threading.RLock()
@@ -45,9 +45,43 @@ class LocalModelRequest(BaseModel):
     replace_loaded: bool = True
 
 
+class ModelChoice(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    backend: str
+    model: str = Field(min_length=1, max_length=500)
+    base_url: str | None = Field(default=None, max_length=500)
+
+
 def install(server):
     app = server.app
     server.templates.env.globals["baseline_tasks"] = task_catalog()
+
+    @app.get("/api/model-picker")
+    def model_choices(backend: str, base_url: str = ""):
+        if backend not in server.BackendFactory.REGISTRY:
+            raise HTTPException(400, "Unsupported backend")
+        if backend in model_sources.LOCAL:
+            try:
+                return {**model_sources.local_state(backend, base_url),
+                        "pricing_default":server.model_pricing.unknown_price(backend)}
+            except local_models.ModelManagementError as exc:
+                return {"backend": backend, "models": [], "active_models": [], "source": "unavailable", "message": str(exc)}
+        data = server.api_models(backend, base_url)
+        if hasattr(data, "body"):
+            data = json.loads(data.body)
+        return {**data, "backend": backend, "models": [{"id": name, "loaded": False, "instances": []} for name in data.get("models", [])], "active_models": []}
+
+    @app.post("/api/model-picker")
+    def choose_model(payload: ModelChoice):
+        if payload.backend not in server.BackendFactory.REGISTRY:
+            raise HTTPException(400, "Unsupported backend")
+        with LOCK:
+            if payload.backend in model_sources.LOCAL and any(job["status"] == "running" for job in JOBS.values()):
+                raise HTTPException(409, "A benchmark is using local models. Wait until it finishes to change the selection.")
+        try:
+            return model_sources.select_model(payload.backend, payload.model, payload.base_url)
+        except local_models.ModelManagementError as exc:
+            raise HTTPException(400, str(exc)) from None
 
     @app.post("/api/local-models/status")
     def local_model_status(payload: LocalModelRequest):
@@ -62,7 +96,13 @@ def install(server):
             if any(job["status"] == "running" for job in JOBS.values()):
                 raise HTTPException(409, "Finish or stop the active benchmark before switching local models.")
         try:
-            return local_models.manage(payload.base_url, payload.model, load=True, replace_loaded=payload.replace_loaded)
+            lock = model_sources.engine_lock("lm_studio",payload.base_url)
+            if not lock.acquire(blocking=False):
+                raise HTTPException(409,"This local server is in use. Wait for its active task to finish.")
+            try:
+                return local_models.manage(payload.base_url, payload.model, load=True, replace_loaded=payload.replace_loaded)
+            finally:
+                lock.release()
         except local_models.ModelManagementError as exc:
             raise HTTPException(400, str(exc)) from None
 
@@ -160,7 +200,7 @@ def install(server):
                 raise HTTPException(409, {"message": "Required APIs need setup", "readiness": result})
             for member in config.agents:
                 if member.model.strip() in {"", "local-model"}:
-                    raise HTTPException(400, "Choose an explicit model ID from Refresh model list; local-model is only a placeholder.")
+                    raise HTTPException(400, "Choose an explicit model ID with Choose model; local-model is only a placeholder.")
                 if member.backend not in server.BackendFactory.REGISTRY or member.planner not in server.PLANNER_MAP:
                     raise HTTPException(400, "Unsupported backend or planner")
             if config.dollar_limit is not None and (config.usd_per_million_input is None or config.usd_per_million_output is None or not config.rate_source):

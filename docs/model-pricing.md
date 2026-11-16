@@ -66,7 +66,7 @@ A retrieval timestamp is not the underlying rate's last review date.
 ## Refresh, caching, and privacy
 
 The server caches public OpenRouter data for five minutes and official/reference
-pricing data for one hour in memory. **Load** in the workspace refreshes the
+pricing data for one hour in memory. **Choose model** in the workspace opens the
 OpenRouter model catalog. **Refresh public prices** in the comparison screen
 requests fresh public sources. On a failed refresh, older data remains explicitly
 stale with its original retrieval time. A first failure has no fake price/date.

@@ -9,6 +9,7 @@ import threading
 import queue
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 
@@ -292,6 +293,14 @@ def _fetch_models(backend: str, base_url: str, api_key: str) -> list[str]:
     return []
 
 
+class ModelSlot(BaseModel):
+    model_config = {"extra": "forbid"}
+    backend: str
+    model: str = Field(max_length=500)
+    base_url: str = ""
+    role: str = Field(default="Independent researcher", max_length=500)
+
+
 class AgentConfig(BaseModel):
     backend: str = "lm_studio"
     model: str = "local-model"
@@ -306,6 +315,8 @@ class AgentConfig(BaseModel):
     allowed_dirs: str = "."
     search_provider: str = "auto"
     search_cse_id: str = ""
+    model_slots: list[ModelSlot] = Field(default_factory=list, max_length=10)
+    max_concurrency: int = Field(default=3, ge=1, le=10)
 
     model_config = {"extra": "ignore"}
 
@@ -468,6 +479,9 @@ def api_defaults():
 
 
 def _validate_run(config: AgentConfig):
+    for slot in config.model_slots:
+        if slot.backend not in BackendFactory.REGISTRY or slot.model.strip() in {"", "local-model"}:
+            raise HTTPException(400, detail="Choose an explicit model for every model slot.")
     if not config.task.strip():
         raise HTTPException(status_code=400, detail="Task is required.")
     if config.api_key or config.search_cse_id:
@@ -497,7 +511,7 @@ def _run_error(exc: Exception) -> str:
     return redact(f"Agent execution failed ({type(exc).__name__}): {detail}")
 
 
-def _execute_run(config: AgentConfig, on_event=None, cancel_event=None):
+def _execute_single_run(config: AgentConfig, on_event=None, cancel_event=None):
     session_id = uuid.uuid4().hex
     tracer = Tracer(trace_dir=str(ROOT / "traces"), session_id=session_id, on_event=on_event)
     backend = None
@@ -551,6 +565,64 @@ def _execute_run(config: AgentConfig, on_event=None, cancel_event=None):
                 except Exception:
                     pass
     return redact(payload)
+
+
+def _execute_slot(config, agent_id, on_event=None, cancel_event=None):
+    from debugging.dashboard.model_sources import model_lease
+    preparing = []
+    started = False
+    def publish(event):
+        nonlocal started
+        if on_event:
+            on_event({**event, "agent_id": agent_id})
+            if event.get("type") == "session":
+                started = True
+                for message in preparing:
+                    on_event({"type":"status", "content":message, "agent_id":agent_id})
+                preparing.clear()
+    def preparation(message):
+        if started:
+            publish({"type":"status", "content":message})
+        else:
+            preparing.append(message)
+    try:
+        with model_lease(config.backend, config.model, config.base_url,
+                         deadline=time.monotonic()+180, stopped=cancel_event,
+                         on_status=preparation) as model:
+            configured = config.model_copy(update={"model":model,"model_slots":[]})
+            return {**_execute_single_run(configured, publish, cancel_event), "agent_id":agent_id}
+    except Exception as exc:
+        return {"agent_id":agent_id,"backend":config.backend,"model":config.model,
+                "status":"cancelled" if cancel_event and cancel_event.is_set() else "error",
+                "result":"","message":_run_error(exc),"warning_count":0}
+
+
+def _execute_run(config: AgentConfig, on_event=None, cancel_event=None):
+    if not config.model_slots:
+        return _execute_slot(config,"agent-1",on_event,cancel_event)
+    members = [config.model_copy(update={"backend":s.backend,"model":s.model,"base_url":s.base_url,"model_slots":[]}) for s in config.model_slots]
+    if len(members)==1:
+        return _execute_slot(members[0],"agent-1",on_event,cancel_event)
+    session_id=uuid.uuid4().hex
+    if on_event:
+        on_event({"type":"session","session_id":session_id,"agent_id":"group","backend":"mixed","model":f"{len(members)} models","max_iterations":config.max_iterations})
+    with ThreadPoolExecutor(max_workers=config.max_concurrency) as pool:
+        futures=[pool.submit(_execute_slot,member,f"agent-{i+1}",on_event,cancel_event) for i,member in enumerate(members)]
+        results=[f.result() for f in futures]
+    succeeded=sum(r["status"]=="success" for r in results)
+    status="success" if succeeded==len(results) else "cancelled" if cancel_event and cancel_event.is_set() else "incomplete"
+    answer="\n\n".join(f"## Model {i+1} · {r['backend']} / {r['model']}\n{r.get('result') or r.get('message','')}" for i,r in enumerate(results))
+    result={"session_id":session_id,"agent_id":"group","backend":"mixed","model":f"{len(members)} models",
+            "status":status,"result":answer,"results":results,"warning_count":sum(r.get("warning_count",0) for r in results),
+            "message":f"{succeeded}/{len(results)} models completed the task."}
+    try:
+        from benchmarks.runner import atomic_json
+        path=ROOT/"traces"/(session_id+'.json')
+        atomic_json(path,result)
+        result["trace_path"]=str(path)
+    except OSError:
+        result["trace_save_error"]="The combined model results could not be saved."
+    return redact(result)
 
 
 @app.post("/api/run")

@@ -22,6 +22,10 @@ class MemoryKeyring:
 def isolated_runtime(monkeypatch, tmp_path):
     """Never use saved credentials, live services, or project runtime files."""
     monkeypatch.chdir(tmp_path)
+    from debugging.dashboard import model_sources
+    # Lifecycle behavior has dedicated mocks/loopback tests. Never touch the
+    # user's running model servers during ordinary application regressions.
+    monkeypatch.setattr(model_sources,"_activate",lambda backend,model,base_url=None:{"model":model,"loaded":True})
     monkeypatch.setattr(credentials, "store", credentials.CredentialStore(MemoryKeyring()))
     monkeypatch.setattr(credentials, "LEGACY_ENV_PATH", tmp_path / ".env")
     monkeypatch.setattr(credentials, "_known_secrets", set())

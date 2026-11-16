@@ -350,6 +350,14 @@ def test_real_process_adapter_against_loopback_fake_model():
         def log_message(self, *args):
             pass
 
+        def do_GET(self):
+            data=json.dumps({"models":[{"key":"fixture-model","type":"llm","loaded_instances":[{"id":"fixture-model"}]}]}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type','application/json')
+            self.send_header('Content-Length',str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
         def do_POST(self):
             payload = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             backend = ScriptedBackend()

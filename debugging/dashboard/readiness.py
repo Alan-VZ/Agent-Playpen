@@ -48,7 +48,8 @@ def classify(code=None):
 def requirements(config):
     """Return deduplicated provider -> consumer names, including team members."""
     result = {}
-    for index, agent in enumerate(config.get("agents") or [config]):
+    for index, selected in enumerate(config.get("agents") or config.get("model_slots") or [config]):
+        agent = {**config, **selected}
         backend = agent.get("backend", "lm_studio")
         if backend in credentials.BACKEND_KEYS:
             result.setdefault(backend, []).append(f"agent-{index + 1}: model")

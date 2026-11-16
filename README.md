@@ -754,3 +754,17 @@ ruff check .
 Optional DOM checks: `node tests/dashboard_ui.cjs`, plus the Maintenance and model
 price DOM scripts after rendering their fixtures. Install the optional local jsdom
 fixture dependency as described at the top of those scripts.
+
+### Selecting and comparing models in the dashboard
+
+Use **Backend → Choose model → select** for any supported source. For LM Studio
+and Ollama, the single-model field shows the model actually loaded. Choosing a
+replacement automatically releases the previous text model and loads/verifies
+the new one. Hosted sources use the chosen model on subsequent requests.
+
+Set **Number of models** to 1–10 to give several models the same workspace task.
+Slots can use the same provider or different providers. Local slots sharing a
+server run in turn so they cannot unload each other during a task; independent
+sources can run concurrently. Every answer remains visible and is saved with its
+trace. All selected slots transfer to the baseline test builder when comparing
+repeatable tasks. See [baseline instructions](docs/baseline-tests.md).

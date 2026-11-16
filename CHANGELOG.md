@@ -26,6 +26,15 @@
 
 ## Unreleased
 
+- Replaced separate model discovery/status/load controls with one shared Choose
+  model picker across every provider and the baseline builder. Single-model local
+  fields follow the actual active model; local selection unloads and verifies before
+  loading. Added equivalent Ollama lifecycle handling.
+- Added 1–10 model slots to ordinary workspace tasks, including mixed providers,
+  ordered individual answers/traces, and transfer of all slots to baseline tests.
+  Whole-task local server leases prevent slots from unloading each other's models;
+  shared local engines run in turn while independent sources may run concurrently.
+
 - Model switching now defaults to unloading previous text-model instances and
   verifying their removal before loading the selection, following ComfyUI's
   release-before-allocation lifecycle. Added explicit coexistence override,

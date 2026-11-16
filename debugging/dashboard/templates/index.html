@@ -393,9 +393,9 @@
       <div id="quickstart" class="hint">
         <p><strong>Quick start â€” running a local model</strong></p>
         <ol>
-          <li>Open LM Studio, load a model, and start its local server.</li>
+          <li>Open LM Studio and start its local server.</li>
           <li>Set <strong>Backend</strong> to <code>lm_studio</code> and <strong>Base URL</strong> to <code>http://localhost:1234/v1</code>.</li>
-          <li>Set <strong>Model</strong> to <code>local-model</code>, or the exact name LM Studio shows.</li>
+          <li>The <strong>Model</strong> field shows the active model. Click <strong>Choose model</strong> to select another; Playpen unloads the previous text model and loads your choice.</li>
           <li>Leave <strong>Planner</strong> on <code>react</code> â€” it is the right default when tools are enabled.</li>
           <li>Tick the <strong>Tools</strong> the agent is allowed to use.</li>
           <li>Write a <strong>Task</strong>, then press <strong>Run Agent</strong>.</li>
@@ -411,22 +411,20 @@
         <form id="agent-form">
           <div class="form-grid">
             <div class="field">
-              <label for="backend">Backend</label>
+              <label for="workspace-model-count">Number of models</label><input id="workspace-model-count" type="number" min="1" max="10" value="1" />
+              <label for="backend">Backend · Model 1</label>
               <select id="backend" name="backend"></select>
             </div>
 
             <div class="field">
               <label for="model">Model</label>
               <div class="input-row">
-                <input id="model" name="model" value="local-model"
-                       autocomplete="off" placeholder="Type to search, or pick from the list" />
-                <button type="button" id="load-models" class="inline-btn">Refresh model list</button>
-              </div>
-              <div id="model-dropdown" class="custom-dropdown" style="display: none;">
-                <div id="model-options" class="dropdown-list" role="listbox" aria-label="Models with prices"></div>
+                <input id="model" name="model" value="" readonly
+                       autocomplete="off" placeholder="No model loaded" />
+                <button type="button" id="load-models" class="inline-btn">Choose model</button>
               </div>
               <div id="model-note" class="field-note"></div>
-              <div id="local-model-controls"></div>
+              <div id="model-picker-controls"></div>
               <div id="model-price-note" class="field-note" aria-live="polite"></div>
               <p class="field-note"><a id="model-price-source" target="_blank" rel="noopener noreferrer" hidden>Price source ↗</a>
                 <a href="/model-prices" target="_blank" rel="noopener" style="color: var(--accent, #79baff);">Compare model prices across backends ↗</a></p>
@@ -437,6 +435,8 @@
               <label for="base_url">Base URL</label>
               <input id="base_url" name="base_url" value="http://localhost:1234/v1" />
             </div>
+
+            <div id="workspace-extra-models"></div>
 
             <div class="field">
               <label for="credential_name">Credential manager</label>
@@ -547,7 +547,7 @@
 
       <section class="panel results">
         <h2>Agent Workspace</h2>
-        <p class="meta">One agent per run. Live status and tool results appear below.</p>
+        <p class="meta">Run the same task with 1–10 models. Live status and tool results appear below.</p>
         <div id="status" class="status" style="display:none"></div>
         <div id="result-output" class="result-output">Configure the form, then run the agent.</div>
         <div class="meta" id="meta-output">No trace generated yet.</div>
@@ -557,7 +557,8 @@
     </div>
   </div>
 
-  {% include 'local_model_controls.html' %}
+  {% include 'model_picker.html' %}
+  {% include 'workspace_models.html' %}
   <script nonce="{{ session_token }}">
     // Credentials never travel in query strings or general configuration payloads.
     const originalFetch = window.fetch.bind(window);
@@ -690,6 +691,7 @@
         base_url: document.getElementById('base_url').value,
         planner: document.getElementById('planner').value,
         tools: selected,
+        model_slots: window.playpenModelSlots?.get() || [],
         task: document.getElementById('task').value,
         allowed_dirs: document.getElementById('allowed_dirs').value,
         search_provider: document.getElementById('search_provider').value,
@@ -899,29 +901,19 @@
         <p><strong>Start here:</strong> <code>lm_studio</code> keeps everything on your machine and costs nothing.</p>`,
 
       model: `
-        <p>The model identifier, exactly as your chosen backend expects it.</p>
-        <p>The list loads automatically when you pick a backend. <strong>Click the field to browse, or start typing to filter</strong> â€” and you can always type a name that is not listed. Press <strong>Load</strong> to refresh after loading a new model.</p>
-        <p>For local backends the list is read live from LM Studio or Ollama, so it shows exactly what you have installed. For cloud backends it is fetched with your saved key; without a key you get a short list of common names instead.</p>
-        <p class="warn">For Ollama, run <code>ollama pull &lt;model-name&gt;</code> first so the model appears in the dropdown. For LM Studio, load a model in the app and then refresh the list.</p>
-        <p><strong>Examples by backend</strong></p>
-        <ul>
-          <li>lm_studio â€” <code>local-model</code> (works as a catch-all), or the exact name shown in LM Studio</li>
-          <li>ollama â€” <code>llama3.1:8b</code>, <code>mistral</code></li>
-          <li>openai â€” <code>gpt-4o-mini</code>, <code>gpt-4o</code></li>
-          <li>anthropic â€” <code>claude-3-5-sonnet-20241022</code></li>
-          <li>groq â€” <code>llama-3.3-70b-versatile</code></li>
-          <li>together â€” <code>meta-llama/Llama-3-70b-chat-hf</code></li>
-        </ul>
-        <p class="warn">Azure OpenAI uses your own deployment name, so it cannot be listed â€” type it manually.</p>`,
+        <p>Click <strong>Choose model</strong>, search the available models, and select one. This is the same action for every provider.</p>
+        <p>For LM Studio and Ollama, the single-model field follows the actual active model. Choosing another installed model releases the previous text model, loads your choice, and confirms its active ID.</p>
+        <p>Hosted providers use the selected model for API requests. Their catalog may require a saved API key. For Azure, use <strong>Enter a model or deployment ID</strong> inside the picker.</p>
+        <p>Set <strong>Number of models</strong> to 1–10 to repeat the task with several choices. Each slot can use a different provider. Slots sharing a local server run in turn; their fields keep the assigned model and show whether it is active or prepared when that slot runs.</p>
+        <p>Install local models in LM Studio or Ollama before selecting them here. Selection does not download models or start a task.</p>`,
 
       base_url: `
-        <p>Address of a local model server. <strong>Only used by <code>lm_studio</code> and <code>ollama</code></strong> â€” cloud backends ignore this field entirely.</p>
+        <p>Address of your local model server or Azure resource endpoint. Other hosted providers use their official endpoints.</p>
         <ul>
-          <li>LM Studio â€” <code>http://localhost:1234/v1</code> <span class="warn">(the <code>/v1</code> suffix is required)</span></li>
-          <li>Ollama â€” <code>http://localhost:11434</code> (no <code>/v1</code>)</li>
-          <li>Model on another PC â€” <code>http://192.168.1.50:1234/v1</code></li>
+          <li>LM Studio: <code>http://localhost:1234/v1</code></li>
+          <li>Ollama: <code>http://localhost:11434/v1</code></li>
         </ul>
-        <p class="warn">If the run fails with a connection error, check the server is actually started inside LM Studio or Ollama.</p>`,
+        <p>Automatic local model management requires HTTP loopback access. Start the model server before choosing a model.</p>`,
 
       api_key: `
         <p>Credential for cloud providers. Not needed for <code>lm_studio</code> or <code>ollama</code>.</p>
@@ -1125,13 +1117,12 @@
     let keyState = {};
 
     const modelInput = document.getElementById('model');
-    const modelOptions = document.getElementById('model-options');
+
     const modelNote = document.getElementById('model-note');
     const modelPriceNote = document.getElementById('model-price-note');
     const modelPriceSource = document.getElementById('model-price-source');
     let modelPriceLookup = new Map();
     let modelDefaultPricing = null;
-    let modelCatalogSequence = 0;
     const apiKeyInput = document.getElementById('api_key');
     const keyNote = document.getElementById('key-note');
     const searchCseField = document.getElementById('google-cse-field');
@@ -1306,107 +1297,7 @@
       modelPriceNote.title = price && price.notes ? price.notes.join('\n') : 'Load the model catalog or select a known model ID.';
     }
 
-    async function loadModels(silent) {
-      const button = document.getElementById('load-models');
-      const sequence = ++modelCatalogSequence;
-      const requestedBackend = backendSelect.value;
-      const params = new URLSearchParams({
-        backend: requestedBackend,
-        base_url: document.getElementById('base_url').value
-      });
-
-      button.disabled = true;
-      modelPriceLookup = new Map(); modelDefaultPricing = null; modelOptions.replaceChildren();
-      modelPriceSource.hidden = true; modelPriceSource.removeAttribute('href');
-      setNote(modelPriceNote, '', 'Loading model catalog and prices…');
-      if (!silent) setNote(modelNote, '', 'Loading models...');
-
-      try {
-        const data = await (await fetch('/api/models?' + params)).json();
-        if (sequence !== modelCatalogSequence || requestedBackend !== backendSelect.value) return;
-        modelPriceLookup = new Map((data.model_details || []).map(item => [item.id, item]));
-        modelDefaultPricing = data.pricing_default || null;
-        modelOptions.replaceChildren();
-        (data.models || []).forEach((name) => {
-          const item = document.createElement('div');
-          item.className = 'dropdown-item';
-          const label = document.createElement('span'); label.textContent = name;
-          const detail = modelPriceLookup.get(name);
-          const price = detail && detail.pricing;
-          const costs = document.createElement('small'); costs.className = 'model-price-line';
-          costs.textContent = priceSummary(price) + (price && price.status === 'reference' ? ' · Reference estimate' : '') + (price && price.stale ? ' · Stale' : '');
-          item.append(label, costs);
-          item.dataset.value = name;
-          item.tabIndex = 0; item.setAttribute('role', 'option');
-          item.addEventListener('click', () => {
-            modelInput.value = name;
-            renderSelectedModelPrice();
-            modelInput.dispatchEvent(new Event('change', {bubbles: true}));
-            document.getElementById('model-dropdown').style.display = 'none';
-          });
-          item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); item.click(); } });
-          modelOptions.appendChild(item);
-        });
-
-        const count = (data.models || []).length;
-        if (data.source === 'live') {
-          setNote(modelNote, 'ok', `${count} catalog model(s) - click the field or type to filter. ${data.catalog_note || ""}`);
-        } else if (data.source === 'cached') {
-          setNote(modelNote, 'warn', `${count} cached model(s); catalog refresh failed. Prices may be stale.`);
-        } else if (count) {
-          setNote(modelNote, 'warn', `${data.message} Showing ${count} example name(s); availability is not verified.`);
-        } else {
-          setNote(modelNote, 'warn', data.message || 'No models found. Type the name manually.');
-        }
-        renderSelectedModelPrice();
-      } catch (err) {
-        if (sequence !== modelCatalogSequence) return;
-        setNote(modelNote, 'bad', 'Could not load models. Type the model name manually.');
-        renderSelectedModelPrice();
-      } finally {
-        if (sequence === modelCatalogSequence) button.disabled = false;
-      }
-    }
-
     function initModelAndKeys() {
-      const dropdown = document.getElementById('model-dropdown');
-      
-      // Show dropdown when model input is focused
-      modelInput.addEventListener('focus', () => {
-        if (modelOptions.children.length > 0) {
-          dropdown.style.display = 'block';
-          filterModelDropdown('');
-        }
-      });
-
-      // Filter dropdown as user types
-      modelInput.addEventListener('input', () => {
-        renderSelectedModelPrice();
-        if (modelOptions.children.length > 0) {
-          dropdown.style.display = 'block';
-          filterModelDropdown(modelInput.value.toLowerCase());
-        }
-      });
-
-      // Hide dropdown when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!modelInput.contains(e.target) && !dropdown.contains(e.target)) {
-          dropdown.style.display = 'none';
-        }
-      });
-
-      function filterModelDropdown(query) {
-        const items = modelOptions.querySelectorAll('.dropdown-item');
-        let hasVisible = false;
-        items.forEach(item => {
-          const match = item.textContent.toLowerCase().includes(query);
-          item.classList.toggle('hidden', !match);
-          if (match) hasVisible = true;
-        });
-        if (!hasVisible) dropdown.style.display = 'none';
-      }
-
-      document.getElementById('load-models').addEventListener('click', () => loadModels(false));
       document.getElementById('save-key').addEventListener('click', () => saveKey(false));
       document.getElementById('clear-key').addEventListener('click', () => saveKey(true));
       document.getElementById('save-cse').addEventListener('click', () => saveSearchExtra(false));
@@ -1416,7 +1307,7 @@
         apiKeyInput.value = '';
         syncBackendDefaults();
         renderKeyStatus();
-        loadModels(true);
+        modelPriceLookup = new Map(); modelDefaultPricing = null; workspacePicker?.refresh();
       });
 
       document.getElementById('search_provider').addEventListener('change', () => {
@@ -1435,19 +1326,20 @@
     initHelp();
     initHelpToggle();
     initModelAndKeys();
-    const localModelControls = window.playpenLocalModels?.mount(document.getElementById('local-model-controls'), {
+    const workspacePicker = window.playpenModelPicker?.mount(document.getElementById('model-picker-controls'), {
+      field: modelInput, button: document.getElementById('load-models'), status: modelNote,
       backend: () => backendSelect.value, model: () => modelInput.value,
       baseUrl: () => document.getElementById('base_url').value,
-      loaded: name => { modelInput.value = name; renderSelectedModelPrice(); }
+      followActive: () => !window.playpenModelSlots || window.playpenModelSlots.get().length === 1,
+      selected: name => { modelInput.value = name; renderSelectedModelPrice(); },
+      catalog: data => { modelPriceLookup = new Map((data.model_details || []).map(item => [item.id,item])); modelDefaultPricing = data.pricing_default || null; renderSelectedModelPrice(); }
     });
-    backendSelect.addEventListener('change', () => localModelControls?.refresh());
-    modelInput.addEventListener('input', () => localModelControls?.refresh());
-    modelInput.addEventListener('change', () => { localModelControls?.refresh(); if (backendSelect.value === 'lm_studio') localModelControls?.check(); });
-    document.getElementById('base_url').addEventListener('change', () => localModelControls?.refresh());
+    document.getElementById('base_url').addEventListener('change', () => workspacePicker?.refresh());
     loadDefaults().then(() => {
-      localModelControls?.refresh();
+      window.playpenModelSlots?.init();
+      workspacePicker?.refresh();
       refreshKeyStatus();
-      loadModels(true);
+
     });
   </script>
 {% include 'credential_widget.html' %}

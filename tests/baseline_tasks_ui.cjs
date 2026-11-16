@@ -7,12 +7,12 @@ async function waitFor(fn){for(let n=0;n<100;n++){if(fn())return;await sleep(15)
 async function check(page){
  const errors=[],launches=[];
  const console=new VirtualConsole();console.on('jsdomError',error=>errors.push(error.message));
- const url=page==='baselines'?'http://127.0.0.1:8765/baselines?tasks=B01,B05&backend=lm_studio&model=chosen-model&temperature=0&max_iterations=12&max_output_tokens=1024':'http://127.0.0.1:8765/';
+ const url=page==='baselines'?'http://127.0.0.1:8765/baselines?tasks=B01,B05&backend=lm_studio&model=chosen-model&temperature=0&max_iterations=12&max_output_tokens=1024&models='+encodeURIComponent(JSON.stringify([{backend:'lm_studio',model:'chosen-model'},{backend:'openrouter',model:'hosted-model'}])):'http://127.0.0.1:8765/';
  const dom=new JSDOM(fs.readFileSync('.test-tmp/baseline_'+page+'.html','utf8'),{url,runScripts:'dangerously',virtualConsole:console,beforeParse(window){
   window.Headers=Headers;window.TextDecoder=TextDecoder;window.AbortController=AbortController;
   window.fetch=async(resource,options={})=>{const route=new URL(resource,url).pathname;let value;
    if(route==='/api/defaults')value={backend:'lm_studio',model:'chosen-model',tools:['calculator'],temperature:0};
-   else if(route==='/api/models')value={models:['chosen-model'],source:'live'};
+   else if(route==='/api/model-picker')value={models:[{id:'chosen-model',loaded:true}],active_models:['chosen-model'],source:'live'};
    else if(route==='/api/keys')value={};
    else if(route==='/api/readiness')value={ready:true,providers:[],blocking:[]};
    else if(route==='/api/benchmarks'&&options.method==='POST'){launches.push(JSON.parse(options.body));value={id:'b'.repeat(32),status:'running'};}
@@ -42,13 +42,15 @@ async function check(page){
    assert.ok(d.getElementById('task').value.includes('B05 · Conflicting evidence'));
    assert.ok(!d.getElementById('task').value.includes('B02 · Research'));
    assert.equal(picker.runLoaded(),true);
+   const count=d.getElementById('workspace-model-count');count.value=3;count.dispatchEvent(new dom.window.Event('change'));await waitFor(()=>dom.window.playpenModelSlots.get().every(m=>m.model==='chosen-model'));
    const destination=new URL(picker.destination(),url);
+   assert.equal(JSON.parse(destination.searchParams.get('models')).length,3);
    assert.equal(destination.searchParams.get('tasks'),'B01,B05');assert.equal(destination.searchParams.get('model'),'chosen-model');assert.equal(destination.searchParams.has('api_key'),false);
    d.getElementById('task').value='An edited custom task';assert.equal(picker.runLoaded(),false);
    d.getElementById('baseline-clear-selection').click();assert.equal(d.getElementById('baseline-load-tasks').disabled,true);
   }else{
    assert.deepEqual(Array.from(picker.ids()),['B01','B05']);
-   const config=JSON.parse(d.getElementById('baseline-config').value)[0];assert.equal(config.agents[0].model,'chosen-model');assert.equal(config.max_iterations,12);assert.equal(config.max_output_tokens,1024);
+   const config=JSON.parse(d.getElementById('baseline-config').value)[0];assert.equal(config.agents.length,2);assert.equal(config.agents[1].model,'hosted-model');assert.equal(config.agents[1].backend,'openrouter');assert.equal(config.agents[0].model,'chosen-model');assert.equal(config.max_iterations,12);assert.equal(config.max_output_tokens,1024);
    assert.equal(config.agents[0].planner,'react');assert.deepEqual(config.agents[0].tools,['read_fixture','calculator']);
    picker.select(['B03']);assert.deepEqual(JSON.parse(d.getElementById('baseline-config').value)[0].agents[0].tools,['read_fixture','write_artifact']);
    d.getElementById('baseline-clear-selection').click();d.getElementById('baseline-run').click();await waitFor(()=>d.getElementById('baseline-message').textContent.includes('at least one'));assert.equal(launches.length,0);
