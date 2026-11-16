@@ -12,7 +12,7 @@
   {% endfor %}
   </div>
   <button type="button" id="baseline-select-all">Select all</button><button type="button" id="baseline-clear-selection">Clear selection</button>
-  {% if baseline_picker_mode == 'workspace' %}<button type="button" id="baseline-load-tasks">Load selected tasks</button><button type="button" id="baseline-open-comparison">Compare using this agent</button>{% endif %}
+  {% if baseline_picker_mode == 'workspace' %}<button type="button" id="baseline-load-tasks">Load selected tasks</button><button type="button" id="baseline-open-comparison">Compare using this agent</button><label for="workspace-baseline-repeats">Repeats per task</label><select id="workspace-baseline-repeats"><option value="1">1 · smoke</option><option value="5">5 · baseline</option><option value="20">20 · extended</option></select>{% endif %}
   <p class="pp-task-summary" id="baseline-selection-summary" role="status" aria-live="polite"></p>
   <details><summary>Preview selected task instructions</summary><pre id="baseline-task-preview"></pre></details>
 </fieldset>
@@ -28,15 +28,26 @@
   function preview(){return catalog.filter(t=>ids().includes(t.id)).map(t=>t.id+' · '+t.title+'\n'+t.prompt+'\n\nFixed inputs for repetition 1:\n'+Object.entries(t.documents).map(([name,content])=>'['+name+']\n'+content).join('\n\n')).join('\n\n────────────────────────\n\n');}
   function update(){configureWorkspace();const count=ids().length;const task=document.getElementById('task');if(task&&(!task.value.trim()||(loadedText!==null&&task.value===loadedText))){loadedText=count?preview():null;task.value=loadedText||'';}document.getElementById('baseline-selection-summary').textContent=count?count+' task'+(count===1?'':'s')+' selected · same inputs and scoring for each configuration.':'Select at least one baseline task.';document.getElementById('baseline-task-preview').textContent=count?preview():'No baseline tasks selected.';for(const id of ['baseline-load-tasks','baseline-open-comparison']){const b=document.getElementById(id);if(b)b.disabled=!count;}document.dispatchEvent(new CustomEvent('baseline-tasks-changed'));}
   function select(values){if(!Array.isArray(values)||!values.length||values.some(id=>!catalog.some(t=>t.id===id)))throw new Error('Choose valid baseline task IDs.');for(const b of boxes)b.checked=values.includes(b.value);update();}
-  function destination(){const config=collectConfig();const params=new URLSearchParams({tasks:ids().join(','),backend:config.backend,model:config.model,planner:config.planner,temperature:String(config.temperature),max_iterations:String(config.max_iterations),max_output_tokens:String(config.max_tokens)});if(window.playpenModelSlots&&window.playpenModelSlots.get().length>1)params.set('models',JSON.stringify(window.playpenModelSlots.get()));if(['lm_studio','ollama','azure_openai'].includes(config.backend))params.set('base_url',config.base_url);return '/baselines?'+params;}
+  function destination(){const config=collectConfig();const params=new URLSearchParams({repeats:document.getElementById('workspace-baseline-repeats')?.value||'1',tasks:ids().join(','),backend:config.backend,model:config.model,planner:config.planner,temperature:String(config.temperature),max_iterations:String(config.max_iterations),max_output_tokens:String(config.max_tokens)});if(window.playpenModelSlots&&window.playpenModelSlots.get().length>1)params.set('models',JSON.stringify(window.playpenModelSlots.get()));if(['lm_studio','ollama','azure_openai'].includes(config.backend))params.set('base_url',config.base_url);return '/baselines?'+params;}
+  async function launch(){
+    const tasks=ids();if(!tasks.length)throw new Error('Select at least one baseline task.');
+    const config=collectConfig(),slots=window.playpenModelSlots?.get()||[config],selected=setup();
+    if(slots.some(slot=>!slot.model||slot.model==='local-model'))throw new Error('Choose an explicit model for every slot before running.');
+    const agents=slots.map(slot=>({backend:slot.backend,model:slot.model,base_url:slot.base_url||null,role:slot.role||'Independent researcher',planner:selected.planner,tools:selected.tools,temperature:config.temperature}));
+    if(!await window.playpenSecrets.preflight({agents}))return null;
+    const payload={configs:[{name:slots.length>1?'workspace-models':'workspace-agent',agents,max_concurrency:Math.min(3,slots.length),max_iterations:config.max_iterations,max_output_tokens:config.max_tokens,auto_baseline_setup:true}],tasks,repeats:Number(document.getElementById('workspace-baseline-repeats').value)};
+    const response=await fetch('/api/benchmarks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();
+    if(!response.ok)throw new Error(typeof result.detail==='string'?result.detail:result.detail?.message||result.message||'Baseline launch failed.');
+    return result;
+  }
   function transfer(){if(ids().length)window.location.assign(destination());}
   for(const box of boxes)box.addEventListener('change',update);
   document.getElementById('baseline-select-all').addEventListener('click',()=>{for(const b of boxes)b.checked=true;update();});
   document.getElementById('baseline-clear-selection').addEventListener('click',()=>{for(const b of boxes)b.checked=false;update();});
   const load=document.getElementById('baseline-load-tasks');
-  if(load)load.addEventListener('click',()=>{if(!ids().length)return;loadedText=preview();const task=document.getElementById('task');task.value=loadedText;task.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('baseline-selection-summary').textContent=ids().length+' baseline tasks loaded. Run Agent will open the scored baseline runner with your selected model settings. Custom task text can be edited separately.';});
+  if(load)load.addEventListener('click',()=>{if(!ids().length)return;loadedText=preview();const task=document.getElementById('task');task.value=loadedText;task.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('baseline-selection-summary').textContent=ids().length+' baseline tasks loaded. Run Agent starts these baseline tasks and opens their live results. Custom task text can be edited separately.';});
   const compare=document.getElementById('baseline-open-comparison');if(compare)compare.addEventListener('click',transfer);
-  window.playpenBaselineTasks={ids,select,update,setup,transfer,destination,runLoaded:()=>loadedText!==null&&document.getElementById('task')?.value===loadedText};
+  window.playpenBaselineTasks={ids,select,update,setup,transfer,destination,launch,runLoaded:()=>loadedText!==null&&document.getElementById('task')?.value===loadedText};
   update();
 })();
 </script>

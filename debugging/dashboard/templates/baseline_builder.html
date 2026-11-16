@@ -7,7 +7,7 @@ window.installBaselineBuilder=function(input){
  const root=document.getElementById('baseline-builder');
  const backends=['lm_studio','ollama','openrouter','openai','anthropic','groq','together','azure_openai'];
  const element=(tag,text)=>{const e=document.createElement(tag);if(text)e.textContent=text;return e;};
- function render(){let configs;try{configs=JSON.parse(input.value);}catch{return;}if(!Array.isArray(configs))return;root.replaceChildren();
+ function render(){let configs;try{configs=JSON.parse(input.value);}catch{return;}if(!Array.isArray(configs))return;root.replaceChildren();window.playpenModelPicker.prune();
   const save=()=>{input.value=JSON.stringify(configs,null,2);};
   function field(parent,label,value,change,type='text'){const l=element('label',label),i=document.createElement('input');i.type=type;i.value=value;i.addEventListener('change',()=>{change(type==='number'?Number(i.value):i.value);save();});l.append(i);parent.append(l);return i;}
   function select(parent,label,value,choices,change){const l=element('label',label),s=document.createElement('select');for(const option of choices){const o=element('option',option);o.value=option;s.append(o);}s.value=value;s.addEventListener('change',()=>{change(s.value);save();});l.append(s);parent.append(l);return s;}

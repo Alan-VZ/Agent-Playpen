@@ -46,6 +46,7 @@ async function check(page){
    const destination=new URL(picker.destination(),url);
    assert.equal(JSON.parse(destination.searchParams.get('models')).length,3);
    assert.equal(destination.searchParams.get('tasks'),'B01,B05');assert.equal(destination.searchParams.get('model'),'chosen-model');assert.equal(destination.searchParams.has('api_key'),false);
+   d.getElementById('workspace-baseline-repeats').value='5';const started=await picker.launch();assert.equal(started.id,'b'.repeat(32));assert.equal(launches.length,1);assert.equal(launches[0].repeats,5);assert.equal(launches[0].configs[0].agents.length,3);assert.deepEqual(launches[0].tasks,['B01','B05']);assert.deepEqual(launches[0].configs[0].agents[0].tools,['read_fixture','calculator']);
    d.getElementById('task').value='An edited custom task';assert.equal(picker.runLoaded(),false);
    d.getElementById('baseline-clear-selection').click();assert.equal(d.getElementById('baseline-load-tasks').disabled,true);
   }else{

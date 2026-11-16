@@ -26,6 +26,12 @@
 
 ## Unreleased
 
+- Run Agent now starts checked baseline tasks directly and opens the new run’s
+  live results. Added workspace repetition selection and protected the results
+  handoff before a new experiment appears in saved history.
+- Removed recurring model-inventory polling. Cache each page’s model catalog
+  and update its active selection after a verified switch.
+
 - Added immediate baseline launch acknowledgement, setup/running/error states,
   progress and explicit pass/fail outcomes. Restore saved results automatically,
   show answers and failed checks, retry lost status connections, and preserve

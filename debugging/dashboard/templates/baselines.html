@@ -21,6 +21,7 @@
  const presets=team=>{const single=base(),configs=[single];if(team){const group=base();group.name='team-local';group.max_concurrency=2;group.agents=[{...single.agents[0]},{...single.agents[0],role:'Independent verifier: check contradictions and missing facts.'},{...single.agents[0],role:'Critic and synthesizer: preserve evidence-backed dissent.'}];configs.push(group);}configInput.value=JSON.stringify(configs,null,2);rebuild();};presets(false);
  try {
    const params=new URLSearchParams(window.location.search);
+   if(['1','5','20'].includes(params.get('repeats')))document.getElementById('baseline-repeats').value=params.get('repeats');
    if(params.has('tasks'))window.playpenBaselineTasks.select(params.get('tasks').split(','));
    if(params.has('backend')){
      const config=base(),member=config.agents[0];config.name='workspace-agent';

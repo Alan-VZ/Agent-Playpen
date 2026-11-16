@@ -732,6 +732,7 @@
     }
 
     let activeRun = null;
+    let baselineLaunching = false;
     const runButton = document.getElementById('run-agent');
     const stopButton = document.getElementById('stop-agent');
     const activityLog = document.getElementById('activity-log');
@@ -766,7 +767,7 @@
 
     document.getElementById('agent-form').addEventListener('submit', async function (event) {
       event.preventDefault();
-      if (activeRun) return;
+      if (activeRun || baselineLaunching) return;
       if (window.playpenBaselineTasks?.ids().length && !window.playpenBaselineTasks.runLoaded()) {
         setStatus('error', 'Baseline tasks are selected. Load the selected tasks or use Compare using this agent; clear the baseline selection to run your custom task.');
         return;
@@ -776,7 +777,15 @@
           setStatus('error', 'Select at least one baseline task.');
           return;
         }
-        window.playpenBaselineTasks.transfer();
+        let baselineStarted=false;baselineLaunching=true;runButton.disabled=true;
+        setStatus('running','Starting selected baseline tests…');resultOutput.textContent='Launch received. Checking setup and starting the baseline experiment…';
+        try{
+          const result=await window.playpenBaselineTasks.launch();
+          if(!result){setStatus('warning','Baseline not started. Complete required API setup, then run again.');resultOutput.textContent='No baseline experiment was launched.';return;}
+          baselineStarted=true;setStatus('running','Baseline started. Opening live results…');
+          window.location.assign(window.playpenBaselineTasks.destination()+'&run='+encodeURIComponent(result.id));
+        }catch(error){setStatus('error','Baseline launch failed: '+error.message);resultOutput.textContent=error.message;}
+        finally{if(!baselineStarted){baselineLaunching=false;runButton.disabled=false;}}
         return;
       }
       const payload = collectConfig();
@@ -1337,7 +1346,6 @@
     document.getElementById('base_url').addEventListener('change', () => workspacePicker?.refresh());
     loadDefaults().then(() => {
       window.playpenModelSlots?.init();
-      workspacePicker?.refresh();
       refreshKeyStatus();
 
     });

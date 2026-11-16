@@ -65,7 +65,7 @@ async function poll(){
   }
  }catch(e){if(id!==job||requestVersion!==version)return;announce('error','Cannot retrieve run status: '+e.message+' Retrying automatically; the run may still be active.');timer=setTimeout(poll,3000);}
 }
-function viewRun(id){stopRequested=false;stopPolling();job=id;startedAt=null;remember(id);clearResults();announce('loading','Loading saved run results…');poll();}
+function viewRun(id){stopRequested=false;stopPolling();job=id;startedAt=null;remember(id);clearResults();announce('loading','Loading run status and results…');detail.textContent='Opening run '+id+'.';poll();}
 runButton.addEventListener('click',async()=>{
  if(launching)return;launching=true;runButton.disabled=true;stopButton.disabled=true;
  stopRequested=false;stopPolling();job=null;startedAt=null;clearResults();announce('checking','Checking baseline setup…');detail.textContent='Your launch request has been received. Checking required APIs and configuration.';focusStatus();
@@ -86,7 +86,7 @@ async function history(autoOpen=true){
  try{const results=await api('/api/benchmarks');const list=document.getElementById('baseline-history-list');list.replaceChildren();
   for(const result of results){const date=new Date(result.created_at);const button=el('button',(Number.isNaN(date.valueOf())?result.created_at:date.toLocaleString())+' · '+result.status+' · '+result.completed+'/'+result.scheduled+' attempts'+(result.passed!==undefined?' · '+result.passed+' passed':''));button.type='button';button.addEventListener('click',()=>{if(launching)return;viewRun(result.id);focusStatus();});list.append(button);}
   if(!results.length)list.append(el('p','No saved baseline runs yet.'));
-  if(autoOpen&&!job&&!launching&&results.length){const requested=new URLSearchParams(window.location.search).get('run');viewRun(results.find(r=>r.id===requested)?.id||results.find(r=>r.status==='running')?.id||results[0].id);}
+  if(autoOpen&&!job&&!launching){const requested=new URLSearchParams(window.location.search).get('run');if(requested&&/^[a-f0-9]{32}$/.test(requested))viewRun(requested);else if(results.length)viewRun(results.find(r=>r.status==='running')?.id||results[0].id);}
  }catch(e){listHistoryError(e);}
 }
 function listHistoryError(e){document.getElementById('baseline-history-list').textContent='Could not load saved runs: '+e.message;}

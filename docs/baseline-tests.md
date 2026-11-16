@@ -47,7 +47,9 @@ For LM Studio and Ollama, the main single-model field follows the actual loaded
 model automatically. Selecting a different installed model unloads other text
 models first, confirms they are gone, loads the choice, and confirms its exact
 active ID. There are no separate refresh, status, or load buttons. List discovery
-and automatic status polling are read-only; choosing a model performs the switch.
+is performed once per backend/server in a page. There is no background inventory
+polling. Choosing a model performs the switch and verifies its loaded state.
+Reload the page to discover models installed outside Playpen.
 
 Hosted providers select the model for subsequent API requests; they manage their
 own loading. Catalog access can depend on saved credentials. The picker also has
@@ -91,10 +93,12 @@ the Task field. Select any of B01–B05 and click **Load selected tasks** to pre
 their fixed instructions and inputs in the Task field. Checking a task automatically
 fills an empty Task field and keeps generated task text synchronized with the selection;
 it does not overwrite a custom task. **Load selected tasks** explicitly replaces
-custom text. **Run Agent** on loaded baseline text, or **Compare
-using this agent**, opens the scored baseline page with your current provider,
-model, planner, temperature, iteration limit, and output-token limit. Launch there
-after reviewing the configuration; this does not start paid calls automatically.
+custom text. **Run Agent** on loaded baseline text starts the selected tasks
+using the current models and settings, then opens that exact run’s live results.
+The workspace repetition selector defaults to one smoke repetition, with five
+and twenty also available. **Compare using this agent** opens the configuration
+review page without starting an experiment. Required API setup is checked before
+launch; a blocked launch does not start model calls.
 
 The baseline page has the same checkboxes, **Select all**, **Clear selection**, and
 task previews. Every configuration receives the same selected task IDs and fixture
