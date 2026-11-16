@@ -215,3 +215,18 @@ recovered to a valid input read, then ended with APITimeoutError on its sixth
 model request after 91.6 seconds overall. There were no denied tool operations;
 this verifies defensive handling, not model qualification. Earlier failed runs
 remain intact. No scoring criteria or expected fixture answers were changed.
+
+## Local inference time and calculator limits
+
+Every model request receives the time remaining in the shared task deadline;
+there is no separate fixed 60-second request cap. The reservation ledger records
+`request_timeout_seconds` for each call. Time already spent loading models,
+using tools, or making earlier requests reduces that allowance. The existing
+task deadline, worker termination, cancellation and token limits still apply.
+A longer allowance is not evidence of correctness or reliable model behavior.
+
+The baseline calculator accepts one numeric expression of at most 200 characters,
+using + - * / % and parentheses. JSON reports, variables, programs and powers are
+not supported. The published tool contract and rejection messages state those
+limits; invalid arguments are recorded separately from successful calculations.
+Final JSON reports belong in FINISH. No fixture answers or scoring checks changed.

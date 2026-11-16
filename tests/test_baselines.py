@@ -519,3 +519,45 @@ def test_baseline_format_correction_does_not_execute_empty_fixture_call():
     assert result['tool_events'][0]['name'] == 'orders.csv'
     assert result['tool_events'][0]['status'] == 'ok'
     assert 'no tool was executed' in backend.chat.call_args_list[1].args[0][-1]['content']
+
+
+@pytest.mark.parametrize('expression,message', [
+    ('{"total":44}', 'not JSON'), ('var total = 44', 'not JSON'), ('9**999999999', 'not JSON'),
+    ('', 'nonempty'), ('1+' * 101, '200 characters'),
+])
+def test_baseline_calculator_explains_rejected_input(expression, message):
+    budget = Budget(ExperimentConfig())
+    calculator = BoundedCalculator(budget, 'agent-1')
+    with pytest.raises(ValueError, match=message):
+        calculator.run(expression=expression)
+    assert budget.tool_events[-1]['status'] == 'invalid_arguments'
+    assert 'No JSON' in calculator.description
+    assert calculator.parameters['properties']['expression']['maxLength'] == 200
+
+
+def test_model_request_timeout_uses_remaining_task_budget(monkeypatch):
+    from benchmarks.runner import MeteredBackend
+    clock = [100.0]
+    monkeypatch.setattr(time, 'monotonic', lambda: clock[0])
+    budget = Budget(ExperimentConfig(timeout_seconds=180))
+    backend = Mock()
+    backend.client.timeout = 60
+    backend.last_usage = {}
+    backend.last_response_stats = {}
+    def chat(messages):
+        observed.append(backend.client.timeout)
+        return 'answer'
+    observed = []
+    backend.chat.side_effect = chat
+    metered = MeteredBackend(backend, budget, 'agent-1')
+    assert metered.chat([]) == 'answer'
+    clock[0] += 80
+    assert metered.chat([]) == 'answer'
+    clock[0] += 90
+    assert metered.chat([]) == 'answer'
+    assert observed == [180, 100, 10]
+    assert [c['request_timeout_seconds'] for c in budget.model_calls] == observed
+    clock[0] += 11
+    with pytest.raises(TimeoutError):
+        metered.chat([])
+    assert backend.chat.call_count == 3

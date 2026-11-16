@@ -26,6 +26,11 @@
 
 ## Unreleased
 
+- Let model requests use the remaining shared task deadline instead of an
+  unconditional 60-second cap; record each request’s timeout in its ledger.
+- Publish the baseline calculator’s arithmetic-only contract and explain invalid
+  JSON/program inputs instead of reporting all such errors as calculation size.
+
 - Reject malformed ReAct action inputs, invented observations, multi-action
   responses, and missing required tool arguments before tool execution. Added
   bounded corrective feedback and a visible stop reason after repeated invalid

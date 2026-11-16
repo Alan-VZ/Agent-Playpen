@@ -177,15 +177,26 @@ class WriteArtifact(BaseTool):
 
 
 class BoundedCalculator(CalculatorTool):
+    description = "Evaluate ONE numeric arithmetic expression of at most 200 characters using + - * / % and parentheses. No JSON, variables, scripts, or exponentiation. Return the final report through FINISH, not this calculator."
+    parameters = {"type":"object", "properties":{"expression":{"type":"string", "maxLength":200,
+                  "description":"Numeric arithmetic only, for example '(3 + 4) - 2'. Not a JSON object or program."}}, "required":["expression"]}
+
     def __init__(self, budget, agent_id):
         self.budget, self.agent_id = budget, agent_id
 
     def run(self, **kwargs):
         with self.budget.lock:
-            self.budget.tool("calculate", "calculator", self.agent_id)
+            event = self.budget.tool("calculate", "calculator", self.agent_id)
             expression = kwargs.get("expression", "")
-            if not isinstance(expression, str) or len(expression) > 200 or "**" in expression or any(c not in "0123456789.+-*/%() \t" for c in expression):
-                raise ValueError("Calculation too large")
+            if not isinstance(expression, str) or not expression.strip():
+                event["status"] = "invalid_arguments"
+                raise ValueError("Calculator requires a nonempty 'expression' string containing numeric arithmetic.")
+            if len(expression) > 200:
+                event["status"] = "invalid_arguments"
+                raise ValueError("Arithmetic expression exceeds 200 characters. Break it into smaller calculations.")
+            if "**" in expression or any(c not in "0123456789.+-*/%() \t" for c in expression):
+                event["status"] = "invalid_arguments"
+                raise ValueError("Calculator accepts numeric arithmetic only, not JSON, variables or code. Example: '(3 + 4) - 2'. Return final JSON through FINISH.")
             return super().run(**kwargs)
 
 
@@ -196,6 +207,13 @@ class MeteredBackend:
     def chat(self, messages):
         call = self.budget.reserve_model(messages, self.agent_id)
         try:
+            with self.budget.lock:
+                self.budget.active()
+                remaining = max(.001, self.budget.deadline - time.monotonic())
+                client = getattr(self.backend, "client", None)
+                if client is not None and hasattr(client, "timeout"):
+                    client.timeout = remaining
+                call["request_timeout_seconds"] = round(remaining, 3)
             value = self.backend.chat(messages)
             with self.budget.lock:
                 self.budget.active()
@@ -231,7 +249,7 @@ def make_backend(member, config):
     client = getattr(backend, "client", None)
     if client is not None:
         if hasattr(client, "timeout"):
-            client.timeout = min(config.timeout_seconds, 60)
+            client.timeout = config.timeout_seconds
         if hasattr(client, "max_retries"):
             client.max_retries = 0
     return backend
