@@ -45,6 +45,7 @@ class ReActPlanner(BasePlanner):
     def __init__(self, backend, tool_descriptions: str = ""):
         self.backend = backend
         self.tool_descriptions = tool_descriptions
+        self.available_tool_names = set()
 
     def plan(self, task: str, ctx) -> Plan:
         """
@@ -104,6 +105,17 @@ class ReActPlanner(BasePlanner):
 
 
         if not re.search(r"^\s*Action:\s*", raw, re.MULTILINE):
+            # Detect unsupported calls; never translate model-specific syntax or
+            # execute text that merely describes a tool operation.
+            call_text = re.search(r"<\s*(?:tool_call|function\b)", raw, re.IGNORECASE)
+            named_call = any(re.search(r"\b" + re.escape(name) + r"\s*\(", raw) for name in self.available_tool_names)
+            try:
+                candidate = json.loads(raw.strip())
+            except (ValueError, TypeError):
+                candidate = None
+            shaped_call = isinstance(candidate, dict) and isinstance(candidate.get("name"), str) and candidate["name"] in self.available_tool_names and "arguments" in candidate
+            if call_text or named_call or shaped_call:
+                raise AgentResponseFormatError("Unrecognized tool-call text is not a final answer. Return one Action: tool_name and Action Input: JSON arguments. No tool was executed.")
             if re.search(r"^\s*(Thought|Action Input|Observation):", raw, re.MULTILINE):
                 raise AgentResponseFormatError("Missing Action. Return one Action and its Action Input, or Action: FINISH with the final answer.")
             return Thought(reasoning=raw, is_terminal=True, answer=final_answer(raw))

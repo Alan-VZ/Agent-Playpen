@@ -19,6 +19,7 @@ venv/
 # Agent Playpen runtime output
 traces/
 benchmark-results/
+controlled-results/
 chroma_data/
 config/web_agent_config.json
 

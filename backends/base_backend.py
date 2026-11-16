@@ -21,6 +21,15 @@ class BaseBackend(ABC):
         total = number("total_tokens")
         self.last_usage = {"input_tokens": inputs, "output_tokens": outputs,
                            "total_tokens": total if total is not None else inputs + outputs if inputs is not None and outputs is not None else None}
+        choices = getattr(response, "choices", None)
+        choice = choices[0] if isinstance(choices, list) and choices else None
+        details = getattr(usage, "completion_tokens_details", None)
+        reasoning = getattr(details, "reasoning_tokens", None)
+        self.last_response_stats = {
+            "finish_reason":getattr(choice, "finish_reason", None),
+            "output_tokens":outputs,
+            "reasoning_tokens":reasoning if isinstance(reasoning, int) and not isinstance(reasoning, bool) else None,
+        }
 
     @abstractmethod
     def chat(self, messages: list[dict]) -> str:

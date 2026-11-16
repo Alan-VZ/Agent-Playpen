@@ -63,6 +63,7 @@ class Agent:
         self.planner.tool_descriptions = "\n".join(
             json.dumps(schema["function"]) for schema in self.executor.registry.to_openai_schemas()
         ) or "No tools available."
+        self.planner.available_tool_names = set(self.executor.registry.list_all())
 
         self.tracer.on_status("Preparing the task and planning the next action.")
         self.planner.plan(task, ctx)

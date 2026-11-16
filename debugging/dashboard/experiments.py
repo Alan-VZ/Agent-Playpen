@@ -2,6 +2,7 @@
 import json
 import threading
 import uuid
+import time
 
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
@@ -52,9 +53,59 @@ class ModelChoice(BaseModel):
     base_url: str | None = Field(default=None, max_length=500)
 
 
+def active_study(root):
+    for path in (root / "controlled-results").glob("*/study.json"):
+        try:
+            if time.time()-path.stat().st_mtime < 300 and json.loads(path.read_text(encoding="utf-8")).get("status")=="running":
+                return path.parent.name
+        except (OSError,ValueError):
+            continue
+    return None
+
+
 def install(server):
     app = server.app
     server.templates.env.globals["baseline_tasks"] = task_catalog()
+
+    @app.get("/controlled-tests/{study_id}")
+    def controlled_page(study_id: str, request: Request):
+        if not valid_id(study_id):
+            raise HTTPException(404, "Unknown study")
+        return server.templates.TemplateResponse(request=request, name="controlled_study.html", context={"session_token":server.API_TOKEN,"study_id":study_id})
+
+    def study_path(study_id):
+        if not valid_id(study_id):
+            raise HTTPException(404, "Unknown study")
+        return server.ROOT / "controlled-results" / study_id
+
+    @app.get("/api/controlled-tests/{study_id}")
+    def controlled_status(study_id: str):
+        from benchmarks.controlled import summarize
+        try:
+            record=json.loads((study_path(study_id)/"study.json").read_text(encoding="utf-8"))
+        except (OSError,ValueError):
+            raise HTTPException(404,"Study not started or unavailable") from None
+        return {"id":study_id,"status":record["status"],"completed":len(record["results"]),"scheduled":record["scheduled"],"current":record.get("current"),"rows":summarize(record)}
+
+    @app.post("/api/controlled-tests/{study_id}/stop")
+    def controlled_stop(study_id: str):
+        path=study_path(study_id)
+        if not (path/"study.json").exists():
+            raise HTTPException(404,"Unknown study")
+        (path/"STOP").touch()
+        return {"status":"stopping"}
+
+    @app.get("/api/controlled-tests/{study_id}/export/{kind}")
+    def controlled_export(study_id: str, kind: str):
+        names={"html":("comparison.html","text/html"),"csv":("comparison.csv","text/csv"),"json":("study.json","application/json")}
+        if kind not in names:
+            raise HTTPException(404,"Unknown export")
+        name,mime=names[kind]
+        try:
+            content=server.redact((study_path(study_id)/name).read_text(encoding="utf-8"))
+        except OSError:
+            raise HTTPException(404,"No report yet") from None
+        return Response(content,media_type=mime,headers={"Content-Disposition":f'attachment; filename="controlled-study.{kind}"'})
 
     @app.get("/api/model-picker")
     def model_choices(backend: str, base_url: str = ""):
@@ -76,6 +127,8 @@ def install(server):
         if payload.backend not in server.BackendFactory.REGISTRY:
             raise HTTPException(400, "Unsupported backend")
         with LOCK:
+            if active_study(server.ROOT):
+                raise HTTPException(409,"A controlled study is running. Stop it before changing models.")
             if payload.backend in model_sources.LOCAL and any(job["status"] == "running" for job in JOBS.values()):
                 raise HTTPException(409, "A benchmark is using local models. Wait until it finishes to change the selection.")
         try:
@@ -92,6 +145,8 @@ def install(server):
 
     @app.post("/api/local-models/load")
     def local_model_load(payload: LocalModelRequest):
+        if active_study(server.ROOT):
+            raise HTTPException(409, "Finish or stop the controlled study before switching models.")
         with LOCK:
             if any(job["status"] == "running" for job in JOBS.values()):
                 raise HTTPException(409, "Finish or stop the active benchmark before switching local models.")
@@ -188,6 +243,8 @@ def install(server):
 
     @app.post("/api/benchmarks")
     def launch(payload: LaunchRequest):
+        if active_study(server.ROOT):
+            raise HTTPException(409,"A controlled study is running. Stop it before starting another experiment.")
         try:
             tasks = selected_tasks(payload.tasks)
         except ValueError as exc:

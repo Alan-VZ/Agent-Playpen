@@ -479,6 +479,9 @@ def api_defaults():
 
 
 def _validate_run(config: AgentConfig):
+    from debugging.dashboard.experiments import active_study
+    if active_study(ROOT):
+        raise HTTPException(409,"A controlled study is running. Stop it before starting another agent run.")
     for slot in config.model_slots:
         if slot.backend not in BackendFactory.REGISTRY or slot.model.strip() in {"", "local-model"}:
             raise HTTPException(400, detail="Choose an explicit model for every model slot.")

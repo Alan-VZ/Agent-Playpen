@@ -30,6 +30,7 @@ from tools.base_tool import BaseTool
 from tools.packs.utils.calculator_tool import CalculatorTool
 from tools.tool_registry import ToolRegistry
 from benchmarks.tasks import SUITE, TASKS, fixture, score, expected, selected_tasks, baseline_setup
+from benchmarks.outcomes import safe_error, category
 
 
 class Member(BaseModel):
@@ -59,6 +60,8 @@ class ExperimentConfig(BaseModel):
     rate_source: str | None = Field(default=None, max_length=500)
     dollar_limit: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     auto_baseline_setup: bool = True
+    capture_diagnostics: bool = False
+    model_min_interval_seconds: float = Field(default=0, ge=0, le=60)
 
 
 def prepare_baseline_configs(configs, tasks):
@@ -89,6 +92,7 @@ class Budget:
         self.artifacts = {}
         self.reservations_closed = False
         self.on_event = on_event
+        self.last_request_at = None
 
     def active(self):
         if self.external_stop.is_set():
@@ -204,8 +208,22 @@ class MeteredBackend:
     def __init__(self, backend, budget, agent_id):
         self.backend, self.budget, self.agent_id = backend, budget, agent_id
 
+    @property
+    def last_response_stats(self):
+        stats = getattr(self.backend, "last_response_stats", None)
+        return stats if isinstance(stats, dict) else {}
+
+    def diagnostic(self, kind, payload):
+        if self.budget.config.capture_diagnostics:
+            self.budget.publish({"type":kind, "agent_id":self.agent_id, "timestamp":datetime.now(timezone.utc).isoformat(), **redact(payload)})
+
     def chat(self, messages):
+        interval = self.budget.config.model_min_interval_seconds
+        while self.budget.last_request_at is not None and time.monotonic() - self.budget.last_request_at < interval:
+            self.budget.active()
+            time.sleep(min(.1, interval))
         call = self.budget.reserve_model(messages, self.agent_id)
+        call_index = len(self.budget.model_calls) - 1
         try:
             with self.budget.lock:
                 self.budget.active()
@@ -214,17 +232,27 @@ class MeteredBackend:
                 if client is not None and hasattr(client, "timeout"):
                     client.timeout = remaining
                 call["request_timeout_seconds"] = round(remaining, 3)
+                self.budget.last_request_at = time.monotonic()
+            bounded = [{"role":str(m.get("role", ""))[:30], "content":str(m.get("content", ""))[:16000]} for m in messages]
+            self.diagnostic("request_diagnostic", {"call_index":call_index, "messages":bounded, "reservation":dict(call)})
             value = self.backend.chat(messages)
+            text = value if isinstance(value, str) else ""
+            self.diagnostic("response_diagnostic", {"call_index":call_index, "content":text[:12000], "content_truncated":len(text)>12000,
+                "characters":len(text), "trailing_whitespace":len(text)-len(text.rstrip()), "stats":self.last_response_stats,
+                "usage":getattr(self.backend, "last_usage", {}), "reported_model":getattr(self.backend,"last_model_identity",None)})
             with self.budget.lock:
                 self.budget.active()
                 stats = getattr(self.backend, "last_usage", None) or getattr(self.backend, "last_response_stats", {}) or {}
                 total = stats.get("total_tokens")
                 call["actual_tokens"] = total if isinstance(total, int) and total >= 0 else None
+                call["response_stats"] = self.last_response_stats
+                call["text_characters"] = len(text)
                 identity = getattr(self.backend, "last_model_identity", None)
                 call["reported_model"] = identity if isinstance(identity, str) and len(identity) <= 500 else None
                 call["status"] = "completed"
             return value
-        except Exception:
+        except Exception as exc:
+            self.diagnostic("error_diagnostic", {"call_index":call_index, **safe_error(exc)})
             with self.budget.lock:
                 call["status"] = "failed"
             raise
@@ -289,9 +317,7 @@ def run_member(member, config, data, budget, agent_id, peers=None, backend_facto
                 "message": agent.stop_reason if agent.completion_status != "success" else "",
                 "trace": [asdict(e) for e in tracer.events]}
     except Exception as exc:
-        code = getattr(exc, "status_code", None)
-        return {"agent_id": agent_id, "status": "error", "answer": "", "error_type": type(exc).__name__,
-                "http_status": code, "message": "Model or execution failed; inspect credential readiness and configured limits.",
+        return {"agent_id": agent_id, "status": "error", "answer": "", **safe_error(exc),
                 "trace": [asdict(e) for e in tracer.events]}
     finally:
         client = getattr(backend, "client", None)
@@ -354,7 +380,7 @@ def attempt(config, task, seed=1, stopped=None, backend_factory=make_backend, on
     status = "timeout" if timed_out else "cancelled" if budget.stopped.is_set() else "completed" if final["status"] == "success" else "execution_failed"
     evaluation["passed"] = evaluation["passed"] and status == "completed"
     actuals = [c["actual_tokens"] for c in calls]
-    return redact({"id": uuid.uuid4().hex, "task": task, "seed": seed, "status": status,
+    result = redact({"id": uuid.uuid4().hex, "task": task, "seed": seed, "status": status,
                    "elapsed_seconds": round(time.monotonic() - started, 3), "evaluation": evaluation,
                    "agents": results, "tool_events": events, "artifacts": artifacts,
                    "fixture_hash": digest(data), "artifact_hashes": {a: {n: digest(v) for n, v in files.items()} for a, files in artifacts.items()},
@@ -362,6 +388,8 @@ def attempt(config, task, seed=1, stopped=None, backend_factory=make_backend, on
                              "actual_tokens": sum(actuals) if actuals and all(v is not None for v in actuals) else None,
                              "estimated_reserved_usd": budget.reserved_cost if config.usd_per_million_input is not None and config.usd_per_million_output is not None else None,
                              "rate_source": config.rate_source, "actual_cost": None}})
+    result["outcome_category"] = category(result)
+    return result
 
 
 def digest(value):
