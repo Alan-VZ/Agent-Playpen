@@ -1,0 +1,13 @@
+﻿provider,model,A_round1,A_round2,B_round1,B_round2,A_paired,A_same_category,A_both_correct,B_paired,B_same_category,B_both_correct,outcomes
+groq,openai/gpt-oss-120b,4,4,4,4,5,3,3,5,5,4,"{'diagnostic_correct': 8, 'incorrect_answer': 4, 'passed': 8}"
+groq,openai/gpt-oss-20b,5,5,0,0,5,5,5,5,5,0,"{'diagnostic_correct': 10, 'provider_error': 10}"
+groq,qwen/qwen3.8-27b,1,0,3,4,5,4,0,5,4,3,"{'incorrect_answer': 8, 'passed': 7, 'provider_rate_limit': 4, 'diagnostic_correct': 1}"
+groq,allam-2-7b,0,0,0,0,5,4,0,5,3,0,"{'response_format': 13, 'provider_rate_limit': 7}"
+openrouter,nvidia/nemotron-3.5-lightning:free,2,2,1,2,5,3,1,5,2,0,"{'output_limit': 13, 'passed': 3, 'diagnostic_correct': 4}"
+openrouter,nvidia/nemotron-3.5-super-vl:free,5,5,4,5,5,5,5,5,4,4,"{'diagnostic_correct': 10, 'passed': 9, 'response_format': 1}"
+openrouter,dots-studio/dots-3-note-preview:free,4,0,0,0,5,0,0,5,0,0,"{'diagnostic_correct': 4, 'response_format': 4, 'execution_error': 2, 'provider_rate_limit': 1, 'provider_quota_unavailable': 9}"
+openrouter,liquid/lfm-3-1.7b:free,0,0,0,0,5,0,0,5,0,0,"{'provider_rate_limit': 5, 'output_limit': 3, 'response_format': 2, 'provider_quota_unavailable': 10}"
+lm_studio,llama-2-7b-chat,0,0,0,0,5,5,0,5,5,0,"{'response_format': 10, 'timeout': 10}"
+lm_studio,qwen2.5-coder-7b-instruct,0,0,0,0,5,5,0,5,5,0,"{'incorrect_answer': 10, 'response_format': 10}"
+lm_studio,dolphin3.0-llama3.1-8b-abliterated@q4_k_m,0,0,0,0,5,5,0,5,4,0,"{'incorrect_answer': 10, 'incomplete_execution': 9, 'timeout': 1}"
+lm_studio,gemma-2-9b-it-abliterated,0,0,0,0,5,5,0,5,4,0,"{'incorrect_answer': 16, 'timeout': 3, 'incomplete_execution': 1}"

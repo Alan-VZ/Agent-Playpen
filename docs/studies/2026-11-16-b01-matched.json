@@ -1,0 +1,120 @@
+{
+  "id": "46ce32d5e085435fa52c66727fd874b5",
+  "status": "completed",
+  "created_at": "2026-11-16T23:41:46.085285+00:00",
+  "plan": {
+    "models": [
+      {
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "base_url": null
+      },
+      {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "base_url": null
+      },
+      {
+        "provider": "groq",
+        "model": "qwen/qwen3.8-27b",
+        "base_url": null
+      },
+      {
+        "provider": "groq",
+        "model": "allam-2-7b",
+        "base_url": null
+      },
+      {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "base_url": null
+      },
+      {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3.5-super-vl:free",
+        "base_url": null
+      },
+      {
+        "provider": "openrouter",
+        "model": "dots-studio/dots-3-note-preview:free",
+        "base_url": null
+      },
+      {
+        "provider": "openrouter",
+        "model": "liquid/lfm-3-1.7b:free",
+        "base_url": null
+      },
+      {
+        "provider": "lm_studio",
+        "model": "llama-2-7b-chat",
+        "base_url": "http://localhost:1234/v1"
+      },
+      {
+        "provider": "lm_studio",
+        "model": "qwen2.5-coder-7b-instruct",
+        "base_url": "http://localhost:1234/v1"
+      },
+      {
+        "provider": "lm_studio",
+        "model": "dolphin3.0-llama3.1-8b-abliterated@q4_k_m",
+        "base_url": "http://localhost:1234/v1"
+      },
+      {
+        "provider": "lm_studio",
+        "model": "gemma-2-9b-it-abliterated",
+        "base_url": "http://localhost:1234/v1"
+      }
+    ],
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "rounds": 2,
+    "timeout_seconds": 180.0,
+    "max_output_tokens": 2048,
+    "max_iterations": 10,
+    "temperature": 0.0,
+    "cloud_interval_seconds": 4.0
+  },
+  "identity": "d066d6e1c8c0c723c32cc75e1fde06fb7891c8f63c1b3ebaaf8148ddec173413",
+  "provenance": {
+    "commit": "05746c54cb4fedac885ca0d037e75615175934f0",
+    "dirty": true,
+    "python": "3.13.5",
+    "dependencies": {
+      "openai": "3.3.1",
+      "anthropic": "2.3.0",
+      "httpx": "0.28.1",
+      "pydantic": "2.13.4",
+      "pytest": "9.2.0"
+    },
+    "cache": "Provider cache uncontrolled; fresh process and conversation per case.",
+    "memory": "fresh"
+  },
+  "source_fingerprint": "551e7a62d256fad121449b8216a2ab68cc83605d5563f0375f0ea656bc880805",
+  "task_contract_hash": "cd8fb3ab3d62c60590fd8063eefb9f68b65e7cd03e124832db1186167756dc38",
+  "scheduled": 240,
+  "quota_policy": "Finish batch; mark quota-blocked cases unavailable. No paid fallback.",
+  "quota_blocked_providers": {
+    "openrouter": "OpenRouter daily free-request quota exhausted; skipped without making a request."
+  },
+  "processed": 240,
+  "attempted": 221,
+  "outcomes": {
+    "diagnostic_correct": 37,
+    "incorrect_answer": 48,
+    "passed": 27,
+    "provider_error": 10,
+    "provider_rate_limit": 17,
+    "response_format": 40,
+    "output_limit": 16,
+    "execution_error": 2,
+    "timeout": 14,
+    "incomplete_execution": 10,
+    "provider_quota_unavailable": 19
+  },
+  "restored_model": "qwen3.5-9b-uncensored-hauhaucs-aggressive@q6_k"
+}
