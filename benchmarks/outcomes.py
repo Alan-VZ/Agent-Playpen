@@ -42,6 +42,8 @@ def category(result):
         ):
             return "output_limit"
     for agent in result.get("agents", []):
+        if "returned no completion choices" in agent.get("message", "").lower():
+            return "provider_error"
         code = agent.get("http_status")
         if code == 429:
             return "provider_rate_limit"

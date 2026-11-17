@@ -1,4 +1,10 @@
-# Controlled B01 diagnostic study
+# Controlled baseline diagnostic studies
+
+The full five-task manifest is `benchmarks/configs/controlled-five-tasks-12-models.json`. It schedules **1,200 cases**: the same twelve models, B01–B05, five seeds, two arms and two rounds. Use that path in the command below for the full suite. The B01-only manifest remains available for a 240-case comparison.
+
+Only free local `read_fixture`, bounded `calculator` and isolated `write_artifact` tools are allowed, automatically selected per task. Frozen research sources do not use a live search API. The strict B scorer and fixtures are unchanged. A scores answer fields only: it excludes input-read evidence, report creation and actual fault-recovery execution. In A, B03 does not request a report write and B04 explicitly asks for the recovery result from supplied source snapshots. These exclusions do not apply to B.
+
+Cloud models and task types are interleaved in a fixed rotating order to spread scarce free quota across the matrix. Local cases remain grouped by model to avoid repeated unload/load cycles. Arm order is reversed by matched seed between rounds. B02/B03/B05 use identical frozen source content across seeds, so those seeds are repeated trials rather than independently varied problems. A quota rejection or timeout cannot establish model correctness or incorrectness. The analysis should compare task-specific answer checks and calculator usage, without treating optional tool-use correlations as proof of a causal benefit.
 
 Run the matched two-arm comparison from the repository root:
 

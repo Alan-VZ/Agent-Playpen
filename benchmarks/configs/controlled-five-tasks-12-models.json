@@ -1,0 +1,76 @@
+{
+  "models": [
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b"
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b"
+    },
+    {
+      "provider": "groq",
+      "model": "allam-2-7b"
+    },
+    {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning:free"
+    },
+    {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-super-vl:free"
+    },
+    {
+      "provider": "openrouter",
+      "model": "dots-studio/dots-3-note-preview:free"
+    },
+    {
+      "provider": "openrouter",
+      "model": "liquid/lfm-3-1.7b:free"
+    },
+    {
+      "provider": "lm_studio",
+      "model": "llama-2-7b-chat",
+      "base_url": "http://localhost:1234/v1"
+    },
+    {
+      "provider": "lm_studio",
+      "model": "qwen2.5-coder-7b-instruct",
+      "base_url": "http://localhost:1234/v1"
+    },
+    {
+      "provider": "lm_studio",
+      "model": "dolphin3.0-llama3.1-8b-abliterated@q4_k_m",
+      "base_url": "http://localhost:1234/v1"
+    },
+    {
+      "provider": "lm_studio",
+      "model": "gemma-2-9b-it-abliterated",
+      "base_url": "http://localhost:1234/v1"
+    }
+  ],
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "rounds": 2,
+  "temperature": 0,
+  "timeout_seconds": 180,
+  "max_output_tokens": 2048,
+  "max_iterations": 10,
+  "cloud_interval_seconds": 4,
+  "tasks": [
+    "B01",
+    "B02",
+    "B03",
+    "B04",
+    "B05"
+  ]
+}

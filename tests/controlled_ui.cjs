@@ -10,16 +10,18 @@ const {JSDOM, VirtualConsole} = require(path.resolve('.test-tmp/ui-test/node_mod
       w.fetch = async (url, opts) => {
         assert.equal(opts.headers['X-Playpen-Token'], 'test-session-token');
         if (url.endsWith('/stop')) {stopped = true; return {ok: true, json: async () => ({status: 'stopping'})};}
-        return {ok: true, json: async () => ({status: 'running', completed: 7, scheduled: 240,
-          current: {round: 1, provider: 'groq', model: 'model <img src=x>', seed: 2, arm: 'B', latest_event: {content: 'Waiting for response'}},
-          rows: [{round: 1, provider: 'groq', model: '<script>bad</script>', A_correct: 1, A_completed: 2, B_correct: 0, B_completed: 2, A_categories: {diagnostic_correct: 1}, B_categories: {provider_quota_unavailable: 2}}]})};
+        return {ok: true, json: async () => ({status: 'running', completed: 7, scheduled: 1200,
+          current: {round: 1, task: 'B03', provider: 'groq', model: 'model <img src=x>', seed: 2, arm: 'B', latest_event: {content: 'Waiting for response'}},
+          rows: [{round: 1, task: 'B03', provider: 'groq', model: '<script>bad</script>', A_correct: 1, A_completed: 2, B_correct: 0, B_completed: 2, A_categories: {diagnostic_correct: 1}, B_categories: {provider_quota_unavailable: 2}}]})};
       };
     }
   });
   try {
     await new Promise(r => setTimeout(r, 30));
     const d = dom.window.document;
-    assert.match(d.getElementById('status').textContent, /7\/240/);
+    assert.match(d.getElementById('status').textContent, /7\/1200/);
+    assert.match(d.getElementById('current').textContent, /B03/);
+    assert.match(d.getElementById('table').textContent, /B03/);
     assert.match(d.getElementById('current').textContent, /Waiting for response/);
     assert.equal(d.querySelector('#table script'), null);
     assert.equal(d.querySelector('#current img'), null);

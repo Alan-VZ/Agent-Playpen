@@ -1,4 +1,4 @@
-"""Checkpointed two-arm B01 study. Arm A is diagnostic, never a baseline pass."""
+"""Checkpointed matched-task study. Arm A is diagnostic, never a baseline pass."""
 
 import argparse
 from collections import Counter
@@ -27,7 +27,7 @@ from benchmarks.runner import (
     digest,
     provenance,
 )
-from benchmarks.tasks import fixture, score
+from benchmarks.tasks import fixture, score, selected_tasks, baseline_setup
 from benchmarks.outcomes import category, safe_error
 from config.credentials import redact
 from debugging.dashboard.model_sources import model_lease, local_state, select_model
@@ -52,9 +52,11 @@ class StudyPlan(BaseModel):
     max_iterations: int = Field(default=10, ge=1, le=100)
     temperature: float = Field(default=0, ge=0, le=2)
     cloud_interval_seconds: float = Field(default=4, ge=0, le=60)
+    tasks: list[str] = Field(default_factory=lambda: ["B01"])
 
     @model_validator(mode="after")
     def validate_identity(self):
+        selected_tasks(self.tasks)
         if len(set(self.seeds)) != len(self.seeds) or any(s < 1 for s in self.seeds):
             raise ValueError("Seeds must be distinct positive integers.")
         if len({(m.provider, m.model) for m in self.models}) != len(self.models):
@@ -93,9 +95,29 @@ def source_fingerprint():
 def cases(plan):
     """Keep model identities/order fixed; counterbalance arm order on repeats."""
     rows = []
+    groups = {}
+    for index, model in enumerate(plan.models):
+        groups.setdefault(model.provider, []).append(index)
     for round_index in range(plan.rounds):
-        for model_index, model in enumerate(plan.models):
-            for seed in plan.seeds:
+        for provider, indices in groups.items():
+            if provider == "lm_studio":
+                order = [
+                    (i, seed, task)
+                    for i in indices
+                    for seed in plan.seeds
+                    for task in plan.tasks
+                ]
+            else:
+                # Spread scarce cloud quota across models and task types. Keep
+                # local models grouped to avoid loading a model for every case.
+                order = [
+                    (i, seed, plan.tasks[(offset + j) % len(plan.tasks)])
+                    for seed in plan.seeds
+                    for offset in range(len(plan.tasks))
+                    for j, i in enumerate(indices)
+                ]
+            for model_index, seed, task in order:
+                model = plan.models[model_index]
                 arms = (
                     ["A", "B"]
                     if (round_index + plan.seeds.index(seed)) % 2 == 0
@@ -104,11 +126,13 @@ def cases(plan):
                 for arm in arms:
                     rows.append(
                         {
-                            "case_id": f"r{round_index + 1}-m{model_index + 1}-s{seed}-{arm}",
+                            "case_id": f"r{round_index + 1}-m{model_index + 1}-s{seed}-{arm}"
+                            + (f"-{task}" if plan.tasks != ["B01"] else ""),
                             "round": round_index + 1,
                             "model_index": model_index,
                             "seed": seed,
                             "arm": arm,
+                            "task": task,
                             "provider": model.provider,
                             "model": model.model,
                         }
@@ -119,6 +143,15 @@ def cases(plan):
 def direct_messages(data):
     # Keep the task contract, remove only the tool-transport instruction.
     contract = data["prompt"].split("\nUse read_fixture(name)", 1)[0]
+    if data["task"] == "B03":
+        contract = contract.replace(
+            "Write the same JSON to report.json using write_artifact. ", ""
+        )
+    if data["task"] == "B04":
+        contract = contract.replace(
+            "Retrieve primary, empty and backup; recover from primary error without looping.",
+            "Use the supplied source snapshots to describe the correct recovery result; no retrieval is performed in this diagnostic.",
+        )
     inputs = "\n\n".join(
         "[" + name + "]\n" + body for name, body in data["documents"].items()
     )
@@ -138,14 +171,16 @@ def direct_messages(data):
     ]
 
 
-def direct_attempt(config, seed, stopped, publish, backend_factory=make_backend):
-    data = fixture("B01", seed)
+def direct_attempt(
+    config, seed, stopped, publish, backend_factory=make_backend, task="B01"
+):
+    data = fixture(task, seed)
     budget = Budget(config, stopped, publish)
     backend = None
     started = time.monotonic()
     result = {
         "id": uuid.uuid4().hex,
-        "task": "B01",
+        "task": task,
         "seed": seed,
         "status": "execution_failed",
         "baseline_eligible": False,
@@ -174,7 +209,15 @@ def direct_attempt(config, seed, stopped, publish, backend_factory=make_backend)
             answer_checks = {
                 k: v
                 for k, v in evaluation["checks"].items()
-                if k not in {"read_inputs", "no_violations"}
+                if k
+                not in {
+                    "read_inputs",
+                    "no_violations",
+                    "artifact",
+                    "observed_failure",
+                    "bounded_reads",
+                    "checked_empty",
+                }
             }
             result.update(
                 status="completed",
@@ -229,9 +272,17 @@ def _worker(case, raw_config, stop, output, events):
     config = ExperimentConfig.model_validate(raw_config)
     try:
         result = (
-            direct_attempt(config, case["seed"], stop, publish)
+            direct_attempt(
+                config, case["seed"], stop, publish, task=case.get("task", "B01")
+            )
             if case["arm"] == "A"
-            else attempt(config, "B01", case["seed"], stopped=stop, on_event=publish)
+            else attempt(
+                config,
+                case.get("task", "B01"),
+                case["seed"],
+                stopped=stop,
+                on_event=publish,
+            )
         )
         result["baseline_eligible"] = case["arm"] == "B"
         result["outcome_category"] = category(result)
@@ -340,23 +391,38 @@ def isolated_case(case, config, diagnostic_path, on_event=None, stop_file=None):
 
 
 def summarize(record):
+    return [
+        row
+        for task in record["plan"].get("tasks", ["B01"])
+        for row in _summarize_task(record, task)
+    ]
+
+
+def _summarize_task(record, task):
     rows = []
     for round_index in range(1, record["plan"]["rounds"] + 1):
         for model_index, model in enumerate(record["plan"]["models"]):
             results = [
                 r
                 for r in record["results"]
-                if r["round"] == round_index and r["model_index"] == model_index
+                if r["round"] == round_index
+                and r["model_index"] == model_index
+                and r.get("task", "B01") == task
             ]
             row = {
                 "round": round_index,
                 "provider": model["provider"],
                 "model": model["model"],
+                "task": task,
                 "planned_per_arm": len(record["plan"]["seeds"]),
             }
             for arm in ["A", "B"]:
                 items = [r for r in results if r["arm"] == arm]
                 row[arm + "_completed"] = len(items)
+                row[arm + "_attempted"] = sum(r.get("attempted", True) for r in items)
+                row[arm + "_unavailable"] = sum(
+                    r.get("attempted") is False for r in items
+                )
                 row[arm + "_correct"] = sum(
                     bool(r.get("diagnostic_correct"))
                     if arm == "A"
@@ -377,13 +443,18 @@ def render(record, target):
     ) as stream:
         fields = [
             "round",
+            "task",
             "provider",
             "model",
             "planned_per_arm",
             "A_completed",
+            "A_attempted",
+            "A_unavailable",
             "A_correct",
             "A_categories",
             "B_completed",
+            "B_attempted",
+            "B_unavailable",
             "B_correct",
             "B_categories",
         ]
@@ -395,6 +466,7 @@ def render(record, target):
             )
     headings = [
         "Round",
+        "Task",
         "Provider",
         "Model",
         "A correct / processed",
@@ -406,6 +478,7 @@ def render(record, target):
     for row in rows:
         values = [
             row["round"],
+            row["task"],
             row["provider"],
             row["model"],
             str(row["A_correct"]) + "/" + str(row["A_completed"]),
@@ -419,7 +492,7 @@ def render(record, target):
             + "</tr>"
         )
     page = (
-        '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="30"><title>Controlled A/B study</title><style>body{font:15px/1.5 system-ui;margin:30px}table{border-collapse:collapse}td,th{border:1px solid #aaa;padding:8px;text-align:left}</style><h1>Controlled B01 A/B study</h1><p>'
+        '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="30"><title>Controlled A/B study</title><style>body{font:15px/1.5 system-ui;margin:30px}table{border-collapse:collapse}td,th{border:1px solid #aaa;padding:8px;text-align:left}</style><h1>Controlled baseline A/B study</h1><p>'
         + html.escape(record["status"])
         + " · "
         + str(len(record["results"]))
@@ -461,11 +534,15 @@ def run(plan, target, resume=False):
             "identity": identity,
             "provenance": provenance(),
             "source_fingerprint": source_fingerprint(),
-            "task_contract_hash": digest(fixture("B01", 1)),
+            "task_contract_hash": digest(
+                {task: fixture(task, 1) for task in plan.tasks}
+            ),
             "scheduled": len(schedule),
             "results": [],
             "current": None,
             "quota_policy": "Finish batch; mark quota-blocked cases unavailable. No paid fallback.",
+            "tool_policy": "Only free local read_fixture, calculator and isolated write_artifact. No live search or paid tool APIs.",
+            "diagnostic_policy": "Arm A scores answer fields only; it excludes actual reads, writes and recovery execution. B02/B03/B05 repeat the same frozen source contents across seeds.",
         }
         record["provenance"]["cache"] = (
             "Provider cache uncontrolled; fresh process and conversation per case."
@@ -514,7 +591,7 @@ def run(plan, target, resume=False):
                         model=model.model,
                         base_url=model.base_url,
                         temperature=plan.temperature,
-                        tools=["read_fixture", "calculator"],
+                        tools=baseline_setup([case["task"]])["tools"],
                     )
                 ],
                 max_concurrency=1,

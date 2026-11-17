@@ -36,6 +36,114 @@ def test_full_matched_schedule():
     assert rows[0]["arm"] != rows[120]["arm"]
 
 
+def test_five_task_schedule_balances_cloud_and_groups_local_models():
+    p = plan().model_copy(update={"tasks": ["B01", "B02", "B03", "B04", "B05"]})
+    rows = controlled.cases(p)
+    assert len(rows) == len({r["case_id"] for r in rows}) == 1200
+    assert set(
+        Counter(
+            (r["provider"], r["model"], r["task"], r["seed"], r["arm"]) for r in rows
+        ).values()
+    ) == {2}
+    first = rows[:8]
+    assert len({r["model"] for r in first}) == 4
+    assert len({r["task"] for r in first}) == 4
+    local = [r for r in rows if r["provider"] == "lm_studio" and r["round"] == 1]
+    assert (
+        sum(local[i]["model"] != local[i - 1]["model"] for i in range(1, len(local)))
+        == 3
+    )
+
+
+@pytest.mark.parametrize("task", ["B01", "B02", "B03", "B04", "B05"])
+def test_direct_task_checks_exclude_only_execution_evidence(task):
+    backend = Mock()
+    backend.chat.return_value = json.dumps(expected(task, 2))
+    backend.last_usage = {}
+    backend.last_response_stats = {}
+    result = controlled.direct_attempt(
+        ExperimentConfig(agents=[Member(backend="groq", model="test")]),
+        2,
+        threading.Event(),
+        lambda e: None,
+        lambda m, c: backend,
+        task=task,
+    )
+    assert result["task"] == task
+    assert result["diagnostic_correct"]
+    assert not result["evaluation"]["passed"]
+    assert not result["tool_events"] and not result["artifacts"]
+    assert not set(result["answer_checks"]) & {
+        "artifact",
+        "observed_failure",
+        "checked_empty",
+        "bounded_reads",
+        "read_inputs",
+        "no_violations",
+    }
+    if task == "B03":
+        assert result["evaluation"]["checks"]["artifact"] is False
+        assert (
+            "using write_artifact" not in backend.chat.call_args.args[0][1]["content"]
+        )
+    if task == "B04":
+        assert result["evaluation"]["checks"]["observed_failure"] is False
+
+
+def test_task_specific_free_tools_and_per_task_summary(tmp_path, monkeypatch):
+    p = controlled.StudyPlan(
+        models=[{"provider": "groq", "model": "test"}],
+        tasks=["B01", "B02", "B03", "B04", "B05"],
+        seeds=[1],
+        rounds=1,
+        cloud_interval_seconds=0,
+    )
+    configs = []
+
+    def fake(case, config, *args):
+        configs.append((case, config))
+        return {
+            "status": "completed",
+            "outcome_category": "passed",
+            "evaluation": {"passed": case["arm"] == "B"},
+            "diagnostic_correct": case["arm"] == "A",
+        }
+
+    monkeypatch.setattr(controlled, "isolated_case", fake)
+    record = controlled.run(p, tmp_path)
+    assert len(record["results"]) == 10
+    for case, config in configs:
+        assert config.agents[0].tools == (
+            ["read_fixture", "calculator"]
+            if case["task"] == "B01"
+            else ["read_fixture", "write_artifact"]
+            if case["task"] == "B03"
+            else ["read_fixture"]
+        )
+    rows = controlled.summarize(record)
+    assert len(rows) == 5
+    assert all(r["A_correct"] == r["B_correct"] == 1 for r in rows)
+    assert all(r["A_attempted"] == r["B_attempted"] == 1 for r in rows)
+    assert "B05" in (tmp_path / "comparison.csv").read_text()
+
+
+def test_empty_completion_is_a_provider_response_error():
+    assert (
+        category(
+            {
+                "status": "execution_failed",
+                "agents": [
+                    {
+                        "error_type": "ValueError",
+                        "message": "OpenRouter returned no completion choices. Retry or choose another model.",
+                    }
+                ],
+            }
+        )
+        == "provider_error"
+    )
+
+
 @pytest.mark.parametrize(
     "changes",
     [
@@ -148,12 +256,22 @@ def test_checkpoint_resume_and_quota_skip(tmp_path, monkeypatch):
 def test_live_status_stop_export_and_model_guard(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
     from debugging.dashboard import server
+
     monkeypatch.setattr(server, "ROOT", tmp_path)
     sid = "a" * 32
     target = tmp_path / "controlled-results" / sid
-    p = controlled.StudyPlan(models=[{"provider": "groq", "model": "test"}], seeds=[1], rounds=1)
+    p = controlled.StudyPlan(
+        models=[{"provider": "groq", "model": "test"}], seeds=[1], rounds=1
+    )
     (target).mkdir(parents=True)
-    record = {"id": sid, "plan": p.model_dump(), "scheduled": 2, "status": "running", "results": [], "current": {"model": "test"}}
+    record = {
+        "id": sid,
+        "plan": p.model_dump(),
+        "scheduled": 2,
+        "status": "running",
+        "results": [],
+        "current": {"model": "test"},
+    }
     (target / "study.json").write_text(json.dumps(record), encoding="utf-8")
     controlled.render(record, target)
     client = TestClient(server.app, base_url="http://127.0.0.1")
@@ -165,6 +283,8 @@ def test_live_status_stop_export_and_model_guard(tmp_path, monkeypatch):
     assert page.status_code == 200 and "Arm A" in page.text
     assert client.get(f"/api/controlled-tests/{sid}/export/csv").status_code == 200
     assert client.get(f"/api/controlled-tests/{sid}/export/invalid").status_code == 404
-    assert client.post("/api/local-models/load", json={"model": "test"}).status_code == 409
+    assert (
+        client.post("/api/local-models/load", json={"model": "test"}).status_code == 409
+    )
     assert client.post(f"/api/controlled-tests/{sid}/stop", json={}).status_code == 200
     assert (target / "STOP").exists()
