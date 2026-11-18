@@ -302,6 +302,15 @@ class ModelSlot(BaseModel):
     model: str = Field(max_length=500)
     base_url: str = ""
     role: str = Field(default="Independent researcher", max_length=500)
+    temperature: float | None = Field(default=None, ge=0, le=2)
+    max_tokens: int | None = Field(default=None, ge=64, le=32768)
+    max_iterations: int | None = Field(default=None, ge=1, le=50)
+    planner: str | None = Field(default=None, pattern="^(react|cot|tree)$")
+    tool_calling_mode: str | None = Field(default=None, pattern="^(auto|native|prompt)$")
+    tools: list[str] | None = None
+    allowed_dirs: str | None = None
+    search_provider: str | None = None
+
 
 
 class AgentConfig(BaseModel):
@@ -498,7 +507,7 @@ def _validate_run(config: AgentConfig):
         raise HTTPException(status_code=400, detail="Task is required.")
     if config.api_key or config.search_cse_id:
         raise HTTPException(status_code=400, detail="Save credentials using the credential manager first.")
-    if "python_repl" in config.tools:
+    if "python_repl" in config.tools or any("python_repl" in (slot.tools or []) for slot in config.model_slots):
         raise HTTPException(status_code=400, detail="Python execution is disabled in the credential-enabled dashboard.")
     if config.planner not in PLANNER_MAP:
         raise HTTPException(status_code=400, detail="Unsupported planner.")
@@ -613,7 +622,7 @@ def _execute_slot(config, agent_id, on_event=None, cancel_event=None):
 def _execute_run(config: AgentConfig, on_event=None, cancel_event=None):
     if not config.model_slots:
         return _execute_slot(config,"agent-1",on_event,cancel_event)
-    members = [config.model_copy(update={"backend":s.backend,"model":s.model,"base_url":s.base_url,"model_slots":[]}) for s in config.model_slots]
+    members = [config.model_copy(update={**s.model_dump(exclude_none=True, exclude={"role"}),"model_slots":[]}) for s in config.model_slots]
     if len(members)==1:
         return _execute_slot(members[0],"agent-1",on_event,cancel_event)
     session_id=uuid.uuid4().hex

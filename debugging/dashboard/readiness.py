@@ -49,7 +49,7 @@ def requirements(config):
     """Return deduplicated provider -> consumer names, including team members."""
     result = {}
     for index, selected in enumerate(config.get("agents") or config.get("model_slots") or [config]):
-        agent = {**config, **selected}
+        agent = {**config, **{key: value for key, value in selected.items() if value is not None}}
         backend = agent.get("backend", "lm_studio")
         if backend in credentials.BACKEND_KEYS:
             result.setdefault(backend, []).append(f"agent-{index + 1}: model")

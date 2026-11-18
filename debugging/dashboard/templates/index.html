@@ -1365,7 +1365,7 @@
     });
     document.getElementById('base_url').addEventListener('change', () => workspacePicker?.refresh());
     loadDefaults().then(() => {
-      window.playpenModelSlots?.init();
+      window.playpenModelSlots?.init(defaultState.model_slots);
       refreshKeyStatus();
 
     });

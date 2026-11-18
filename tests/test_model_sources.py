@@ -310,3 +310,38 @@ input()
             process.wait(5)
         process.stdin.close()
         process.stderr.close()
+
+
+def test_model_slots_preserve_independent_settings(monkeypatch, tmp_path):
+    monkeypatch.setattr(server, "ROOT", tmp_path)
+    seen = {}
+
+    def execute(config, *args):
+        seen[config.model] = config
+        return {"backend": config.backend, "model": config.model, "status": "success", "result": "answer", "warning_count": 0}
+
+    monkeypatch.setattr(server, "_execute_single_run", execute)
+    config = server.AgentConfig(task="Identical task", temperature=0.7, max_tokens=2048, model_slots=[
+        {"backend": "openrouter", "model": "first", "temperature": 0, "max_tokens": 4096, "max_iterations": 5, "planner": "cot", "tools": [], "allowed_dirs": "fixtures"},
+        {"backend": "groq", "model": "second", "temperature": 0.4, "max_tokens": 8192, "max_iterations": 12, "planner": "react", "tool_calling_mode": "native", "tools": ["calculator"]},
+    ])
+    server._execute_run(config)
+    assert seen["first"].temperature == 0
+    assert seen["first"].max_tokens == 4096
+    assert seen["first"].max_iterations == 5
+    assert seen["first"].planner == "cot"
+    assert seen["first"].tools == []
+    assert seen["first"].allowed_dirs == "fixtures"
+    assert seen["second"].temperature == 0.4
+    assert seen["second"].max_tokens == 8192
+    assert seen["second"].max_iterations == 12
+    assert seen["second"].tool_calling_mode == "native"
+    assert all(member.task == "Identical task" for member in seen.values())
+
+
+def test_baseline_launch_accepts_ten_independent_configurations():
+    from debugging.dashboard.experiments import LaunchRequest
+    payload = {"configs": [{"name": f"model-{index}", "agents": [{"model": f"model-{index}"}]} for index in range(10)], "repeats": 1, "tasks": ["B01"]}
+    assert len(LaunchRequest.model_validate(payload).configs) == 10
+    with pytest.raises(ValidationError):
+        LaunchRequest.model_validate({**payload, "configs": payload["configs"] + [payload["configs"][0]]})

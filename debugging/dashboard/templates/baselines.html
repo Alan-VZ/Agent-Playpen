@@ -28,8 +28,9 @@
      for(const key of ['backend','model','planner','base_url','tool_calling_mode'])if(params.has(key))member[key]=params.get(key);
      if(params.has('temperature'))member.temperature=Number(params.get('temperature'));
      for(const key of ['max_iterations','max_output_tokens','timeout_seconds'])if(params.has(key))config[key]=Number(params.get(key));
-     if(params.has('models')){const slots=JSON.parse(params.get('models'));if(!Array.isArray(slots)||!slots.length||slots.length>10)throw new Error('Choose between 1 and 10 models.');config.agents=slots.map(slot=>({backend:slot.backend,model:slot.model,base_url:slot.base_url||null,role:slot.role||'Independent researcher',planner:member.planner,tool_calling_mode:member.tool_calling_mode,temperature:member.temperature}));config.name='workspace-models';config.max_concurrency=3;}
-     configInput.value=JSON.stringify([config],null,2);rebuild();
+     let configurations=[config];
+     if(params.has('models')){const slots=JSON.parse(params.get('models'));if(!Array.isArray(slots)||!slots.length||slots.length>10)throw new Error('Choose between 1 and 10 models.');configurations=slots.map((slot,index)=>({...config,name:('model-'+(index+1)+'-'+slot.model).slice(0,100),max_iterations:slot.max_iterations??config.max_iterations,max_output_tokens:slot.max_tokens??config.max_output_tokens,agents:[{backend:slot.backend,model:slot.model,base_url:slot.base_url||null,role:slot.role||'Independent researcher',planner:slot.planner||member.planner,tool_calling_mode:slot.tool_calling_mode||member.tool_calling_mode,temperature:slot.temperature??member.temperature}]}));}
+     configInput.value=JSON.stringify(configurations,null,2);rebuild();
      message.textContent='Selected tasks and current agent settings loaded. Review the choices, add comparison agents if desired, then run.';
    }
  } catch(error){message.textContent=error.message;}

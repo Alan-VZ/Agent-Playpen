@@ -31,11 +31,13 @@
   function destination(){const config=collectConfig();const params=new URLSearchParams({repeats:document.getElementById('workspace-baseline-repeats')?.value||'1',tasks:ids().join(','),backend:config.backend,model:config.model,planner:config.planner,tool_calling_mode:config.tool_calling_mode||'auto',temperature:String(config.temperature),max_iterations:String(config.max_iterations),max_output_tokens:String(config.max_tokens)});if(window.playpenModelSlots&&window.playpenModelSlots.get().length>1)params.set('models',JSON.stringify(window.playpenModelSlots.get()));if(['lm_studio','ollama','azure_openai'].includes(config.backend))params.set('base_url',config.base_url);return '/baselines?'+params;}
   async function launch(){
     const tasks=ids();if(!tasks.length)throw new Error('Select at least one baseline task.');
+    if(!document.getElementById('agent-form').reportValidity())throw new Error('Correct the highlighted model settings before running.');
     const config=collectConfig(),slots=window.playpenModelSlots?.get()||[config],selected=setup();
     if(slots.some(slot=>!slot.model||slot.model==='local-model'))throw new Error('Choose an explicit model for every slot before running.');
-    const agents=slots.map(slot=>({backend:slot.backend,model:slot.model,base_url:slot.base_url||null,role:slot.role||'Independent researcher',planner:selected.planner,tool_calling_mode:config.tool_calling_mode||'auto',tools:selected.tools,temperature:config.temperature}));
-    if(!await window.playpenSecrets.preflight({agents}))return null;
-    const payload={configs:[{name:slots.length>1?'workspace-models':'workspace-agent',agents,max_concurrency:Math.min(3,slots.length),max_iterations:config.max_iterations,max_output_tokens:config.max_tokens,timeout_seconds:210,auto_baseline_setup:true}],tasks,repeats:Number(document.getElementById('workspace-baseline-repeats').value)};
+    if(slots.some(slot=>(slot.max_tokens??config.max_tokens)>16384))throw new Error('Baseline max tokens must be 16384 or less for every model.');
+    const configs=slots.map((slot,index)=>({name:slots.length>1?('model-'+(index+1)+'-'+slot.model).slice(0,100):'workspace-agent',agents:[{backend:slot.backend,model:slot.model,base_url:slot.base_url||null,role:slot.role||'Independent researcher',planner:selected.planner,tool_calling_mode:slot.tool_calling_mode||config.tool_calling_mode||'auto',tools:selected.tools,temperature:slot.temperature??config.temperature}],max_concurrency:1,max_iterations:slot.max_iterations??config.max_iterations,max_output_tokens:slot.max_tokens??config.max_tokens,timeout_seconds:210,auto_baseline_setup:true}));
+    if(!await window.playpenSecrets.preflight({agents:configs.flatMap(c=>c.agents)}))return null;
+    const payload={configs,tasks,repeats:Number(document.getElementById('workspace-baseline-repeats').value)};
     const response=await fetch('/api/benchmarks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();
     if(!response.ok)throw new Error(typeof result.detail==='string'?result.detail:result.detail?.message||result.message||'Baseline launch failed.');
     return result;

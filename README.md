@@ -779,3 +779,7 @@ Select `scientific_calculator` in the workspace Tools list or open **Menu → Sc
 Every selected agent tool now uses the reusable [Universal Agent Control Plane](https://github.com/Alan-VZ/universal-agent-control-plane) execution layer: typed request validation, readiness, consistent status/errors, bounded output, verified records and conservative replay. Open **Menu → Universal tools & MCP** for the common catalog and direct execution console. Export the same tools to other hosts with `python -m tools.mcp_server`; explicitly connect allow-listed external MCP servers from local configuration. Native OpenAI-compatible calls and legacy prompt calls converge on this shared layer.
 
 Read [setup, architecture and limits](docs/universal-tools.md), [all observed issues and resolutions](docs/issues-and-resolutions.md), and [creators/research acknowledgements](docs/credits-and-sources.md). The original B01–B05 fixtures/scorer and study results remain preserved; interface improvements require new labeled model measurements. No MCP layer guarantees identical model decisions or halts every remote/in-process side effect on timeout.
+
+### Multiple model comparisons
+
+Use the workspace model cards to select and independently configure up to ten models, then run one shared task on each. Workspace baseline launches create separate comparison configurations using the same tasks and seeds. See [model comparisons](docs/model-comparisons.md) for per-model controls, baseline setup and remaining provider-setting limitations.

@@ -34,7 +34,7 @@ class ReviewRequest(BaseModel):
 
 class LaunchRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    configs: list[ExperimentConfig] = Field(min_length=1, max_length=8)
+    configs: list[ExperimentConfig] = Field(min_length=1, max_length=10)
     repeats: int = 5
     tasks: list[str] = Field(default_factory=lambda: list(TASKS), min_length=1, max_length=5)
 
