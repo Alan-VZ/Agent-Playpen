@@ -26,6 +26,7 @@ class Agent:
         tracer: Tracer,
         max_iterations: int = 10,
         cancel_event=None,
+        final_answer_validator=None,
     ):
         if max_iterations < 1:
             raise ValueError("max_iterations must be at least 1")
@@ -37,6 +38,7 @@ class Agent:
         self.executor.on_event = lambda event: self.tracer.on_status(f"Tool {event['tool']}: {event['status']} · execution {event['execution_id']}", "tool_" + event["status"])
         self.max_iterations = max_iterations
         self.cancel_event = cancel_event
+        self.final_answer_validator = final_answer_validator
         self.completion_status = "running"
         self.stop_reason = ""
 
@@ -54,6 +56,7 @@ class Agent:
         cached_reads = {}
         read_attempts = {}
         format_errors = 0
+        final_errors = 0
         ctx = AgentContext(
             session_id=str(uuid.uuid4()),
             task=task,
@@ -107,6 +110,20 @@ class Agent:
 
             # If the planner considers this terminal, return the answer
             if thought.is_terminal:
+                problem = self.final_answer_validator(thought.answer or "") if self.final_answer_validator else None
+                if problem:
+                    final_errors += 1
+                    self.tracer.on_status("Final answer rejected: " + problem, "warning")
+                    self.tracer.on_status("Rejected final report: " + redact(thought.answer or "")[:4000], "final_report_rejected")
+                    if final_errors >= 2:
+                        self.completion_status = "incomplete"
+                        self.stop_reason = "Final report validation failed twice: " + problem
+                        return ""
+                    observation = "Observation: Final report validation failed. " + problem + " Return a corrected final report; do not repeat unchanged reads."
+                    ctx.observation_history.append(observation)
+                    self.tracer.on_observe(observation)
+                    ctx.iteration += 1
+                    continue
                 self.completion_status = "success"
                 self.tracer.on_response(thought.answer or "")
                 return redact(thought.answer)
@@ -114,13 +131,25 @@ class Agent:
             # ACT: execute the tool named in the Thought
             self._check_cancelled()
             read_key = None
-            if thought.tool_name in {"web_search", "fetch"}:
+            if thought.tool_name in {"web_search", "fetch", "read_fixture"}:
                 args = dict(thought.tool_args)
                 if thought.tool_name == "web_search" and isinstance(args.get("query"), str):
                     args["query"] = " ".join(args["query"].casefold().split())
                 read_key = (thought.tool_name, json.dumps(args, sort_keys=True, ensure_ascii=False))
                 read_attempts[read_key] = read_attempts.get(read_key, 0) + 1
-                if read_attempts[read_key] >= 3:
+                if thought.tool_name == "read_fixture" and read_attempts[read_key] >= 3:
+                    feedback = "This fixture has already been read. Use the existing observation to calculate and return the final report; no read was executed."
+                    if read_attempts[read_key] >= 4:
+                        self.stop_reason = "Repeated unchanged fixture reads after recovery feedback."
+                        break
+                    if getattr(type(self.backend), "accept_tool_result", None):
+                        self.backend.accept_tool_result(feedback)
+                    ctx.observation_history.append("Observation: " + feedback)
+                    self.tracer.on_status(feedback, "warning")
+                    self.tracer.on_observe(feedback)
+                    ctx.iteration += 1
+                    continue
+                if thought.tool_name != "read_fixture" and read_attempts[read_key] >= 3:
                     self.stop_reason = f"The same {thought.tool_name} request was attempted three times. Change the query/provider or supply a known source URL."
                     break
             if read_key is not None and read_key in cached_reads:
@@ -175,9 +204,9 @@ class Agent:
         if isinstance(stats, dict):
             summary += " " + "; ".join(f"{key}={value}" for key, value in stats.items() if value is not None)
         self.tracer.on_status(summary, "model_response")
+        if isinstance(stats, dict) and stats.get("finish_reason") == "length":
+            raise AgentResponseFormatError("Output was truncated at the output-token limit. No action was executed and this is not a final answer. Reply concisely within the existing token budget; do not repeat the analysis. If reasoning consumes the allowance, increase Max tokens or use a supported lower reasoning budget.")
         if not isinstance(raw, str) or not raw.strip():
-            if isinstance(stats, dict) and stats.get("finish_reason") == "length":
-                raise ValueError("The model hit the output-token limit before producing an answer. Increase Max tokens or choose a model that fits the current budget; reasoning tokens may consume the output allowance.")
             raise ValueError("The model returned an empty text response. Try another model or increase the output token limit.")
         thought = self.planner.parse_thought(raw)
         if not thought.is_terminal and thought.tool_name in self.executor.registry.list_all():

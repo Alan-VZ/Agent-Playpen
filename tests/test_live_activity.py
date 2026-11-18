@@ -172,7 +172,8 @@ def test_empty_model_output_reports_limit_and_keeps_usage(client, monkeypatch):
     backend.last_response_stats = {"finish_reason": "length", "output_tokens": 2048, "reasoning_tokens": 2048}
     monkeypatch.setattr(server, "_build_backend", lambda config: backend)
     events = records(client.post("/api/run/stream", json={"task": "research", "tools": []}))
-    assert events[-1]["status"] == "error"
+    assert events[-1]["status"] == "incomplete"
+    assert backend.chat.call_count == 3
     assert "output-token limit" in events[-1]["message"]
     metadata = next(event for event in events if event["type"] == "model_response")
     assert "reasoning_tokens=2048" in metadata["content"]

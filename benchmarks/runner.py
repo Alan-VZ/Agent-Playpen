@@ -306,6 +306,41 @@ def make_backend(member, config):
     return backend
 
 
+def validate_final_report(task, answer):
+    """Validate report shape/consistency, never consult expected fixture answers."""
+    from decimal import Decimal, InvalidOperation
+    from benchmarks.tasks import parse_answer
+    try:
+        report = parse_answer(answer)
+    except (ValueError, TypeError, AttributeError):
+        return "Return a JSON object matching the task contract, without prose."
+    required = {"B01": {"net_total", "valid_orders", "duplicate_ids", "category_totals"},
+                "B02": {"opens", "closed", "loan_days", "citations"},
+                "B03": {"findings", "port_8080_allowed"},
+                "B04": {"release", "source", "empty_is_evidence", "recovered"},
+                "B05": {"choice", "max_load", "chosen_load", "rejected_reason", "warranty", "source", "quote"}}[task]
+    if not required.issubset(report):
+        return "Missing report fields: " + ", ".join(sorted(required - report.keys()))
+    if task == "B01":
+        categories = report["category_totals"]
+        if not isinstance(categories, dict) or set(categories) != {"parts", "service"}:
+            return "category_totals must contain numeric parts and service totals."
+        if type(report["valid_orders"]) is not int or report["valid_orders"] < 0 or not isinstance(report["duplicate_ids"], list) or any(not isinstance(v, str) for v in report["duplicate_ids"]):
+            return "valid_orders must be a nonnegative integer and duplicate_ids an array of strings."
+        values = [report["net_total"], *categories.values()]
+        if any(type(v) not in (int, float) for v in values):
+            return "Totals must be JSON numbers."
+        try:
+            numbers = [Decimal(str(v)) for v in values]
+            if not all(v.is_finite() for v in numbers):
+                return "Totals must be finite numbers."
+            if numbers[0] != sum(numbers[1:]):
+                return "Category totals do not sum to net_total. Recheck refund signs for every category against the input."
+        except InvalidOperation:
+            return "Totals must be finite numbers."
+    return None
+
+
 def run_member(member, config, data, budget, agent_id, peers=None, backend_factory=make_backend):
     backend = None
     lease = None
@@ -332,8 +367,12 @@ def run_member(member, config, data, budget, agent_id, peers=None, backend_facto
             raise ValueError("Unsupported planner")
         agent = Agent(metered, planners[member.planner](metered), registry,
                       MemoryManager({"enabled_stores": ["working", "conversation"]}), tracer,
-                      config.max_iterations, cancel_event=budget.stopped)
-        task = data["prompt"] + "\nYour role: " + member.role
+                      config.max_iterations, cancel_event=budget.stopped,
+                      final_answer_validator=lambda answer: validate_final_report(data["task"], answer))
+        task = data["prompt"]
+        if data["task"] == "B01":
+            task += "\nExecution guidance: subtract refunds in each category as well as the grand total. Category totals must sum to the net total. For calculator calls, extract numeric values and send numeric arithmetic such as (8 + 3) - 2, never SQL, sum(column), variables or programs. Read each unchanged fixture once, then use its observation."
+        task +=  "\nYour role: " + member.role
         if peers is not None:
             task += "\nCritique these independent reports; verify against inputs, preserve decisive dissent, then produce the required final JSON:\n" + json.dumps(peers)[:24000]
         answer = agent.run(task)
@@ -522,7 +561,8 @@ def provenance():
         except PackageNotFoundError:
             dependencies[name] = "not installed"
     return {"commit": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain")),
-            "python": platform.python_version(), "dependencies": dependencies, "cache": "cold", "memory": "fresh"}
+            "python": platform.python_version(), "dependencies": dependencies, "cache": "cold", "memory": "fresh",
+            "recovery_policy": "report-recovery-v1"}
 
 
 def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, backend_factory=make_backend, resume=False, tasks=None):
