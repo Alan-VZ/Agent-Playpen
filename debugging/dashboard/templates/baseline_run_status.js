@@ -32,9 +32,9 @@ function showEvidence(result){
  const evidence=document.getElementById('baseline-evidence');evidence.replaceChildren();
  if((result.attempts||[]).length)evidence.append(el('h3','Individual test results — expand to see answers and failed checks'));
  for(const attempt of result.attempts||[]){const details=el('details','');const passed=attempt.evaluation?.passed;
- details.append(el('summary',attempt.task+' · configuration '+(attempt.config_index+1)+' · repeat '+(attempt.repetition+1)+' · '+(passed?'PASS':'FAIL')+' · '+attempt.status));
+ details.append(el('summary',attempt.task+' · configuration '+(attempt.config_index+1)+' · repeat '+(attempt.repetition+1)+' · '+(passed?'PASS':'FAIL')+' · '+(attempt.outcome_category||attempt.status)));
  const failed=Object.entries(attempt.evaluation?.checks||{}).filter(([,ok])=>!ok).map(([name])=>name);
- if(!passed)details.append(el('p',failureReason(attempt)));
+ if(!passed)details.append(el('p',failureReason(attempt)));if(attempt.failure_categories?.length)details.append(el('p','Observed categories: '+attempt.failure_categories.join(', ')));if(attempt.interaction_record_count||attempt.interactions?.length)details.append(el('p',(attempt.interaction_record_count||attempt.interactions.length)+' captured interaction records are included in the JSON export.'));
  if(failed.length)details.append(el('p','Failed checks: '+failed.join(', ')));
  for(const agent of attempt.agents||[]){details.append(el('h4',agent.agent_id+' · '+agent.status),el('pre',agent.answer||agent.message||'No final answer was returned.'));}
  const raw=el('details','');raw.append(el('summary','Full recorded evidence'),el('pre',JSON.stringify(attempt,null,2)));details.append(raw);evidence.append(details);
@@ -42,7 +42,7 @@ function showEvidence(result){
 }
 function showExports(result,id){
  const exports=document.getElementById('baseline-exports');exports.replaceChildren();
- const reuse=el('button','Use these settings for a new run');reuse.type='button';reuse.addEventListener('click',()=>{configInput.value=JSON.stringify(result.configs,null,2);rebuild();window.playpenBaselineTasks.select(result.selected_tasks||['B01','B02','B03','B04','B05']);document.getElementById('baseline-repeats').value=String(result.repeats||5);detail.textContent='Saved settings loaded for your next run. The results below still belong to run '+id+'.';});exports.append(reuse);
+ const reuse=el('button','Use these settings for a new run');reuse.type='button';reuse.addEventListener('click',()=>{configInput.value=JSON.stringify(result.configs,null,2);rebuild();window.playpenBaselineTasks.select(result.selected_tasks||['B01','B02','B03','B04','B05']);document.getElementById('baseline-repeats').value=String(result.repeats||5);const order=document.getElementById('baseline-scheduling');if(order)order.value=result.scheduling||'counterbalanced';detail.textContent='Saved settings loaded for your next run. The results below still belong to run '+id+'.';});exports.append(reuse);
  for(const kind of ['html','csv','json']){const button=el('button','Download '+kind.toUpperCase());button.type='button';button.addEventListener('click',async()=>{try{const response=await fetch('/api/benchmarks/'+id+'/export/'+kind,{headers:{'X-Playpen-Token':token}});if(!response.ok)throw new Error('Export unavailable.');const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='baseline-comparison.'+kind;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){announce('error',e.message);}});exports.append(button);}
 }
 async function poll(){
@@ -78,7 +78,7 @@ runButton.addEventListener('click',async()=>{
   const configs=JSON.parse(configInput.value);if(!Array.isArray(configs)||!configs.length)throw new Error('Enter a nonempty array of configurations.');
   if(!await window.playpenSecrets.preflight({agents:configs.flatMap(c=>c.agents||[])})){announce('needs_setup','Not started — required API setup needs attention.');detail.textContent='Complete setup in the API inventory, close it, then click Run baseline tests again. No experiment was launched.';return;}
   announce('starting','Starting baseline tests…');
-  const result=await api('/api/benchmarks',{configs,tasks,repeats:Number(document.getElementById('baseline-repeats').value)});
+  const result=await api('/api/benchmarks',{configs,tasks,scheduling:document.getElementById('baseline-scheduling')?.value||'configuration_first',repeats:Number(document.getElementById('baseline-repeats').value)});
   job=result.id;startedAt=Date.now();remember(job);stopButton.disabled=false;announce('running','Run accepted · preparing the selected models and tasks…');detail.textContent='Run '+job+' has started. Results appear as each attempt finishes.';document.getElementById('baseline-live-details').open=true;
   await poll();
  }catch(e){announce('error','Baseline launch failed: '+e.message);detail.textContent='No new run was confirmed. Check the message above before retrying.';}

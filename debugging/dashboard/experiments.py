@@ -1,4 +1,5 @@
 """Local authenticated routes for credential inventory and benchmark jobs."""
+from typing import Literal
 import json
 import threading
 import uuid
@@ -35,6 +36,7 @@ class ReviewRequest(BaseModel):
 class LaunchRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     configs: list[ExperimentConfig] = Field(min_length=1, max_length=10)
+    scheduling: Literal["configuration_first", "task_first", "counterbalanced"] = "configuration_first"
     repeats: int = 5
     tasks: list[str] = Field(default_factory=lambda: list(TASKS), min_length=1, max_length=5)
 
@@ -212,7 +214,7 @@ def install(server):
             raise HTTPException(404, "Unknown experiment")
         return server.ROOT / "benchmark-results" / job_id
 
-    def worker(job_id, configs, repeats, output, stop, tasks):
+    def worker(job_id, configs, repeats, output, stop, tasks, scheduling):
         try:
             def progress(value):
                 with LOCK:
@@ -221,7 +223,7 @@ def install(server):
                         JOBS[job_id]["events"] = JOBS[job_id]["events"][-200:]
                     else:
                         JOBS[job_id]["progress"] = value
-            record = run_experiment(configs, output, repeats, stopped=stop, on_progress=progress, tasks=tasks)
+            record = run_experiment(configs, output, repeats, stopped=stop, on_progress=progress, tasks=tasks, scheduling=scheduling)
             render_report(record, output)
             with LOCK:
                 JOBS[job_id]["status"] = record["status"]
@@ -266,9 +268,9 @@ def install(server):
                 JOBS.pop(next(iter(JOBS)))
             job_id = uuid.uuid4().hex
             stop = threading.Event()
-            JOBS[job_id] = {"status": "running", "stop": stop, "events": [], "progress": {"completed": 0, "scheduled": len(payload.configs) * payload.repeats * len(tasks)}}
+            JOBS[job_id] = {"status": "running", "stop": stop, "events": [], "progress": {"completed": 0, "scheduled": sum(len(c.selected_tasks or tasks) for c in payload.configs) * payload.repeats}}
             output = experiment_path(job_id)
-            threading.Thread(target=worker, args=(job_id, payload.configs, payload.repeats, output, stop, tasks), daemon=True).start()
+            threading.Thread(target=worker, args=(job_id, payload.configs, payload.repeats, output, stop, tasks, payload.scheduling), daemon=True).start()
         return {"id": job_id, "status": "running"}
 
     @app.get("/api/benchmarks/{job_id}")
@@ -295,7 +297,7 @@ def install(server):
             if not activity and record:
                 activity = [event for attempt in record.get("attempts", []) for event in attempt.get("partial_events", [])][-200:]
             return {"id": job_id, "status": state, "progress": job["progress"] if job else {"completed": len(record["attempts"]), "scheduled": record["scheduled"]},
-                    "summaries": summaries(record) if record else [], "configs": record["configs"] if record else [], "repeats": record["repeats"] if record else 5, "selected_tasks": record.get("selected_tasks", list(TASKS)) if record else list(TASKS), "attempts": record["attempts"] if record else [], "events": activity}
+                    "summaries": summaries(record) if record else [], "configs": record["configs"] if record else [], "repeats": record["repeats"] if record else 5, "selected_tasks": record.get("selected_tasks", list(TASKS)) if record else list(TASKS), "scheduling": record.get("scheduling", "counterbalanced") if record else "configuration_first", "attempts": [{**{k:v for k,v in a.items() if k != "interactions"}, "interaction_record_count":len(a.get("interactions", []))} for a in record["attempts"]] if record else [], "events": activity}
 
     @app.post("/api/benchmarks/{job_id}/stop")
     def stop(job_id: str):

@@ -545,6 +545,8 @@ def _execute_single_run(config: AgentConfig, on_event=None, cancel_event=None):
         tracer.on_status(f"Connecting to {config.backend} / {config.model}.")
         backend = _build_backend(config)
         backend.tool_calling_mode = config.tool_calling_mode
+        from benchmarks.evidence import install_transport_capture
+        install_transport_capture(backend, lambda kind, data: tracer.on_status(json.dumps(data), kind))
         planner = PLANNER_MAP[config.planner](backend=backend)
         registry = ToolRegistry()
         for tool_name in config.tools:
@@ -1058,3 +1060,6 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("debugging.dashboard.server:app", host="127.0.0.1", port=8765, reload=False, access_log=False)
+
+from debugging.dashboard import diagnostics  # noqa: E402
+diagnostics.install(sys.modules[__name__])

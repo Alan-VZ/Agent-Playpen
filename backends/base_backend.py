@@ -4,6 +4,11 @@ from abc import ABC, abstractmethod
 class BaseBackend(ABC):
     """Abstract interface implemented by all model backends."""
 
+    @property
+    def uses_native_tools(self):
+        import openai
+        return getattr(self, "tool_calling_mode", "prompt") != "prompt" and isinstance(getattr(self, "client", None), (openai.OpenAI, openai.AzureOpenAI))
+
     def record_usage(self, response):
         """Keep only numeric provider usage; missing data is explicitly unknown."""
         identity = getattr(response, "model", None)
@@ -66,6 +71,10 @@ class BaseBackend(ABC):
                 }
             )
             self._pending_native_call = None
+        elif self.uses_native_tools:
+            if not hasattr(self, "_native_history"):
+                self.reset_tool_session()
+            self._native_history.append({"role": "user", "content": "Runtime observation/feedback: " + redact(str(text))[:4000]})
 
     def chat_with_tools(self, messages, schemas):
         """Normalize native OpenAI-compatible calls into the shared action contract.
@@ -148,6 +157,10 @@ class BaseBackend(ABC):
                 + json.dumps(arguments)
             )
         content = message.content
+        if isinstance(content, str) and content.strip():
+            if not hasattr(self, "_native_history"):
+                self.reset_tool_session()
+            self._native_history.append({"role": "assistant", "content": content})
         if not isinstance(content, str) or not content.strip():
             raise AgentResponseFormatError(
                 "The provider returned neither a tool call nor an answer."

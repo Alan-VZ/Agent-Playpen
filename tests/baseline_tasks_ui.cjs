@@ -76,6 +76,10 @@ async function check(page){
    automatic.click();assert.equal(d.querySelector('.baseline-tools input').disabled,false);
    const readBox=d.querySelector('.baseline-tools input');readBox.click();assert.ok(!JSON.parse(d.getElementById('baseline-config').value)[0].agents[0].tools.includes('read_fixture'));
    d.querySelector('.baseline-builder label.checkbox-option input').click();assert.equal(d.querySelector('.baseline-tools input').disabled,true);assert.ok(JSON.parse(d.getElementById('baseline-config').value)[0].agents[0].tools.includes('read_fixture'));
+   const sharedTasks=d.querySelector('.baseline-builder fieldset input');assert.equal(sharedTasks.checked,true);sharedTasks.click();
+   const taskB03=d.querySelector('.baseline-builder fieldset input[data-task="B03"]');taskB03.click();assert.ok(JSON.parse(d.getElementById('baseline-config').value)[0].selected_tasks.includes('B03'));
+   assert.ok(JSON.parse(d.getElementById('baseline-config').value)[0].agents[0].tools.includes('write_artifact'));
+   d.querySelector('.baseline-builder fieldset input').click();assert.equal(JSON.parse(d.getElementById('baseline-config').value)[0].selected_tasks,undefined);
    picker.select(['B03']);assert.deepEqual(JSON.parse(d.getElementById('baseline-config').value)[0].agents[0].tools,['read_fixture','write_artifact']);
    d.getElementById('baseline-clear-selection').click();d.getElementById('baseline-run').click();await waitFor(()=>d.getElementById('baseline-message').textContent.includes('at least one'));assert.equal(launches.length,0);
    picker.select(['B01','B05']);d.getElementById('baseline-repeats').value='1';d.getElementById('baseline-run').click();await waitFor(()=>launches.length===1);assert.deepEqual(launches[0].tasks,['B01','B05']);

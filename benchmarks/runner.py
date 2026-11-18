@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from backends.backend_factory import BackendFactory
 from config.credentials import redact
 from core.agent import Agent
+from core.exceptions import AgentResponseFormatError
 from debugging.tracer import Tracer
 from memory.memory_manager import MemoryManager
 from planner.react_planner import ReActPlanner
@@ -30,7 +31,31 @@ from tools.base_tool import BaseTool
 from tools.packs.utils.calculator_tool import CalculatorTool
 from tools.tool_registry import ToolRegistry
 from benchmarks.tasks import SUITE, TASKS, fixture, score, expected, selected_tasks, baseline_setup
-from benchmarks.outcomes import safe_error, category
+from benchmarks.outcomes import safe_error, category, categories
+
+_baseline_fixture, _baseline_score, _baseline_expected = fixture, score, expected
+
+
+def fixture(task, seed):
+    if task.startswith("D"):
+        from benchmarks.diagnostics import fixture as diagnostic_fixture
+        return diagnostic_fixture(task, seed)
+    return _baseline_fixture(task, seed)
+
+
+def expected(task, seed):
+    if task.startswith("D"):
+        from benchmarks.diagnostics import expected as diagnostic_expected
+        return diagnostic_expected(task, seed)
+    return _baseline_expected(task, seed)
+
+
+def score(data, answer, events, artifacts):
+    if data["task"].startswith("D"):
+        from benchmarks.diagnostics import score as diagnostic_score
+        return diagnostic_score(data, answer, events)
+    return _baseline_score(data, answer, events, artifacts)
+
 
 
 class Member(BaseModel):
@@ -61,15 +86,16 @@ class ExperimentConfig(BaseModel):
     rate_source: str | None = Field(default=None, max_length=500)
     dollar_limit: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     auto_baseline_setup: bool = True
-    capture_diagnostics: bool = False
+    capture_diagnostics: bool = True
+    selected_tasks: list[Literal["B01", "B02", "B03", "B04", "B05"]] | None = Field(default=None, min_length=1, max_length=5)
     model_min_interval_seconds: float = Field(default=0, ge=0, le=60)
 
 
 def prepare_baseline_configs(configs, tasks):
-    setup = baseline_setup(tasks)
     result = []
     for original in configs:
         config = original.model_copy(deep=True)
+        setup = baseline_setup(config.selected_tasks or tasks)
         if config.auto_baseline_setup:
             for member in config.agents:
                 member.planner = setup["planner"]
@@ -93,6 +119,7 @@ class Budget:
         self.artifacts = {}
         self.reservations_closed = False
         self.on_event = on_event
+        self.interactions = []
         self.last_request_at = None
 
     def active(self):
@@ -156,7 +183,7 @@ class ReadFixture(BaseTool):
                 event["status"] = "denied"
                 return "[ERROR] Unknown fixture; arbitrary filesystem access is unavailable."
             self.counts[name] = self.counts.get(name, 0) + 1
-            if self.data["task"] == "B04" and name == "primary" and self.counts[name] == 1:
+            if self.data["task"] in {"B04", "D06"} and name == "primary" and self.counts[name] == 1:
                 event["status"] = "injected_failure"
                 return "[ERROR] Temporary source failure. Alternative source: backup. No automatic retry."
             return self.data["documents"][name]
@@ -210,12 +237,19 @@ class MeteredBackend:
         self.backend, self.budget, self.agent_id = backend, budget, agent_id
 
     @property
+    def uses_native_tools(self):
+        return getattr(self.backend, "uses_native_tools", False) is True
+
+    @property
     def last_response_stats(self):
         stats = getattr(self.backend, "last_response_stats", None)
         return stats if isinstance(stats, dict) else {}
 
     def diagnostic(self, kind, payload):
         if self.budget.config.capture_diagnostics:
+            entry = json.loads(json.dumps({"kind": kind, "agent_id": self.agent_id, **redact(payload)}, default=lambda value: "[non-serializable metadata]"))
+            with self.budget.lock:
+                self.budget.interactions.append(entry)
             self.budget.publish({"type":kind, "agent_id":self.agent_id, "timestamp":datetime.now(timezone.utc).isoformat(), **redact(payload)})
 
     def reset_tool_session(self):
@@ -247,12 +281,17 @@ class MeteredBackend:
         call["tool_calling_mode"] = mode
         call_index = len(self.budget.model_calls) - 1
         try:
+            if self.budget.config.capture_diagnostics and not getattr(self, "_capture_installed", False):
+                from benchmarks.evidence import install_transport_capture
+                self._capture_installed = install_transport_capture(self.backend, lambda kind, payload: self.diagnostic(kind, {"call_index": len(self.budget.model_calls)-1, **payload}))
             with self.budget.lock:
                 self.budget.active()
                 remaining = max(.001, self.budget.deadline - time.monotonic())
                 client = getattr(self.backend, "client", None)
                 if client is not None and hasattr(client, "timeout"):
                     client.timeout = remaining
+                    if hasattr(client, "max_retries"):
+                        client.max_retries = 0
                 call["request_timeout_seconds"] = round(remaining, 3)
                 self.budget.last_request_at = time.monotonic()
             bounded = [{"role":str(m.get("role", ""))[:30], "content":str(m.get("content", ""))[:16000]} for m in messages]
@@ -262,7 +301,7 @@ class MeteredBackend:
             text = value if isinstance(value, str) else ""
             self.diagnostic("response_diagnostic", {"call_index":call_index, "content":text[:12000], "content_truncated":len(text)>12000,
                 "characters":len(text), "trailing_whitespace":len(text)-len(text.rstrip()), "stats":self.last_response_stats,
-                "usage":getattr(self.backend, "last_usage", {}), "reported_model":getattr(self.backend,"last_model_identity",None)})
+                "usage":getattr(self.backend, "last_usage", {}), "reported_model":getattr(self.backend,"last_model_identity",None), "route": "native" if self.last_response_stats.get("finish_reason") == "tool_calls" else "text"})
             with self.budget.lock:
                 self.budget.active()
                 stats = getattr(self.backend, "last_usage", None) or getattr(self.backend, "last_response_stats", {}) or {}
@@ -278,6 +317,11 @@ class MeteredBackend:
             self.diagnostic("error_diagnostic", {"call_index":call_index, **safe_error(exc)})
             with self.budget.lock:
                 call["status"] = "failed"
+                if isinstance(exc, AgentResponseFormatError):
+                    usage = getattr(self.backend, "last_usage", {})
+                    call["actual_tokens"] = usage.get("total_tokens") if isinstance(usage, dict) else None
+                    call["response_stats"] = self.last_response_stats
+                    call["status"] = "response_rejected"
             raise
 
 
@@ -306,7 +350,7 @@ def make_backend(member, config):
     return backend
 
 
-def validate_final_report(task, answer):
+def validate_final_report(task, answer, documents=None, read_names=None):
     """Validate report shape/consistency, never consult expected fixture answers."""
     from decimal import Decimal, InvalidOperation
     from benchmarks.tasks import parse_answer
@@ -314,6 +358,9 @@ def validate_final_report(task, answer):
         report = parse_answer(answer)
     except (ValueError, TypeError, AttributeError):
         return "Return a JSON object matching the task contract, without prose."
+    if task.startswith("D"):
+        from benchmarks.diagnostics import validate_report
+        return validate_report(task, report, documents or {}, read_names or set())
     required = {"B01": {"net_total", "valid_orders", "duplicate_ids", "category_totals"},
                 "B02": {"opens", "closed", "loan_days", "citations"},
                 "B03": {"findings", "port_8080_allowed"},
@@ -321,6 +368,17 @@ def validate_final_report(task, answer):
                 "B05": {"choice", "max_load", "chosen_load", "rejected_reason", "warranty", "source", "quote"}}[task]
     if not required.issubset(report):
         return "Missing report fields: " + ", ".join(sorted(required - report.keys()))
+    if task == "B02" and documents is not None:
+        missing_sources = set(documents) - set(read_names or ())
+        if missing_sources:
+            return "Read these required sources before finishing: " + ", ".join(sorted(missing_sources))
+        citations = report.get("citations")
+        if not isinstance(citations, dict) or type(report.get("loan_days")) is not int:
+            return "Supply a numeric integer loan_days and a citations object from observed sources."
+        for fact in ("opens", "closed", "loan_days"):
+            citation = citations.get(fact, {})
+            if not isinstance(citation, dict) or citation.get("source") not in documents or not isinstance(citation.get("quote"), str) or not citation["quote"].strip() or citation["quote"] not in documents[citation["source"]]:
+                return "Citation for " + fact + " must quote exact text from a source actually read."
     if task == "B01":
         categories = report["category_totals"]
         if not isinstance(categories, dict) or set(categories) != {"parts", "service"}:
@@ -368,7 +426,7 @@ def run_member(member, config, data, budget, agent_id, peers=None, backend_facto
         agent = Agent(metered, planners[member.planner](metered), registry,
                       MemoryManager({"enabled_stores": ["working", "conversation"]}), tracer,
                       config.max_iterations, cancel_event=budget.stopped,
-                      final_answer_validator=lambda answer: validate_final_report(data["task"], answer))
+                      final_answer_validator=lambda answer: validate_final_report(data["task"], answer, data["documents"], ({e["name"] for e in budget.tool_events if e.get("operation")=="read" and e.get("status")=="ok"} | ({"__calculator__"} if any(e.get("operation")=="calculate" and e.get("status")=="ok" for e in budget.tool_events) else set()))))
         task = data["prompt"]
         if data["task"] == "B01":
             task += "\nExecution guidance: subtract refunds in each category as well as the grand total. Category totals must sum to the net total. For calculator calls, extract numeric values and send numeric arithmetic such as (8 + 3) - 2, never SQL, sum(column), variables or programs. Read each unchanged fixture once, then use its observation."
@@ -438,6 +496,7 @@ def attempt(config, task, seed=1, stopped=None, backend_factory=make_backend, on
         events = json.loads(json.dumps(budget.tool_events))
         artifacts = json.loads(json.dumps(budget.artifacts))
         calls = json.loads(json.dumps(budget.model_calls))
+        interactions = json.loads(json.dumps(budget.interactions))
     evaluation = score(data, final["answer"], events, artifacts.get(final["agent_id"], {}))
     evaluation["expected"] = expected(task, seed)
     status = "timeout" if timed_out else "cancelled" if budget.stopped.is_set() else "completed" if final["status"] == "success" else "execution_failed"
@@ -445,13 +504,14 @@ def attempt(config, task, seed=1, stopped=None, backend_factory=make_backend, on
     actuals = [c["actual_tokens"] for c in calls]
     result = redact({"id": uuid.uuid4().hex, "task": task, "seed": seed, "status": status,
                    "elapsed_seconds": round(time.monotonic() - started, 3), "evaluation": evaluation,
-                   "agents": results, "tool_events": events, "artifacts": artifacts,
+                   "agents": results, "tool_events": events, "artifacts": artifacts, "interactions": interactions,
                    "fixture_hash": digest(data), "artifact_hashes": {a: {n: digest(v) for n, v in files.items()} for a, files in artifacts.items()},
                    "usage": {"model_calls": calls, "tool_requests": len(events), "reserved_tokens": budget.reserved_tokens,
                              "actual_tokens": sum(actuals) if actuals and all(v is not None for v in actuals) else None,
                              "estimated_reserved_usd": budget.reserved_cost if config.usd_per_million_input is not None and config.usd_per_million_output is not None else None,
                              "rate_source": config.rate_source, "actual_cost": None}})
     result["outcome_category"] = category(result)
+    result["failure_categories"] = categories(result)
     return result
 
 
@@ -565,8 +625,12 @@ def provenance():
             "recovery_policy": "report-recovery-v1"}
 
 
-def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, backend_factory=make_backend, resume=False, tasks=None):
+def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, backend_factory=make_backend, resume=False, tasks=None, scheduling="configuration_first"):
+    if scheduling not in {"configuration_first", "task_first", "counterbalanced"}:
+        raise ValueError("Unsupported scheduling order")
     task_ids = selected_tasks(tasks)
+    config_tasks = [selected_tasks(c.selected_tasks or task_ids) for c in configs]
+    task_ids = selected_tasks(list(dict.fromkeys(t for group in config_tasks for t in group)))
     configs = prepare_baseline_configs(configs, task_ids)
     if repeats not in {1, 5, 20}:
         raise ValueError("Repeats must be 1 (smoke), 5 (baseline), or 20 (extended)")
@@ -589,9 +653,12 @@ def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, b
         for member in item["agents"]:
             if member.get("tool_calling_mode") == "prompt":
                 member.pop("tool_calling_mode", None)
+    for item in serialized:
+        if item.get("selected_tasks") is None:
+            item.pop("selected_tasks", None)
     fixture_hashes = {f"{task}:{seed}": digest(fixture(task, seed)) for task in task_ids for seed in range(1, repeats + 1)}
     contract_hash = hashlib.sha256((Path(__file__).parent / "tasks.py").read_bytes()).hexdigest()
-    identity = digest({"configs": serialized, "suite": SUITE, "repeats": repeats, "fixtures": fixture_hashes, "contract": contract_hash})
+    identity = digest({"configs": serialized, "suite": SUITE, "repeats": repeats, "fixtures": fixture_hashes, "contract": contract_hash, "scheduling": scheduling, "execution_contract": "diagnostic-v2"})
     if resume:
         record = json.loads(path.read_text(encoding="utf-8"))
         if record["identity"] != identity:
@@ -605,49 +672,51 @@ def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, b
                   "selected_tasks": list(task_ids),
                   "fixture_hashes": fixture_hashes,
                   "contract_hash": contract_hash, "evidence_type": "model experiment" if backend_factory is make_backend else "scripted harness check; not model performance",
-                  "scheduled": len(configs) * repeats * len(task_ids), "provenance": provenance(), "attempts": [], "status": "running"}
+                  "scheduled": sum(len(group) for group in config_tasks) * repeats, "scheduling": scheduling,
+                  "execution_order": [], "provenance": provenance(), "attempts": [], "status": "running"}
     stop = stopped or threading.Event()
     completed = {(r["config_index"], r["task"], r["repetition"]) for r in record["attempts"]}
     atomic_json(path, record)
     try:
-        for repetition in range(repeats):
-            for task in task_ids:
-                # Rotate configuration order so persistent providers are not always first/last.
-                for offset in range(len(configs)):
-                    index = (offset + repetition) % len(configs)
-                    if (index, task, repetition) in completed:
-                        continue
-                    if stop.is_set():
-                        record["status"] = "cancelled"
-                        return record
-                    callback = (lambda event: on_progress({"type": "activity", "task": task, "config_index": index, "repetition": repetition, **event})) if on_progress else None
-                    if backend_factory is make_backend:
-                        result = isolated_attempt(configs[index], task, seed=repetition + 1, stopped=stop, on_event=callback)
-                    else:
-                        # Injection is restricted to Python callers for offline regression testing.
-                        result = attempt(configs[index], task, seed=repetition + 1, stopped=stop, backend_factory=backend_factory, on_event=callback)
-                    result.update(config_index=index, repetition=repetition)
-                    record["attempts"].append(result)
-                    atomic_json(output / (result["id"] + ".json"), result)
-                    atomic_json(path, record)
-                    if on_progress:
-                        on_progress({"completed": len(record["attempts"]), "scheduled": record["scheduled"], "task": task, "status": result["status"]})
-                    if backend_factory is make_backend:
-                        from debugging.dashboard.readiness import Inventory, classify
-                        rejected = False
-                        for report in result["agents"]:
-                            code = report.get("http_status")
-                            if code in {401, 402, 403, 429}:
-                                member_index = int(report["agent_id"].split("-")[-1]) - 1
-                                provider = configs[index].agents[member_index].backend
-                                try:
-                                    Inventory(Path(__file__).resolve().parents[1]).update(provider, status=classify(code), checked_at=datetime.now(timezone.utc).isoformat(), scope="operation test")
-                                except (ValueError, OSError):
-                                    pass
-                                rejected = rejected or code == 401
-                        if rejected:
-                            record["status"] = "needs_setup"
-                            return record
+        if scheduling == "configuration_first":
+            order = [(index, task, repetition) for index in range(len(configs)) for repetition in range(repeats) for task in config_tasks[index]]
+        else:
+            order = [(index, task, repetition) for repetition in range(repeats) for task in task_ids for offset in range(len(configs)) for index in [(offset + (repetition if scheduling == "counterbalanced" else 0)) % len(configs)] if task in config_tasks[index]]
+        for index, task, repetition in order:
+            if (index, task, repetition) in completed:
+                continue
+            if stop.is_set():
+                record["status"] = "cancelled"
+                return record
+            callback = (lambda event: on_progress({"type": "activity", "task": task, "config_index": index, "repetition": repetition, **event})) if on_progress else None
+            if backend_factory is make_backend:
+                result = isolated_attempt(configs[index], task, seed=repetition + 1, stopped=stop, on_event=callback)
+            else:
+                # Injection is restricted to Python callers for offline regression testing.
+                result = attempt(configs[index], task, seed=repetition + 1, stopped=stop, backend_factory=backend_factory, on_event=callback)
+            result.update(config_index=index, repetition=repetition)
+            record.setdefault("execution_order", []).append({"config_index":index,"task":task,"repetition":repetition})
+            record["attempts"].append(result)
+            atomic_json(output / (result["id"] + ".json"), result)
+            atomic_json(path, record)
+            if on_progress:
+                on_progress({"completed": len(record["attempts"]), "scheduled": record["scheduled"], "task": task, "status": result["status"]})
+            if backend_factory is make_backend:
+                from debugging.dashboard.readiness import Inventory, classify
+                rejected = False
+                for report in result["agents"]:
+                    code = report.get("http_status")
+                    if code in {401, 402, 403, 429}:
+                        member_index = int(report["agent_id"].split("-")[-1]) - 1
+                        provider = configs[index].agents[member_index].backend
+                        try:
+                            Inventory(Path(__file__).resolve().parents[1]).update(provider, status=classify(code), checked_at=datetime.now(timezone.utc).isoformat(), scope="operation test")
+                        except (ValueError, OSError):
+                            pass
+                        rejected = rejected or code == 401
+                if rejected:
+                    record["status"] = "needs_setup"
+                    return record
         record["status"] = "cancelled" if stop.is_set() else "completed"
         return record
     finally:
@@ -668,6 +737,7 @@ def summaries(record):
     rows = []
     task_ids = selected_tasks(record.get("selected_tasks"))
     for index, config in enumerate(record["configs"]):
+        task_ids = selected_tasks(config.get("selected_tasks") or record.get("selected_tasks"))
         attempts = [r for r in record["attempts"] if r["config_index"] == index]
         times = sorted(r["elapsed_seconds"] for r in attempts)
         n = len(times)

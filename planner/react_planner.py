@@ -64,6 +64,9 @@ class ReActPlanner(BasePlanner):
 
     def format_thought_prompt(self, step: Step, ctx) -> list[dict]:
         """Build the messages array for the Think phase."""
+        if getattr(self.backend, "uses_native_tools", False) is True and self.available_tool_names:
+            return [{"role": "system", "content": "Use the supplied function tools to solve the task. Request one tool at a time and wait for its real result. Do not write textual Action/Observation scripts or invent results. When done, return the task's requested final answer directly. Use observed evidence; do not repeat unchanged reads or calculations."},
+                    {"role": "user", "content": ctx.task}]
         history = "\n".join(
             [f"Thought: {t.reasoning}\nAction: {t.tool_name}\nAction Input: {json.dumps(t.tool_args)}\n{o}"
              if t.tool_name else f"Format correction (no tool executed): {o}"

@@ -783,3 +783,7 @@ Read [setup, architecture and limits](docs/universal-tools.md), [all observed is
 ### Multiple model comparisons
 
 Use the workspace model cards to select and independently configure up to ten models, then run one shared task on each. Workspace baseline launches create separate comparison configurations using the same tasks and seeds. See [model comparisons](docs/model-comparisons.md) for per-model controls, baseline setup and remaining provider-setting limitations.
+
+### Capability diagnostics
+
+Use the workspace **Open capability diagnostics** button for six focused tests with recorded request/response evidence and offline replay. Baseline comparisons now support configuration-first execution and per-model task subsets. See [diagnostic workflow](docs/diagnostics.md).

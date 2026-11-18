@@ -55,6 +55,7 @@ class Agent:
             self.backend.reset_tool_session()
         cached_reads = {}
         read_attempts = {}
+        calculator_attempts = {}
         format_errors = 0
         final_errors = 0
         ctx = AgentContext(
@@ -120,6 +121,8 @@ class Agent:
                         self.stop_reason = "Final report validation failed twice: " + problem
                         return ""
                     observation = "Observation: Final report validation failed. " + problem + " Return a corrected final report; do not repeat unchanged reads."
+                    if getattr(type(self.backend), "accept_tool_result", None):
+                        self.backend.accept_tool_result(observation)
                     ctx.observation_history.append(observation)
                     self.tracer.on_observe(observation)
                     ctx.iteration += 1
@@ -130,6 +133,21 @@ class Agent:
 
             # ACT: execute the tool named in the Thought
             self._check_cancelled()
+            if thought.tool_name == "calculator":
+                calculation_key = json.dumps(thought.tool_args, sort_keys=True)
+                calculator_attempts[calculation_key] = calculator_attempts.get(calculation_key, 0) + 1
+                if calculator_attempts[calculation_key] >= 2:
+                    feedback = "This exact calculation already has an observation. No calculation was executed. Use that result and return the final report, or choose a different operation only if required."
+                    if calculator_attempts[calculation_key] >= 3:
+                        self.stop_reason = "Repeated identical calculator calls after recovery feedback."
+                        break
+                    if getattr(type(self.backend), "accept_tool_result", None):
+                        self.backend.accept_tool_result(feedback)
+                    ctx.observation_history.append("Observation: " + feedback)
+                    self.tracer.on_status(feedback, "warning")
+                    self.tracer.on_observe(feedback)
+                    ctx.iteration += 1
+                    continue
             read_key = None
             if thought.tool_name in {"web_search", "fetch", "read_fixture"}:
                 args = dict(thought.tool_args)
@@ -208,7 +226,12 @@ class Agent:
             raise AgentResponseFormatError("Output was truncated at the output-token limit. No action was executed and this is not a final answer. Reply concisely within the existing token budget; do not repeat the analysis. If reasoning consumes the allowance, increase Max tokens or use a supported lower reasoning budget.")
         if not isinstance(raw, str) or not raw.strip():
             raise ValueError("The model returned an empty text response. Try another model or increase the output token limit.")
-        thought = self.planner.parse_thought(raw)
+        try:
+            thought = self.planner.parse_thought(raw)
+        except AgentResponseFormatError:
+            self.tracer.on_status("Rejected action response: " + redact(raw)[:16000], "action_response_rejected")
+            raise
+        self.tracer.on_status(json.dumps({"terminal": thought.is_terminal, "tool": thought.tool_name, "arguments": thought.tool_args}), "parsed_action")
         if not thought.is_terminal and thought.tool_name in self.executor.registry.list_all():
             tool = self.executor.registry.get(thought.tool_name)
             parameters = tool.to_openai_schema()["function"].get("parameters", {})

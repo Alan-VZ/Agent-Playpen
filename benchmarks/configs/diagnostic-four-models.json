@@ -1,0 +1,82 @@
+[
+  {
+    "name": "diagnostic-1-qwen-qwen3.8-27b",
+    "agents": [
+      {
+        "backend": "groq",
+        "model": "qwen/qwen3.8-27b",
+        "base_url": null,
+        "planner": "react",
+        "tool_calling_mode": "auto",
+        "temperature": 0,
+        "tools": []
+      }
+    ],
+    "max_concurrency": 1,
+    "max_iterations": 10,
+    "max_output_tokens": 2048,
+    "timeout_seconds": 400,
+    "capture_diagnostics": true,
+    "auto_baseline_setup": false
+  },
+  {
+    "name": "diagnostic-2-qwen3.5-9b-uncensored-hauhaucs-aggressive@q6_k",
+    "agents": [
+      {
+        "backend": "lm_studio",
+        "model": "qwen3.5-9b-uncensored-hauhaucs-aggressive@q6_k",
+        "base_url": "http://localhost:1234/v1",
+        "planner": "react",
+        "tool_calling_mode": "auto",
+        "temperature": 0,
+        "tools": []
+      }
+    ],
+    "max_concurrency": 1,
+    "max_iterations": 10,
+    "max_output_tokens": 2048,
+    "timeout_seconds": 400,
+    "capture_diagnostics": true,
+    "auto_baseline_setup": false
+  },
+  {
+    "name": "diagnostic-3-qwen2.5-coder-7b-instruct",
+    "agents": [
+      {
+        "backend": "lm_studio",
+        "model": "qwen2.5-coder-7b-instruct",
+        "base_url": "http://localhost:1234/v1",
+        "planner": "react",
+        "tool_calling_mode": "auto",
+        "temperature": 0,
+        "tools": []
+      }
+    ],
+    "max_concurrency": 1,
+    "max_iterations": 10,
+    "max_output_tokens": 2048,
+    "timeout_seconds": 400,
+    "capture_diagnostics": true,
+    "auto_baseline_setup": false
+  },
+  {
+    "name": "diagnostic-4-tinyllama-1.1b-chat-v1.0",
+    "agents": [
+      {
+        "backend": "lm_studio",
+        "model": "tinyllama-1.1b-chat-v1.0",
+        "base_url": "http://localhost:1234/v1",
+        "planner": "react",
+        "tool_calling_mode": "auto",
+        "temperature": 0,
+        "tools": []
+      }
+    ],
+    "max_concurrency": 1,
+    "max_iterations": 10,
+    "max_output_tokens": 2048,
+    "timeout_seconds": 400,
+    "capture_diagnostics": true,
+    "auto_baseline_setup": false
+  }
+]

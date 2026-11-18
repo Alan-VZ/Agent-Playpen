@@ -2,19 +2,19 @@
 
 Run 6ec7f70828b648568b85133fdba48faa finished: 0/10 strict passes. See [evidence and limits](docs/studies/2026-11-18-five-model-two-task-recovery.md).
 
-- [ ] Capture bounded/redacted rejected action text and actual calling mode, then audit one failing interaction before another broad model sweep.
-- [ ] Inspect native-vs-text prompt/history presentation with captured requests; avoid claiming a confirmed root cause before evidence.
-- [ ] Guard repeated deterministic calculator calls without caching writes or stateful/live tools.
-- [ ] Require B02 observed-source coverage and supporting quotation checks before accepting a final report; no grading-target injection.
-- [ ] Add clearly labeled capability diagnostics separate from full autonomous baselines and guided deterministic workflows.
+- [x] Capture bounded/redacted rejected action text and actual calling mode, then audit one failing interaction before another broad model sweep.
+- [x] Inspect native-vs-text prompt/history presentation with captured requests; avoid claiming a confirmed root cause before evidence.
+- [x] Guard repeated deterministic calculator calls without caching writes or stateful/live tools.
+- [x] Require B02 observed-source coverage and supporting quotation checks before accepting a final report; no grading-target injection.
+- [x] Add clearly labeled capability diagnostics separate from full autonomous baselines and guided deterministic workflows.
 
 # November 18: scheduling follow-up — after the active test finishes
 
-- [ ] Add configuration-first scheduling: run all selected baseline tasks for configuration 1, then configuration 2, and so on, instead of cycling all configurations for each task. Reduce repeated local model switches; retain the existing local-server lease and cancellation behavior.
-- [ ] Allow an explicit task selection for each configuration/model, with shared selection as the default. Example: configuration 1 B01/B02/B04; configurations 2 and 3 B01/B02/B03.
-- [ ] Update progress counts, result tables, exports and resume identities for per-configuration selections; distinguish not-selected cases from pending, failed and completed cases.
-- [ ] Preserve matched fixture seeds and budgets. Compare models on common selected tasks; label differing task sets so aggregate scores are not presented as directly equivalent.
-- [ ] Record execution order in provenance; retain task-first/counterbalanced scheduling as an option for controlled studies where order effects matter. Verify cancellation, resume, model-switch count and absence of omitted/duplicate cases.
+- [x] Add configuration-first scheduling: run all selected baseline tasks for configuration 1, then configuration 2, and so on, instead of cycling all configurations for each task. Reduce repeated local model switches; retain the existing local-server lease and cancellation behavior.
+- [x] Allow an explicit task selection for each configuration/model, with shared selection as the default. Example: configuration 1 B01/B02/B04; configurations 2 and 3 B01/B02/B03.
+- [x] Update progress counts, result tables, exports and resume identities for per-configuration selections; distinguish not-selected cases from pending, failed and completed cases.
+- [x] Preserve matched fixture seeds and budgets. Compare models on common selected tasks; label differing task sets so aggregate scores are not presented as directly equivalent.
+- [x] Record execution order in provenance; retain task-first/counterbalanced scheduling as an option for controlled studies where order effects matter. Verify cancellation, resume, model-switch count and absence of omitted/duplicate cases.
 
 Deferral satisfied: the five-model B01/B02, 400-second experiment is complete. Scheduling work remains pending; this review does not change scheduling or start another experiment.
 
@@ -110,3 +110,5 @@ and bounded source/cache access. Agent count and concurrency must be separate se
 - [ ] Add optional reminders only when the user requests scheduling; no autonomous billing changes.
 - [ ] Complete PR review/merge and release notes after checking current branch and remote status.
 - [ ] Revisit native credential-store availability and limitations on Windows/macOS/Linux; encryption does not protect against arbitrary same-user malware.
+
+Diagnostic-v2 implementation complete; model effectiveness is established only by the new live study, not by checked implementation tasks. The historical instruction to defer scheduler changes applied until run 6ec7f70828b648568b85133fdba48faa completed.

@@ -36,3 +36,5 @@ config/qalculate.json
 qalculate-output/
 
 config/mcp_servers.json
+
+diagnostic-results/

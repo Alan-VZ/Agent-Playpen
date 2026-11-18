@@ -41,6 +41,15 @@ def category(result):
             and last.get("text_characters") == 0
         ):
             return "output_limit"
+    messages = " ".join(a.get("message", "") for a in result.get("agents", [])).lower()
+    if "truncated" in messages or "output-token limit" in messages:
+        return "output_limit"
+    if "repeated" in messages:
+        return "repeated_action"
+    if "validation failed" in messages:
+        return "final_report_validation"
+    if "iteration budget" in messages:
+        return "iteration_limit"
     for agent in result.get("agents", []):
         if "returned no completion choices" in agent.get("message", "").lower():
             return "provider_error"
@@ -62,6 +71,12 @@ def category(result):
             or "invalid model response" in agent.get("message", "").lower()
         ):
             return "response_format"
+    checks = result.get("evaluation", {}).get("checks", {})
+    if checks.get("valid_json") and (
+        checks.get("read_inputs") is False
+        or any(k.startswith("citation_") and v is False for k, v in checks.items())
+    ):
+        return "missing_or_unsupported_evidence"
     if any(a.get("status") == "incomplete" for a in result.get("agents", [])):
         return "incomplete_execution"
     if result.get("status") == "execution_failed":
@@ -69,3 +84,30 @@ def category(result):
     if result.get("evaluation", {}).get("checks", {}).get("valid_json") is False:
         return "response_format"
     return "incorrect_answer"
+
+
+def categories(result):
+    """Contributing observed symptoms in addition to the primary category."""
+    found = {category(result)}
+    events = result.get("partial_events", []) + [
+        event for agent in result.get("agents", []) for event in agent.get("trace", [])
+    ]
+    text = " ".join(
+        str(e.get("content", ""))
+        for e in events
+        if e.get("type") in {"warning", "error"}
+    ).lower()
+    if "format" in text or "model response rejected" in text:
+        found.add("response_format")
+    if "repeated" in text or "already been read" in text or "exact calculation" in text:
+        found.add("repeated_action")
+    if "final answer rejected" in text:
+        found.add("final_report_validation")
+    if "truncated" in text:
+        found.add("output_limit")
+    if any(
+        e.get("type") == "tool_result" and '"ok": false' in e.get("content", "")
+        for e in events
+    ):
+        found.add("tool_execution_error")
+    return sorted(found)

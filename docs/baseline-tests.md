@@ -262,3 +262,5 @@ New runs reject provider-truncated responses before parsing actions or accepting
 Identical fixture reads reuse the first result; the third request receives a no-execution recovery instruction, and a fourth identical request stops incomplete. This cache is scoped to one agent run and does not cache writes or arbitrary filesystem tools. B01 gets explicit runtime guidance about subtracting refunds in categories and passing numeric arithmetic to the calculator. Re-run results must be labeled as using this recovery behavior; original results are not retroactively improved.
 
 Baseline configuration checkboxes use inline labels. With automatic setup enabled, planner and tool boxes are locked to selected-task requirements. Clear automatic setup to edit them manually; turn it back on to restore baseline requirements.
+
+New comparison runs default to configuration-first scheduling. Each configuration may inherit shared tasks or choose a B01–B05 subset. The execution-order selector also offers task-first and counterbalanced modes. Subsets/order affect schedule counts, result selection and resume identity. See [diagnostics and scheduling](diagnostics.md).
