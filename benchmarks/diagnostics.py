@@ -215,6 +215,14 @@ def run(configs, output, stopped=None, resume=False):
             "planner/react_planner.py",
         )
     }
+    fingerprints.update(
+        {
+            file.relative_to(source_root).as_posix(): hashlib.sha256(
+                file.read_bytes()
+            ).hexdigest()
+            for file in (source_root / "backends").glob("*.py")
+        }
+    )
     fixture_hashes = {task: digest(fixture(task, 1)) for task in TASKS}
     identity = digest(
         {
@@ -295,16 +303,34 @@ def run(configs, output, stopped=None, resume=False):
                 atomic_json(output / "progress.json", {**progress, "phase": "running"})
 
                 def event(value):
-                    if value.get("type") in {
+                    with (output / "activity.jsonl").open(
+                        "a", encoding="utf-8"
+                    ) as stream:
+                        stream.write(json.dumps(value, ensure_ascii=False) + "\n")
+                    kind = value.get("type")
+                    if kind in {
+                        "status",
+                        "model_request",
                         "transport_request",
-                        "transport_response",
-                        "error_diagnostic",
-                        "action_response_rejected",
+                        "model_response",
+                        "provider_pacing",
                     }:
-                        with (output / "activity.jsonl").open(
-                            "a", encoding="utf-8"
-                        ) as stream:
-                            stream.write(json.dumps(value, ensure_ascii=False) + "\n")
+                        phase = (
+                            "provider pacing"
+                            if kind == "provider_pacing"
+                            else "waiting for model"
+                            if kind in {"model_request", "transport_request"}
+                            else "running"
+                        )
+                        atomic_json(
+                            output / "progress.json",
+                            {
+                                **progress,
+                                "phase": phase,
+                                "last_activity": value.get("content", kind),
+                                "wait_seconds": value.get("wait_seconds"),
+                            },
+                        )
 
                 result = isolated_attempt(config, task, 1, stopped=stop, on_event=event)
                 last_case_finished = time.monotonic()

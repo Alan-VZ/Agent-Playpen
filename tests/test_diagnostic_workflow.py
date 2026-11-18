@@ -215,3 +215,105 @@ def test_diagnostic_resume_fingerprints_and_pacing_cancel(monkeypatch, tmp_path)
     )
     with pytest.raises(ValueError, match="resume"):
         diagnostics.run([config], tmp_path, resume=True)
+
+
+def test_evidence_call_index_survives_other_agent_reservation(monkeypatch):
+    from benchmarks import evidence
+
+    callbacks = []
+    monkeypatch.setattr(
+        evidence,
+        "install_transport_capture",
+        lambda backend, emit: callbacks.append(emit) or True,
+    )
+    budget = runner.Budget(runner.ExperimentConfig())
+
+    class Backend:
+        tool_calling_mode = "prompt"
+        last_usage = {"total_tokens": 1}
+
+        def chat(self, messages):
+            budget.reserve_model([{"role": "user", "content": "other"}], "agent-2")
+            callbacks[0]("transport_request", {"payload": {"messages": messages}})
+            return "done"
+
+    metered = runner.MeteredBackend(Backend(), budget, "agent-1")
+    assert metered.chat([{"role": "user", "content": "own"}]) == "done"
+    entry = next(e for e in budget.interactions if e["kind"] == "transport_request")
+    assert entry["call_index"] == 0 and len(budget.model_calls) == 2
+
+
+def test_in_case_pacing_is_visible():
+    import time
+
+    events = []
+    budget = runner.Budget(
+        runner.ExperimentConfig(model_min_interval_seconds=0.02), on_event=events.append
+    )
+    budget.last_request_at = time.monotonic()
+
+    class Backend:
+        last_usage = {"total_tokens": 1}
+
+        def chat(self, messages):
+            return "done"
+
+    assert (
+        runner.MeteredBackend(Backend(), budget, "agent-1").chat(
+            [{"role": "user", "content": "test"}]
+        )
+        == "done"
+    )
+    assert any(e["type"] == "provider_pacing" for e in events)
+
+
+def test_groq_single_action_policy_is_explicit_on_wire():
+    from backends.groq_backend import GroqBackend
+
+    requests = []
+
+    def respond(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "id": "fixture",
+                "object": "chat.completion",
+                "created": 1,
+                "model": "fixture",
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": '{"result":63}'},
+                    }
+                ],
+            },
+        )
+
+    backend = object.__new__(GroqBackend)
+    backend.client = openai.OpenAI(
+        api_key="synthetic",
+        base_url="http://127.0.0.1:9/v1",
+        http_client=httpx.Client(transport=httpx.MockTransport(respond)),
+    )
+    backend.model = "fixture"
+    backend.temperature = 0
+    backend.max_tokens = 512
+    backend.tool_calling_mode = "auto"
+    try:
+        backend.chat_with_tools(
+            [{"role": "user", "content": "calculate"}],
+            [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "calculator",
+                        "parameters": {"type": "object"},
+                    },
+                }
+            ],
+        )
+        assert requests[0]["parallel_tool_calls"] is False
+    finally:
+        backend.client.close()

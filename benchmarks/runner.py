@@ -268,6 +268,8 @@ class MeteredBackend:
 
     def _request(self, messages, schemas=None):
         interval = self.budget.config.model_min_interval_seconds
+        if self.budget.last_request_at is not None and time.monotonic() - self.budget.last_request_at < interval:
+            self.budget.publish({"type":"provider_pacing","agent_id":self.agent_id,"content":"Waiting for the configured provider pacing interval.","wait_seconds":round(interval-(time.monotonic()-self.budget.last_request_at),1)})
         while self.budget.last_request_at is not None and time.monotonic() - self.budget.last_request_at < interval:
             self.budget.active()
             time.sleep(min(.1, interval))
@@ -280,10 +282,11 @@ class MeteredBackend:
         call = self.budget.reserve_model(reservation, self.agent_id)
         call["tool_calling_mode"] = mode
         call_index = len(self.budget.model_calls) - 1
+        self._active_call_index = call_index
         try:
             if self.budget.config.capture_diagnostics and not getattr(self, "_capture_installed", False):
                 from benchmarks.evidence import install_transport_capture
-                self._capture_installed = install_transport_capture(self.backend, lambda kind, payload: self.diagnostic(kind, {"call_index": len(self.budget.model_calls)-1, **payload}))
+                self._capture_installed = install_transport_capture(self.backend, lambda kind, payload: self.diagnostic(kind, {"call_index": self._active_call_index, **payload}))
             with self.budget.lock:
                 self.budget.active()
                 remaining = max(.001, self.budget.deadline - time.monotonic())

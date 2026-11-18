@@ -10,6 +10,8 @@ class GroqBackend(BaseBackend):
     Typically 10x faster token generation than hosted GPT-4.
     """
 
+    native_request_options = {"parallel_tool_calls": False}
+
     GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
     def __init__(

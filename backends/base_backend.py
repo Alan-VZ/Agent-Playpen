@@ -107,6 +107,7 @@ class BaseBackend(ABC):
             max_tokens=self.max_tokens,
             tools=schemas,
             tool_choice="auto",
+            **getattr(self, "native_request_options", {}),
         )
         self.record_usage(response)
         message = response.choices[0].message
