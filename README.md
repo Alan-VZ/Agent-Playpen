@@ -768,3 +768,7 @@ server run in turn so they cannot unload each other during a task; independent
 sources can run concurrently. Every answer remains visible and is saved with its
 trace. All selected slots transfer to the baseline test builder when comparing
 repeatable tasks. See [baseline instructions](docs/baseline-tests.md).
+
+### Scientific calculator and graphs
+
+Select `scientific_calculator` in the workspace Tools list or open **Menu → Scientific calculator & graphs**. The optional local Qalculate engine provides high-precision calculations, units, symbolic math and scalar 2D SVG plots with precise CSV/JSON downloads. See [setup and usage](docs/scientific-calculator.md) and the [independently installable bridge](playpen_qalculate/README.md).

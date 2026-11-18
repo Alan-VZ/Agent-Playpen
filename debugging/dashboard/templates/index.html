@@ -383,6 +383,7 @@
       <div class="header-row">
         <div>
           <h1>Agent Playpen</h1>
+          <p><a href="/scientific-calculator">Scientific calculator &amp; graphs</a></p>
           <p>Web-based agent configuration and execution. No CLI setup required.</p>
           <p><a href="/setup" target="_blank" rel="noopener" style="color: var(--accent, #79baff);">Keys, costs &amp; maintenance guide ↗</a></p>
           <p><a href="/maintenance" target="_blank" rel="noopener" style="color: var(--accent, #79baff);">Maintenance: connect accounts &amp; manage keys ↗</a></p>
@@ -663,7 +664,7 @@
       document.getElementById('temperature').value = values.temperature || defaultState.temperature;
       document.getElementById('max_tokens').value = values.max_tokens || defaultState.max_tokens;
 
-      const toolNames = ['web_search', 'fetch', 'nimble_extract', 'read_file', 'write_file', 'calculator', 'datetime'];
+      const toolNames = ['web_search', 'fetch', 'nimble_extract', 'read_file', 'write_file', 'calculator', 'scientific_calculator', 'datetime'];
       toolList.innerHTML = '';
       toolNames.forEach((name) => {
         const wrapper = document.createElement('label');
@@ -1036,7 +1037,8 @@
       nimble_extract: 'Optional Nimble basic extraction; consumes credits. No rendering. Maximum 5 requests per run.',
       read_file: 'Read files, restricted to the Allowed directories.',
       write_file: 'Create or overwrite files, restricted to the Allowed directories.',
-      calculator: 'Accurate arithmetic. Recommended for any numeric task.',
+      calculator: 'Basic bounded arithmetic used by the original baseline tasks.',
+      scientific_calculator: 'Local Qalculate: high-precision scientific math, units, algebra, calculus and 2D graphs. Open Scientific calculator & graphs in the menu for direct use.',
       datetime: 'Current date and time. Enable for anything involving "today" or "now".'
     };
 

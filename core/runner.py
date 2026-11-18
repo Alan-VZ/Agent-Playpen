@@ -21,6 +21,7 @@ from tools.packs.filesystem.read_file import ReadFileTool
 from tools.packs.filesystem.write_file import WriteFileTool
 from tools.packs.code.python_repl import PythonReplTool
 from tools.packs.utils.calculator_tool import CalculatorTool
+from tools.packs.utils.scientific_calculator_tool import ScientificCalculatorTool
 from tools.packs.utils.datetime_tool import DatetimeTool
 
 
@@ -38,6 +39,7 @@ TOOL_MAP = {
     "write_file": WriteFileTool,
     "python_repl": PythonReplTool,
     "calculator": CalculatorTool,
+    "scientific_calculator": ScientificCalculatorTool,
     "datetime": DatetimeTool,
 }
 

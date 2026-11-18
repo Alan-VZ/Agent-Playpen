@@ -30,3 +30,7 @@ Thumbs.db
 # Local helper script for quick save/commit flow
 save-and-commit.ps1
 
+
+# Local Qalculate runtime configuration and generated plots
+config/qalculate.json
+qalculate-output/

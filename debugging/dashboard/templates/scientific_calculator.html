@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scientific calculator · Agent Playpen</title>
+<style>
+body{margin:0;background:#0d1520;color:#e6eef8;font:16px/1.6 system-ui}main{max-width:1080px;margin:60px auto;padding:24px}a{color:#9ecbff}h1{margin-bottom:4px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}section{background:#162231;border:1px solid #40536a;border-radius:12px;padding:22px}label{display:block;margin:12px 0}input,textarea,select,button{font:inherit;color:inherit;background:#213247;border:1px solid #5c7089;border-radius:6px;padding:9px;box-sizing:border-box}input,textarea,select{width:100%}button{cursor:pointer}button:disabled{opacity:.55}.row{display:flex;gap:12px}.row>*{flex:1}pre{white-space:pre-wrap;overflow-wrap:anywhere}#status{padding:12px;border-left:3px solid #95c6ff;min-height:28px}img{width:100%;background:white}#downloads button{margin:6px}.note{font-size:14px;color:#bdcce0}[hidden]{display:none!important}@media(max-width:780px){.grid{grid-template-columns:1fr}main{margin-top:40px}}
+</style></head><body><main>
+<a href="/">← Agent workspace</a><h1>Scientific calculator &amp; graphs</h1>
+<p>The LLM selects the equation and values; Qalculate computes the result. Local, free, no API key.</p>
+<p id="engine" role="status">Checking local calculator…</p><div class="grid"><section><form id="calculator">
+<label>Operation<select id="operation"><option value="evaluate">Calculate / solve</option><option value="plot">Plot a real function</option></select></label>
+<label>Expression<textarea id="expression" rows="3" required maxlength="2000">distance/duration</textarea></label>
+<p class="note">Examples: sqrt(2), solve(x^2=4,x), integrate(x^2,0,1), 50 ohm*2 A to V. For a graph: sin(x). Use explicit multiplication, e.g. x*(x+1).</p>
+<label>Named values (JSON, exact strings with optional units)<textarea id="variables" rows="3">{"distance":"120 km","duration":"2 h"}</textarea></label>
+<div class="row"><label>Significant digits<input id="precision" type="number" min="10" max="200" value="50" required></label><label>Angles<select id="angle"><option value="radians">Radians</option><option value="degrees">Degrees</option></select></label></div>
+<label id="mode-label">Result mode<select id="mode"><option value="approximate">Decimal approximation</option><option value="exact">Exact / symbolic</option><option value="try exact">Try exact</option></select></label>
+<div id="plot-options" hidden><label>Independent variable<select id="variable"><option>x</option><option>y</option><option>z</option><option>t</option></select></label><div class="row"><label>From<input id="xmin" value="-10"></label><label>To<input id="xmax" value="10"></label><label>Samples<input id="points" type="number" min="3" max="501" value="201"></label></div></div>
+<button id="run" type="submit">Calculate</button></form></section><section><h2>Result</h2><p id="status" role="status" aria-live="polite">Ready. Enter an expression, then Calculate.</p><pre id="result"></pre><img id="plot" hidden alt="Qalculate function graph"><div id="downloads"></div><details><summary>Calculation record</summary><pre id="record"></pre></details><p class="note">Precision is significant digits, not a guarantee about the accuracy of input measurements. Graphs are sampled scalar 2D curves; undefined/complex samples become gaps. Unsampled discontinuities can remain. CSV and JSON preserve Qalculate's numeric strings; screen coordinates are rounded.</p></section></div>
+<p class="note">To let an agent use this engine, select <strong>scientific_calculator</strong> in the workspace Tools list. This page also works independently of any LLM. Existing baseline scores continue to use their original bounded calculator.</p>
+</main>{% include 'credential_widget.html' %}
+<script nonce="{{ session_token }}">
+(() => {
+const token={{ session_token|tojson }}, $=id=>document.getElementById(id);let urls=[];
+const headers={'X-Playpen-Token':token,'Content-Type':'application/json'};
+async function api(path,options={}){const r=await fetch(path,{...options,headers});if(!r.ok){const d=await r.json();throw new Error(d.error?.message||d.detail||d.message||'Request failed');}return r;}
+function clear(){urls.forEach(URL.revokeObjectURL);urls=[];$('plot').hidden=true;$('plot').removeAttribute('src');$('downloads').replaceChildren();$('result').textContent='';$('record').textContent='';}
+async function show(data){$('record').textContent=JSON.stringify(data,null,2);if(data.operation!=='plot'){$('result').textContent=data.result;$('status').textContent=`Completed successfully · ${data.engine_version} · ${data.precision_digits} significant digits`;return;}
+ const base=`/api/scientific-calculator/artifacts/${data.plot_id}/`;
+ const svg=await (await api(base+'plot.svg')).blob();const url=URL.createObjectURL(svg);urls.push(url);$('plot').src=url;$('plot').hidden=false;
+ for(const [label,name] of [['SVG graph','plot.svg'],['CSV samples','samples.csv'],['JSON record','calculation.json']]){const b=document.createElement('button');b.type='button';b.textContent='Download '+label;b.onclick=async()=>{try{const blob=await(await api(base+name)).blob();const u=URL.createObjectURL(blob);urls.push(u);const a=document.createElement('a');a.href=u;a.download=name;a.click();}catch(e){$('status').textContent=e.message;}};$('downloads').append(b);}
+ $('status').textContent=`Graph completed · ${data.finite_samples}/${data.points} finite samples · ${data.engine_version}`;
+}
+$('operation').onchange=()=>{const plot=$('operation').value==='plot';$('plot-options').hidden=!plot;$('mode-label').hidden=plot;$('run').textContent=plot?'Generate graph':'Calculate';};
+$('calculator').onsubmit=async e=>{e.preventDefault();clear();$('run').disabled=true;$('status').textContent='Running Qalculate…';try{const body={operation:$('operation').value,expression:$('expression').value,variables:JSON.parse($('variables').value||'{}'),precision:Number($('precision').value),angle_unit:$('angle').value};if(body.operation==='plot')Object.assign(body,{variable:$('variable').value,x_min:$('xmin').value,x_max:$('xmax').value,points:Number($('points').value)});else body.mode=$('mode').value;await show(await(await api('/api/scientific-calculator',{method:'POST',body:JSON.stringify(body)})).json());}catch(e){$('status').textContent='Failed: '+e.message;}finally{$('run').disabled=false;}};
+api('/api/scientific-calculator/status').then(r=>r.json()).then(d=>{$('engine').textContent=d.message;}).catch(e=>{$('engine').textContent=e.message;});
+const saved=new URLSearchParams(location.search).get('plot');if(saved&&/^[a-f0-9]{32}$/.test(saved)){ $('status').textContent='Loading saved graph…';api(`/api/scientific-calculator/artifacts/${saved}/calculation.json`).then(r=>r.json()).then(data=>{ $('operation').value='plot';$('operation').onchange();$('expression').value=data.expression;$('variables').value=JSON.stringify(data.variables||{});$('precision').value=data.precision_digits;$('angle').value=data.angle_unit;$('variable').value=data.variable;$('xmin').value=data.x_min;$('xmax').value=data.x_max;$('points').value=data.points;return show(data);}).catch(e=>{$('status').textContent='Failed: '+e.message;});}
+})();
+</script></body></html>

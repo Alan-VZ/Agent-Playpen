@@ -38,6 +38,7 @@ from planner.tree_planner import TreePlanner
 from tools.packs.filesystem.read_file import ReadFileTool
 from tools.packs.filesystem.write_file import WriteFileTool
 from tools.packs.utils.calculator_tool import CalculatorTool
+from tools.packs.utils.scientific_calculator_tool import ScientificCalculatorTool
 from tools.packs.utils.datetime_tool import DatetimeTool
 from tools.packs.web.fetch_tool import FetchTool
 from tools.packs.web.nimble_extract import NimbleExtractTool
@@ -161,7 +162,7 @@ async def local_session_boundary(request: Request, call_next):
     response.headers["Cache-Control"] = "no-store"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Content-Security-Policy"] = f"default-src 'self'; script-src 'self' 'nonce-{API_TOKEN}'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    response.headers["Content-Security-Policy"] = f"default-src 'self'; script-src 'self' 'nonce-{API_TOKEN}'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
     return response
 
 PLANNER_MAP = {
@@ -177,6 +178,7 @@ TOOL_CHOICES = [
     "read_file",
     "write_file",
     "calculator",
+    "scientific_calculator",
     "datetime",
 ]
 
@@ -340,6 +342,8 @@ def _tool_factory(name: str, config: AgentConfig):
         return WriteFileTool(allowed_dirs=dirs, safe_mode=True)
     if name == "python_repl":
         raise ValueError("Unrestricted Python execution is unavailable in the credential-enabled dashboard.")
+    if name == "scientific_calculator":
+        return ScientificCalculatorTool()
     if name == "calculator":
         return CalculatorTool()
     if name == "datetime":
@@ -1026,6 +1030,8 @@ async def save_env(request: Request):
 from debugging.dashboard import experiments  # noqa: E402
 import sys  # noqa: E402
 experiments.install(sys.modules[__name__])
+from debugging.dashboard import scientific  # noqa: E402
+scientific.install(sys.modules[__name__])
 
 
 if __name__ == "__main__":

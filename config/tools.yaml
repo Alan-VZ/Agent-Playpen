@@ -71,6 +71,9 @@ tools:
   graphql:
     enabled: false
 
+  scientific_calculator:
+    enabled: true  # Requires the separate local Qalculate/qalc executable.
+
   calculator:
     enabled: true
 

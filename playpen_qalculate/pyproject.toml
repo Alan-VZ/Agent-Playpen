@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "playpen-qalculate"
+version = "0.1.0"
+description = "Standalone bounded Qalculate CLI bridge with precision-preserving scientific plots"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = []
+
+[project.scripts]
+playpen-qalculate = "playpen_qalculate.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+
+[tool.hatch.build.targets.wheel.force-include]
+"__init__.py" = "playpen_qalculate/__init__.py"
+"__main__.py" = "playpen_qalculate/__main__.py"
+"engine.py" = "playpen_qalculate/engine.py"
+"plotting.py" = "playpen_qalculate/plotting.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["/*.py", "/README.md", "/LICENSE", "/tests", "/pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

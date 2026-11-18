@@ -39,7 +39,10 @@ class ToolRegistry:
         from tools.packs.filesystem.write_file import WriteFileTool
         from tools.packs.code.python_repl import PythonReplTool
 
+        from tools.packs.utils.scientific_calculator_tool import ScientificCalculatorTool
+
         TOOL_CLASSES = {
+            "scientific_calculator": ScientificCalculatorTool,
             "web_search": WebSearchTool,
             "fetch": FetchTool,
             "nimble_extract": NimbleExtractTool,
