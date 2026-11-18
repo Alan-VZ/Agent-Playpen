@@ -28,6 +28,13 @@ async function check(page){
   if(page==='index'){
    await waitFor(()=>d.getElementById('backend').options.length>0);
    assert.equal(picker.ids().length,0);
+   assert.equal(d.getElementById('temperature').value,'0');
+   for(const [id,value] of [['max_iterations','15'],['temperature','0.25'],['max_tokens','4096']]){
+    const field=d.getElementById(id);assert.equal(field.type,'text');field.value='';field.dispatchEvent(new dom.window.Event('input',{bubbles:true}));assert.equal(field.checkValidity(),false);
+    field.value=value;field.dispatchEvent(new dom.window.Event('input',{bubbles:true}));assert.equal(field.value,value);assert.equal(field.checkValidity(),true);
+   }
+   const temp=d.getElementById('temperature');temp.value='3';temp.dispatchEvent(new dom.window.Event('input'));assert.equal(temp.checkValidity(),false);temp.value='0';temp.dispatchEvent(new dom.window.Event('input'));assert.equal(temp.checkValidity(),true);
+
    d.getElementById('planner').value='cot';
    d.querySelector('input[name=baseline_tasks][value=B01]').click();assert.ok(d.getElementById('task').value.includes('B01 · Data reconciliation'));
    assert.equal(d.getElementById('planner').value,'react');assert.equal(d.getElementById('planner').disabled,true);
