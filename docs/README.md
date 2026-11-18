@@ -12,3 +12,5 @@
 - [API inventory and maintenance](keys-costs-maintenance.md), [search reliability](search-reliability.md), [search providers](search-providers.md).
 
 Historical studies are evidence snapshots. New gateway/model calling routes require labeled follow-up evaluation rather than retroactive changes to their results.
+
+- [Four local model failures, November 18](studies/2026-11-18-four-local-models.md): truncation, wrong category subtotal, repeated reads and timeout distinguished.

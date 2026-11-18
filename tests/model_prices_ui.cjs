@@ -47,6 +47,14 @@ function change(id, value, event = 'change') { byId(id).value = value; byId(id).
     assert.ok(rows()[0].textContent.includes('free'));
     assert.equal(rows()[0].children[5].textContent, '$0');
     assert.equal(rows().find(row => row.textContent.includes('expensive')).children[5].textContent, '$0.006');
+    document.querySelector('button[data-sort="input"]').click();
+    assert.ok(rows()[0].textContent.includes('expensive'));assert.ok(rows().at(-1).textContent.includes('deployment'));
+    assert.equal(document.querySelector('button[data-sort="input"]').closest('th').getAttribute('aria-sort'),'descending');
+    document.querySelector('button[data-sort="input"]').click();assert.ok(rows()[0].textContent.includes('free'));
+    for(const key of ['model','output','cache_read','cache_write','estimate','source']){
+      const header=document.querySelector('button[data-sort="'+key+'"]');header.click();assert.equal(byId('sort').value,key);assert.equal(header.closest('th').getAttribute('aria-sort'),'ascending');header.click();assert.equal(header.closest('th').getAttribute('aria-sort'),'descending');
+    }
+    change('sort-direction','asc');
     change('source', 'reference');
     assert.equal(rows().length, 1); assert.ok(rows()[0].textContent.includes('Reference estimate'));
     change('input-tokens', '', 'input');

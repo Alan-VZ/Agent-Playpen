@@ -40,3 +40,7 @@ November 18 multi-model editor correction: workspace slots previously exposed di
 November 18 deferred loading: the model chooser still invoked immediate local-model activation during comparison setup. Selection now returns a queued ID without provider mutations; only the runtime lease activates local models. Explicit choices remain pinned when the catalog reports a different active model. Regression checks cover mutation-free selection and runtime activation under the server lease.
 
 November 18 settings usability: added editable compact model summary and browser-saved defaults applied explicitly to all models. Exposed per-model baseline time limits in workspace and launch/URL configuration, preserving separate budgets. Fixed planner display names and incorrectly encoded help punctuation. See [model comparisons](model-comparisons.md).
+
+November 18 price comparison: every column header now toggles ascending/descending order with arrows and accessible sort state; the direction selector and existing sort dropdown stay synchronized. Unknown numeric prices remain last in both directions, and equal values use a stable backend/model tie-break.
+
+Four-model run e40dbdbca42544399d6aa0057b1cc1c4 had four strict B01 failures with distinct causes; see [the analysis](studies/2026-11-18-four-local-models.md). Successful tool execution is not sufficient for a correct final report. Provider-truncated prose can currently be normalized as a final answer; baseline validation catches the failure, but truncation handling remains an open issue.
