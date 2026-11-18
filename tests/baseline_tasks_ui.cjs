@@ -46,12 +46,12 @@ async function check(page){
    const destination=new URL(picker.destination(),url);
    assert.equal(JSON.parse(destination.searchParams.get('models')).length,3);
    assert.equal(destination.searchParams.get('tasks'),'B01,B05');assert.equal(destination.searchParams.get('model'),'chosen-model');assert.equal(destination.searchParams.has('api_key'),false);
-   d.getElementById('workspace-baseline-repeats').value='5';const started=await picker.launch();assert.equal(started.id,'b'.repeat(32));assert.equal(launches.length,1);assert.equal(launches[0].repeats,5);assert.equal(launches[0].configs[0].agents.length,3);assert.deepEqual(launches[0].tasks,['B01','B05']);assert.deepEqual(launches[0].configs[0].agents[0].tools,['read_fixture','calculator']);assert.equal(launches[0].configs[0].agents[0].tool_calling_mode,'auto');
+   d.getElementById('workspace-baseline-repeats').value='5';const started=await picker.launch();assert.equal(started.id,'b'.repeat(32));assert.equal(launches.length,1);assert.equal(launches[0].repeats,5);assert.equal(launches[0].configs[0].agents.length,3);assert.deepEqual(launches[0].tasks,['B01','B05']);assert.deepEqual(launches[0].configs[0].agents[0].tools,['read_fixture','calculator']);assert.equal(launches[0].configs[0].agents[0].tool_calling_mode,'auto');assert.equal(launches[0].configs[0].timeout_seconds,210);
    d.getElementById('task').value='An edited custom task';assert.equal(picker.runLoaded(),false);
    d.getElementById('baseline-clear-selection').click();assert.equal(d.getElementById('baseline-load-tasks').disabled,true);
   }else{
    assert.deepEqual(Array.from(picker.ids()),['B01','B05']);
-   const config=JSON.parse(d.getElementById('baseline-config').value)[0];assert.equal(config.agents.length,2);assert.equal(config.agents[1].model,'hosted-model');assert.equal(config.agents[1].backend,'openrouter');assert.equal(config.agents[0].model,'chosen-model');assert.equal(config.max_iterations,12);assert.equal(config.max_output_tokens,1024);
+   const config=JSON.parse(d.getElementById('baseline-config').value)[0];assert.equal(config.agents.length,2);assert.equal(config.agents[1].model,'hosted-model');assert.equal(config.agents[1].backend,'openrouter');assert.equal(config.agents[0].model,'chosen-model');assert.equal(config.max_iterations,12);assert.equal(config.max_output_tokens,1024);assert.equal(config.timeout_seconds,210);
    assert.equal(config.agents[0].planner,'react');assert.equal(config.agents[0].tool_calling_mode,'auto');assert.deepEqual(config.agents[0].tools,['read_fixture','calculator']);
    picker.select(['B03']);assert.deepEqual(JSON.parse(d.getElementById('baseline-config').value)[0].agents[0].tools,['read_fixture','write_artifact']);
    d.getElementById('baseline-clear-selection').click();d.getElementById('baseline-run').click();await waitFor(()=>d.getElementById('baseline-message').textContent.includes('at least one'));assert.equal(launches.length,0);
