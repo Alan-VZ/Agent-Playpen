@@ -165,6 +165,12 @@ class BaseBackend(ABC):
             raise AgentResponseFormatError(
                 "The provider returned neither a tool call nor an answer."
             )
+        if mode == "auto":
+            from backends.tool_protocol import normalize_json_call
+            normalized = normalize_json_call(content, schemas)
+            if normalized is not None:
+                self.last_response_stats["adapter_route"] = "json_call_v1"
+                return normalized
         if "Action:" in content:
             return content
         return "Thought: Final answer\nAction: FINISH\nAction Input: " + json.dumps(

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "qwen25-json-call-v1-followup",
+    "agents": [
+      {
+        "backend": "lm_studio",
+        "model": "qwen2.5-coder-7b-instruct",
+        "base_url": "http://localhost:1234/v1",
+        "planner": "react",
+        "tool_calling_mode": "auto",
+        "temperature": 0,
+        "tools": []
+      }
+    ],
+    "max_concurrency": 1,
+    "max_iterations": 10,
+    "max_output_tokens": 2048,
+    "timeout_seconds": 400,
+    "capture_diagnostics": true,
+    "auto_baseline_setup": false
+  }
+]

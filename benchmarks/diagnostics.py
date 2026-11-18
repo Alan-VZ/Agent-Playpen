@@ -202,7 +202,7 @@ def run(configs, output, stopped=None, resume=False):
     path = output / "experiment.json"
     settings = [c.model_dump() for c in configs]
     identity = digest(
-        {"configs": settings, "tasks": TASKS, "contract": "diagnostic-v2"}
+        {"configs": settings, "tasks": TASKS, "contract": "diagnostic-v3-json-call"}
     )
     if resume:
         record = json.loads(path.read_text(encoding="utf-8"))

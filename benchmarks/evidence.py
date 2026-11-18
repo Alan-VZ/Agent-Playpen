@@ -79,8 +79,8 @@ def replay_text(raw, tool_names=()):
         }
 
 
-def replay_response(payload, tool_names=()):
-    """Validate recorded native shapes or replay text; never dispatch calls."""
+def replay_response(payload, tool_names=(), mode="auto"):
+    """Replay current normalization plus parsing; never dispatch calls."""
     try:
         choice = payload["choices"][0]
         if choice.get("finish_reason") == "length":
@@ -99,11 +99,21 @@ def replay_response(payload, tool_names=()):
                 "arguments": arguments,
                 "route": "native",
             }
-        return {
-            **replay_text(message.get("content") or "", tool_names),
-            "route": "text",
-        }
-    except (KeyError, IndexError, TypeError, ValueError) as exc:
+        raw = message.get("content") or ""
+        if tool_names and mode == "auto":
+            from backends.tool_protocol import normalize_json_call
+
+            normalized = normalize_json_call(
+                raw, [{"function": {"name": name}} for name in tool_names]
+            )
+            if normalized:
+                return {**replay_text(normalized, tool_names), "route": "json_call_v1"}
+        if tool_names and mode != "prompt" and "Action:" not in raw:
+            raw = "Thought: Final answer\nAction: FINISH\nAction Input: " + json.dumps(
+                raw
+            )
+        return {**replay_text(raw, tool_names), "route": "text"}
+    except Exception as exc:
         return {
             "accepted": False,
             "category": "malformed_response",
@@ -117,16 +127,35 @@ def replay_attempt(data):
         for e in data.get("interactions", [])
         if e.get("kind") == "transport_request"
     }
+    modes = {
+        e.get("call_index"): e.get("reservation", {}).get("tool_calling_mode", "auto")
+        for e in data.get("interactions", [])
+        if e.get("kind") == "request_diagnostic"
+    }
     results = []
     for event in data.get("interactions", []):
         if event.get("kind") != "transport_response":
             continue
+        item = {"call_index": event.get("call_index"), "replay_version": "json-call-v1"}
         if event.get("truncated") or "payload" not in event:
             results.append(
                 {
-                    "call_index": event.get("call_index"),
+                    **item,
                     "replay_available": False,
                     "reason": "bounded or unavailable body",
+                }
+            )
+            continue
+        if event.get("status_code", 200) >= 400:
+            results.append(
+                {
+                    **item,
+                    "replay_available": True,
+                    "accepted": False,
+                    "category": "provider_rate_limit"
+                    if event["status_code"] == 429
+                    else "provider_rejection",
+                    "http_status": event["status_code"],
                 }
             )
             continue
@@ -136,9 +165,11 @@ def replay_attempt(data):
         ]
         results.append(
             {
-                "call_index": event.get("call_index"),
+                **item,
                 "replay_available": True,
-                **replay_response(event["payload"], tools),
+                **replay_response(
+                    event["payload"], tools, modes.get(event.get("call_index"), "auto")
+                ),
             }
         )
     return results

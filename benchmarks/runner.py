@@ -301,7 +301,7 @@ class MeteredBackend:
             text = value if isinstance(value, str) else ""
             self.diagnostic("response_diagnostic", {"call_index":call_index, "content":text[:12000], "content_truncated":len(text)>12000,
                 "characters":len(text), "trailing_whitespace":len(text)-len(text.rstrip()), "stats":self.last_response_stats,
-                "usage":getattr(self.backend, "last_usage", {}), "reported_model":getattr(self.backend,"last_model_identity",None), "route": "native" if self.last_response_stats.get("finish_reason") == "tool_calls" else "text"})
+                "usage":getattr(self.backend, "last_usage", {}), "reported_model":getattr(self.backend,"last_model_identity",None), "route": self.last_response_stats.get("adapter_route") or ("native" if self.last_response_stats.get("finish_reason") == "tool_calls" else "text")})
             with self.budget.lock:
                 self.budget.active()
                 stats = getattr(self.backend, "last_usage", None) or getattr(self.backend, "last_response_stats", {}) or {}
@@ -622,7 +622,7 @@ def provenance():
             dependencies[name] = "not installed"
     return {"commit": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain")),
             "python": platform.python_version(), "dependencies": dependencies, "cache": "cold", "memory": "fresh",
-            "recovery_policy": "report-recovery-v1"}
+            "recovery_policy": "diagnostic-v3-json-call"}
 
 
 def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, backend_factory=make_backend, resume=False, tasks=None, scheduling="configuration_first"):
@@ -658,7 +658,7 @@ def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, b
             item.pop("selected_tasks", None)
     fixture_hashes = {f"{task}:{seed}": digest(fixture(task, seed)) for task in task_ids for seed in range(1, repeats + 1)}
     contract_hash = hashlib.sha256((Path(__file__).parent / "tasks.py").read_bytes()).hexdigest()
-    identity = digest({"configs": serialized, "suite": SUITE, "repeats": repeats, "fixtures": fixture_hashes, "contract": contract_hash, "scheduling": scheduling, "execution_contract": "diagnostic-v2"})
+    identity = digest({"configs": serialized, "suite": SUITE, "repeats": repeats, "fixtures": fixture_hashes, "contract": contract_hash, "scheduling": scheduling, "execution_contract": "diagnostic-v3-json-call"})
     if resume:
         record = json.loads(path.read_text(encoding="utf-8"))
         if record["identity"] != identity:
