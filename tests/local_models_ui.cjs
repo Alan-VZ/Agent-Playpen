@@ -13,7 +13,7 @@ async function waitFor(fn){for(let n=0;n<150;n++){if(fn())return;await sleep(15)
   window.fetch=async(resource,options={})=>{const route=new URL(resource,'http://127.0.0.1:8765').pathname;let value;
    if(route==='/api/defaults')value={backend:'lm_studio',model:'local-model',tools:['calculator']};
    else if(route==='/api/keys')value={};
-   else if(route==='/api/model-picker'&&options.method==='POST'){const payload=JSON.parse(options.body);mutations.push(payload);if(reject)return {ok:false,json:async()=>({detail:'Could not release previous model'})};if(['lm_studio','ollama'].includes(payload.backend))active=payload.model;value={model:payload.model,loaded:payload.backend==='lm_studio'};}
+   else if(route==='/api/model-picker'&&options.method==='POST'){const payload=JSON.parse(options.body);mutations.push(payload);if(reject)return {ok:false,json:async()=>({detail:'Could not release previous model'})};value={model:payload.model,loaded:false,status:'queued'};}
    else if(route==='/api/model-picker'){inventoryReads.push(resource);value={models:[{id:active,loaded:true},{id:'replacement-model',loaded:false}],active_models:[active],source:'live'};}
    else throw new Error('Unexpected request '+route);
    return {ok:true,json:async()=>value};
@@ -41,7 +41,7 @@ async function waitFor(fn){for(let n=0;n<150;n++){if(fn())return;await sleep(15)
   count.value=1;count.dispatchEvent(new dom.window.Event('change'));assert.equal(dom.window.playpenModelSlots.get().length,1);
   reject=true;dom.window.playpenModelPicker.refreshAll();await sleep(30);assert.equal(d.getElementById('model').value,'replacement-model');assert.equal(inventoryReads.length,2);
   d.getElementById('load-models').click();await waitFor(()=>d.querySelector('dialog[open] .pp-model-options button'));
-  Array.from(d.querySelectorAll('dialog[open] .pp-model-options button')).find(b=>b.textContent==='actual-loaded-instance').click();
+  Array.from(d.querySelectorAll('dialog[open] .pp-model-options button')).find(b=>b.textContent.startsWith('actual-loaded-instance')).click();
   await waitFor(()=>d.querySelector('dialog[open]').textContent.includes('Could not release'));assert.equal(d.getElementById('model').value,'replacement-model');
   assert.deepEqual(errors,[]);
  }finally{dom.window.close();}

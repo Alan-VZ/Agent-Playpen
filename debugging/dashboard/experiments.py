@@ -126,11 +126,6 @@ def install(server):
     def choose_model(payload: ModelChoice):
         if payload.backend not in server.BackendFactory.REGISTRY:
             raise HTTPException(400, "Unsupported backend")
-        with LOCK:
-            if active_study(server.ROOT):
-                raise HTTPException(409,"A controlled study is running. Stop it before changing models.")
-            if payload.backend in model_sources.LOCAL and any(job["status"] == "running" for job in JOBS.values()):
-                raise HTTPException(409, "A benchmark is using local models. Wait until it finishes to change the selection.")
         try:
             return model_sources.select_model(payload.backend, payload.model, payload.base_url)
         except local_models.ModelManagementError as exc:

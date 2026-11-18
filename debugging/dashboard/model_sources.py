@@ -245,17 +245,11 @@ def _activate(backend, model, base_url=None):
 
 
 def select_model(backend, model, base_url=None):
-    if backend not in LOCAL:
-        return _activate(backend, model, base_url)
-    lock = engine_lock(backend, base_url)
-    if not lock.acquire(blocking=False):
-        raise local_models.ModelManagementError(
-            "This local server is in use. Selection was not changed; wait for the active model to finish."
-        )
-    try:
-        return _activate(backend, model, base_url)
-    finally:
-        lock.release()
+    """Record an explicit choice without touching a provider's loaded models."""
+    if not model.strip() or model == "local-model":
+        raise local_models.ModelManagementError("Choose an explicit model before running.")
+    return {"model": model.strip(), "loaded": False, "status": "queued",
+            "message": "Queued for runtime; selection does not load or unload models."}
 
 
 @contextmanager

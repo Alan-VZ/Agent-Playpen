@@ -162,8 +162,7 @@ def test_engine_lease_protects_whole_run_and_releases_on_error(monkeypatch):
             ):
                 future = pool.submit(later)
                 assert entered.wait(2)
-                with pytest.raises(local_models.ModelManagementError, match="in use"):
-                    model_sources.select_model("lm_studio", "interrupt")
+                assert model_sources.select_model("lm_studio", "interrupt")["status"] == "queued"
                 assert activated == ["first"] and not future.done()
                 # Hosted sources do not wait for a local GPU lease.
                 assert (
@@ -171,7 +170,7 @@ def test_engine_lease_protects_whole_run_and_releases_on_error(monkeypatch):
                     == "hosted"
                 )
                 raise ValueError("release on failure")
-        assert future.result(2) == ["first", "hosted", "second"]
+        assert future.result(2) == ["first", "second"]
 
 
 def test_expired_or_cancelled_lease_never_loads(monkeypatch):
@@ -345,3 +344,14 @@ def test_baseline_launch_accepts_ten_independent_configurations():
     assert len(LaunchRequest.model_validate(payload).configs) == 10
     with pytest.raises(ValidationError):
         LaunchRequest.model_validate({**payload, "configs": payload["configs"] + [payload["configs"][0]]})
+
+
+def test_selection_never_activates_any_provider(monkeypatch):
+    activate = Mock(side_effect=AssertionError("Selection must not activate models"))
+    monkeypatch.setattr(model_sources, "_activate", activate)
+    for backend in ["lm_studio", "ollama", "openrouter", "groq"]:
+        assert model_sources.select_model(backend, "chosen") == {
+            "model": "chosen", "loaded": False, "status": "queued",
+            "message": "Queued for runtime; selection does not load or unload models.",
+        }
+    activate.assert_not_called()
