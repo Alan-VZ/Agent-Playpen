@@ -91,7 +91,7 @@ Review and redact it before sharing. The three run directories above are under
 
 ## November 17 follow-through
 
-The earlier evidence and suggestions above are retained as a dated record. Current model selection uses Choose model with automatic local switching/verification; the old separate refresh/load/status instructions are superseded. Progress/results and saved-run identity are documented in the baseline guide. Typed validation, provider call adapters, verified result records and the shared MCP-capable execution layer are implemented; live model improvement after these changes is not yet measured. See [the complete issue register](issues-and-resolutions.md), [universal tools](universal-tools.md), [calculator](scientific-calculator.md), and [credits](credits-and-sources.md).
+The earlier evidence and suggestions above are retained as a dated record. Current model selection uses Choose model to queue the selected ID; automatic local switching/verification happens at runtime; the old separate refresh/load/status instructions are superseded. Progress/results and saved-run identity are documented in the baseline guide. Typed validation, provider call adapters, verified result records and the shared MCP-capable execution layer are implemented; live model improvement after these changes is not yet measured. See [the complete issue register](issues-and-resolutions.md), [universal tools](universal-tools.md), [calculator](scientific-calculator.md), and [credits](credits-and-sources.md).
 
 
 ## November 18 baseline-route correction
