@@ -1,0 +1,2835 @@
+{
+  "id": "6372f9258614472f8f8bf2945a998605",
+  "status": "completed",
+  "scheduled": 1200,
+  "processed": 1200,
+  "attempted": 801,
+  "quota_skipped": 399,
+  "plan": {
+    "models": [
+      {
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "base_url": null
+      },
+      {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "base_url": null
+      },
+      {
+        "provider": "groq",
+        "model": "qwen/qwen3.8-27b",
+        "base_url": null
+      },
+      {
+        "provider": "groq",
+        "model": "allam-2-7b",
+        "base_url": null
+      },
+      {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "base_url": null
+      },
+      {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3.5-super-vl:free",
+        "base_url": null
+      },
+      {
+        "provider": "openrouter",
+        "model": "dots-studio/dots-3-note-preview:free",
+        "base_url": null
+      },
+      {
+        "provider": "openrouter",
+        "model": "liquid/lfm-3-1.7b:free",
+        "base_url": null
+      },
+      {
+        "provider": "lm_studio",
+        "model": "llama-2-7b-chat",
+        "base_url": "http://localhost:1234/v1"
+      },
+      {
+        "provider": "lm_studio",
+        "model": "qwen2.5-coder-7b-instruct",
+        "base_url": "http://localhost:1234/v1"
+      },
+      {
+        "provider": "lm_studio",
+        "model": "dolphin3.0-llama3.1-8b-abliterated@q4_k_m",
+        "base_url": "http://localhost:1234/v1"
+      },
+      {
+        "provider": "lm_studio",
+        "model": "gemma-2-9b-it-abliterated",
+        "base_url": "http://localhost:1234/v1"
+      }
+    ],
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "rounds": 2,
+    "timeout_seconds": 180.0,
+    "max_output_tokens": 2048,
+    "max_iterations": 10,
+    "temperature": 0.0,
+    "cloud_interval_seconds": 4.0,
+    "tasks": [
+      "B01",
+      "B02",
+      "B03",
+      "B04",
+      "B05"
+    ]
+  },
+  "provenance": {
+    "commit": "7990fc75859df41776908fcd465a4a74e1b459c1",
+    "dirty": true,
+    "python": "3.13.5",
+    "dependencies": {
+      "openai": "3.3.1",
+      "anthropic": "2.3.0",
+      "httpx": "0.28.1",
+      "pydantic": "2.13.4",
+      "pytest": "9.2.0"
+    },
+    "cache": "Provider cache uncontrolled; fresh process and conversation per case.",
+    "memory": "fresh"
+  },
+  "source_fingerprint": "640502caf6e4c77cdd307ac946aa0a7423b9892611d356a165b7bb3dc16e1b90",
+  "outcomes": {
+    "diagnostic_correct": 177,
+    "passed": 59,
+    "provider_error": 61,
+    "incorrect_answer": 216,
+    "response_format": 183,
+    "execution_error": 2,
+    "provider_rate_limit": 22,
+    "provider_quota_unavailable": 399,
+    "timeout": 57,
+    "incomplete_execution": 24
+  },
+  "tasks": [
+    {
+      "task": "B01",
+      "A_scheduled": 120,
+      "A_processed": 120,
+      "A_attempted": 81,
+      "A_success": 23,
+      "A_quota_skipped": 39,
+      "A_outcomes": {
+        "diagnostic_correct": 23,
+        "response_format": 18,
+        "incorrect_answer": 37,
+        "provider_rate_limit": 3,
+        "provider_quota_unavailable": 39
+      },
+      "A_failed_checks_given_valid_json": {
+        "category_totals": 37,
+        "net_total": 20,
+        "decimal_total": 20
+      },
+      "A_check_denominators_given_valid_json": {
+        "valid_json": 60,
+        "net_total": 60,
+        "valid_orders": 60,
+        "duplicate_ids": 60,
+        "category_totals": 60,
+        "decimal_total": 60
+      },
+      "B_scheduled": 120,
+      "B_processed": 120,
+      "B_attempted": 80,
+      "B_success": 19,
+      "B_quota_skipped": 40,
+      "B_outcomes": {
+        "passed": 19,
+        "response_format": 20,
+        "provider_error": 10,
+        "incorrect_answer": 5,
+        "provider_quota_unavailable": 40,
+        "timeout": 14,
+        "incomplete_execution": 12
+      },
+      "B_failed_checks_given_valid_json": {
+        "category_totals": 5,
+        "net_total": 4,
+        "valid_orders": 4,
+        "duplicate_ids": 3,
+        "decimal_total": 4
+      },
+      "B_check_denominators_given_valid_json": {
+        "valid_json": 24,
+        "read_inputs": 24,
+        "net_total": 24,
+        "valid_orders": 24,
+        "duplicate_ids": 24,
+        "category_totals": 24,
+        "decimal_total": 24,
+        "no_violations": 24
+      }
+    },
+    {
+      "task": "B02",
+      "A_scheduled": 120,
+      "A_processed": 120,
+      "A_attempted": 80,
+      "A_success": 41,
+      "A_quota_skipped": 40,
+      "A_outcomes": {
+        "diagnostic_correct": 41,
+        "incorrect_answer": 27,
+        "provider_quota_unavailable": 40,
+        "response_format": 10,
+        "provider_rate_limit": 2
+      },
+      "A_failed_checks_given_valid_json": {
+        "opens": 9,
+        "closed": 27
+      },
+      "A_check_denominators_given_valid_json": {
+        "valid_json": 68,
+        "opens": 68,
+        "citation_opens": 68,
+        "closed": 68,
+        "citation_closed": 68,
+        "loan_days": 68,
+        "citation_loan_days": 68
+      },
+      "B_scheduled": 120,
+      "B_processed": 120,
+      "B_attempted": 80,
+      "B_success": 0,
+      "B_quota_skipped": 40,
+      "B_outcomes": {
+        "provider_error": 10,
+        "incorrect_answer": 28,
+        "response_format": 29,
+        "provider_rate_limit": 4,
+        "provider_quota_unavailable": 40,
+        "timeout": 7,
+        "incomplete_execution": 2
+      },
+      "B_failed_checks_given_valid_json": {
+        "read_inputs": 27,
+        "loan_days": 16,
+        "citation_loan_days": 16,
+        "closed": 19,
+        "opens": 1,
+        "citation_opens": 1,
+        "citation_closed": 1
+      },
+      "B_check_denominators_given_valid_json": {
+        "valid_json": 28,
+        "read_inputs": 28,
+        "opens": 28,
+        "citation_opens": 28,
+        "closed": 28,
+        "citation_closed": 28,
+        "loan_days": 28,
+        "citation_loan_days": 28,
+        "no_violations": 28
+      }
+    },
+    {
+      "task": "B03",
+      "A_scheduled": 120,
+      "A_processed": 120,
+      "A_attempted": 80,
+      "A_success": 30,
+      "A_quota_skipped": 40,
+      "A_outcomes": {
+        "incorrect_answer": 39,
+        "diagnostic_correct": 30,
+        "provider_rate_limit": 1,
+        "provider_quota_unavailable": 40,
+        "response_format": 10
+      },
+      "A_failed_checks_given_valid_json": {
+        "findings": 39
+      },
+      "A_check_denominators_given_valid_json": {
+        "valid_json": 69,
+        "findings": 69,
+        "no_false_positive": 69
+      },
+      "B_scheduled": 120,
+      "B_processed": 120,
+      "B_attempted": 80,
+      "B_success": 11,
+      "B_quota_skipped": 40,
+      "B_outcomes": {
+        "passed": 11,
+        "provider_error": 19,
+        "response_format": 23,
+        "provider_rate_limit": 1,
+        "provider_quota_unavailable": 40,
+        "timeout": 12,
+        "incorrect_answer": 14
+      },
+      "B_failed_checks_given_valid_json": {
+        "read_inputs": 14,
+        "findings": 12,
+        "no_false_positive": 10,
+        "artifact": 14
+      },
+      "B_check_denominators_given_valid_json": {
+        "valid_json": 25,
+        "read_inputs": 25,
+        "findings": 25,
+        "no_false_positive": 25,
+        "artifact": 25,
+        "no_violations": 25
+      }
+    },
+    {
+      "task": "B04",
+      "A_scheduled": 120,
+      "A_processed": 120,
+      "A_attempted": 80,
+      "A_success": 54,
+      "A_quota_skipped": 40,
+      "A_outcomes": {
+        "response_format": 26,
+        "diagnostic_correct": 54,
+        "provider_quota_unavailable": 40
+      },
+      "A_failed_checks_given_valid_json": {},
+      "A_check_denominators_given_valid_json": {
+        "valid_json": 54,
+        "release": 54,
+        "source": 54,
+        "empty_is_evidence": 54,
+        "recovered": 54
+      },
+      "B_scheduled": 120,
+      "B_processed": 120,
+      "B_attempted": 80,
+      "B_success": 16,
+      "B_quota_skipped": 40,
+      "B_outcomes": {
+        "response_format": 12,
+        "passed": 16,
+        "provider_error": 10,
+        "provider_rate_limit": 7,
+        "incorrect_answer": 15,
+        "provider_quota_unavailable": 40,
+        "timeout": 10,
+        "incomplete_execution": 10
+      },
+      "B_failed_checks_given_valid_json": {
+        "read_inputs": 1,
+        "release": 1,
+        "checked_empty": 15
+      },
+      "B_check_denominators_given_valid_json": {
+        "valid_json": 31,
+        "read_inputs": 31,
+        "release": 31,
+        "source": 31,
+        "empty_is_evidence": 31,
+        "recovered": 31,
+        "observed_failure": 31,
+        "bounded_reads": 31,
+        "checked_empty": 31,
+        "no_violations": 31
+      }
+    },
+    {
+      "task": "B05",
+      "A_scheduled": 120,
+      "A_processed": 120,
+      "A_attempted": 80,
+      "A_success": 29,
+      "A_quota_skipped": 40,
+      "A_outcomes": {
+        "incorrect_answer": 39,
+        "diagnostic_correct": 29,
+        "provider_rate_limit": 2,
+        "provider_quota_unavailable": 40,
+        "timeout": 4,
+        "response_format": 6
+      },
+      "A_failed_checks_given_valid_json": {
+        "choice": 19,
+        "constraint_reason": 39,
+        "citation": 19,
+        "chosen_load": 10
+      },
+      "A_check_denominators_given_valid_json": {
+        "valid_json": 68,
+        "choice": 68,
+        "max_load": 68,
+        "chosen_load": 68,
+        "source": 68,
+        "unknown": 68,
+        "constraint_reason": 68,
+        "citation": 68
+      },
+      "B_scheduled": 120,
+      "B_processed": 120,
+      "B_attempted": 80,
+      "B_success": 13,
+      "B_quota_skipped": 40,
+      "B_outcomes": {
+        "response_format": 29,
+        "passed": 13,
+        "provider_error": 12,
+        "execution_error": 2,
+        "incorrect_answer": 12,
+        "provider_rate_limit": 2,
+        "provider_quota_unavailable": 40,
+        "timeout": 10
+      },
+      "B_failed_checks_given_valid_json": {
+        "read_inputs": 7,
+        "citation": 6,
+        "constraint_reason": 10
+      },
+      "B_check_denominators_given_valid_json": {
+        "valid_json": 25,
+        "read_inputs": 25,
+        "choice": 25,
+        "max_load": 25,
+        "chosen_load": 25,
+        "source": 25,
+        "unknown": 25,
+        "constraint_reason": 25,
+        "citation": 25,
+        "no_violations": 25
+      }
+    }
+  ],
+  "calculator_observations": [
+    {
+      "provider": "groq",
+      "calculator_requested": false,
+      "attempted_cases": 40,
+      "strict_passes": 19,
+      "valid_json_cases": 20,
+      "usage_incomplete_cases": 0,
+      "calculator_operations": 0,
+      "calculator_invalid_arguments": 0
+    },
+    {
+      "provider": "groq",
+      "calculator_requested": true,
+      "attempted_cases": 0,
+      "strict_passes": 0,
+      "valid_json_cases": 0,
+      "usage_incomplete_cases": 0,
+      "calculator_operations": 0,
+      "calculator_invalid_arguments": 0
+    },
+    {
+      "provider": "groq",
+      "calculator_requested": "unknown",
+      "attempted_cases": 0,
+      "strict_passes": 0,
+      "valid_json_cases": 0,
+      "usage_incomplete_cases": 0,
+      "calculator_operations": 0,
+      "calculator_invalid_arguments": 0
+    },
+    {
+      "provider": "openrouter",
+      "calculator_requested": false,
+      "attempted_cases": 0,
+      "strict_passes": 0,
+      "valid_json_cases": 0,
+      "usage_incomplete_cases": 0,
+      "calculator_operations": 0,
+      "calculator_invalid_arguments": 0
+    },
+    {
+      "provider": "openrouter",
+      "calculator_requested": true,
+      "attempted_cases": 0,
+      "strict_passes": 0,
+      "valid_json_cases": 0,
+      "usage_incomplete_cases": 0,
+      "calculator_operations": 0,
+      "calculator_invalid_arguments": 0
+    },
+    {
+      "provider": "openrouter",
+      "calculator_requested": "unknown",
+      "attempted_cases": 0,
+      "strict_passes": 0,
+      "valid_json_cases": 0,
+      "usage_incomplete_cases": 0,
+      "calculator_operations": 0,
+      "calculator_invalid_arguments": 0
+    },
+    {
+      "provider": "lm_studio",
+      "calculator_requested": false,
+      "attempted_cases": 14,
+      "strict_passes": 0,
+      "valid_json_cases": 0,
+      "usage_incomplete_cases": 0,
+      "calculator_operations": 0,
+      "calculator_invalid_arguments": 0
+    },
+    {
+      "provider": "lm_studio",
+      "calculator_requested": true,
+      "attempted_cases": 21,
+      "strict_passes": 0,
+      "valid_json_cases": 4,
+      "usage_incomplete_cases": 0,
+      "calculator_operations": 58,
+      "calculator_invalid_arguments": 48
+    },
+    {
+      "provider": "lm_studio",
+      "calculator_requested": "unknown",
+      "attempted_cases": 5,
+      "strict_passes": 0,
+      "valid_json_cases": 0,
+      "usage_incomplete_cases": 5,
+      "calculator_operations": 0,
+      "calculator_invalid_arguments": 0
+    }
+  ],
+  "model_tasks": [
+    {
+      "task": "B01",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "A_r1_success": 4,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 4,
+        "incorrect_answer": 1
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 4,
+      "A_same_outcome_category": 4,
+      "B_r1_success": 4,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "passed": 4,
+        "incorrect_answer": 1
+      },
+      "B_r2_success": 5,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "passed": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 4,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B01",
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "provider_error": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "provider_error": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B01",
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "A_r1_success": 2,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 3,
+        "diagnostic_correct": 2
+      },
+      "A_r2_success": 2,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 3,
+        "diagnostic_correct": 2
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 2,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 5,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "passed": 5
+      },
+      "B_r2_success": 5,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "passed": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 5,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B01",
+      "provider": "groq",
+      "model": "allam-2-7b",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "response_format": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "provider_rate_limit": 2,
+        "response_format": 3
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 3,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B01",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 1,
+      "A_r1_quota_skipped": 4,
+      "A_r1_outcomes": {
+        "provider_rate_limit": 1,
+        "provider_quota_unavailable": 4
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 4,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B01",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-super-vl:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B01",
+      "provider": "openrouter",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B01",
+      "provider": "openrouter",
+      "model": "liquid/lfm-3-1.7b:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B01",
+      "provider": "lm_studio",
+      "model": "llama-2-7b-chat",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "response_format": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "response_format": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "timeout": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "timeout": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B01",
+      "provider": "lm_studio",
+      "model": "qwen2.5-coder-7b-instruct",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B01",
+      "provider": "lm_studio",
+      "model": "dolphin3.0-llama3.1-8b-abliterated@q4_k_m",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incomplete_execution": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "timeout": 1,
+        "incomplete_execution": 4
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B01",
+      "provider": "lm_studio",
+      "model": "gemma-2-9b-it-abliterated",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incorrect_answer": 2,
+        "incomplete_execution": 2,
+        "timeout": 1
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "incorrect_answer": 2,
+        "timeout": 2,
+        "incomplete_execution": 1
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B02",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "A_r1_success": 2,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 2,
+        "incorrect_answer": 3
+      },
+      "A_r2_success": 1,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 4,
+        "diagnostic_correct": 1
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 2,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B02",
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "A_r1_success": 4,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 4,
+        "incorrect_answer": 1
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 4,
+      "A_same_outcome_category": 4,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "provider_error": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "provider_error": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B02",
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "provider_rate_limit": 1,
+        "incorrect_answer": 4
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 4,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incorrect_answer": 4,
+        "provider_rate_limit": 1
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "provider_rate_limit": 2,
+        "incorrect_answer": 3
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 2
+    },
+    {
+      "task": "B02",
+      "provider": "groq",
+      "model": "allam-2-7b",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 4,
+        "provider_rate_limit": 1
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 4,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 4,
+        "provider_rate_limit": 1
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B02",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B02",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-super-vl:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B02",
+      "provider": "openrouter",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B02",
+      "provider": "openrouter",
+      "model": "liquid/lfm-3-1.7b:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B02",
+      "provider": "lm_studio",
+      "model": "llama-2-7b-chat",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "response_format": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "response_format": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 2,
+        "timeout": 3
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 2,
+        "timeout": 3
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B02",
+      "provider": "lm_studio",
+      "model": "qwen2.5-coder-7b-instruct",
+      "A_r1_success": 4,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 4,
+        "incorrect_answer": 1
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 4,
+      "A_same_outcome_category": 4,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B02",
+      "provider": "lm_studio",
+      "model": "dolphin3.0-llama3.1-8b-abliterated@q4_k_m",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 4,
+        "incorrect_answer": 1
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B02",
+      "provider": "lm_studio",
+      "model": "gemma-2-9b-it-abliterated",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incomplete_execution": 1,
+        "response_format": 4
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "incomplete_execution": 1,
+        "response_format": 3,
+        "timeout": 1
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B03",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 1,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "provider_error": 4,
+        "passed": 1
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "provider_error": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B03",
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "provider_error": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "provider_error": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B03",
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 4,
+        "provider_rate_limit": 1
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 4,
+      "B_r1_success": 5,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "passed": 5
+      },
+      "B_r2_success": 5,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "passed": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 5,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B03",
+      "provider": "groq",
+      "model": "allam-2-7b",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 4,
+        "provider_rate_limit": 1
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B03",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B03",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-super-vl:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B03",
+      "provider": "openrouter",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B03",
+      "provider": "openrouter",
+      "model": "liquid/lfm-3-1.7b:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B03",
+      "provider": "lm_studio",
+      "model": "llama-2-7b-chat",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "response_format": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "response_format": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "timeout": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "timeout": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B03",
+      "provider": "lm_studio",
+      "model": "qwen2.5-coder-7b-instruct",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B03",
+      "provider": "lm_studio",
+      "model": "dolphin3.0-llama3.1-8b-abliterated@q4_k_m",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B03",
+      "provider": "lm_studio",
+      "model": "gemma-2-9b-it-abliterated",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 1,
+        "incorrect_answer": 3,
+        "timeout": 1
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 3,
+        "timeout": 1,
+        "incorrect_answer": 1
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 3
+    },
+    {
+      "task": "B04",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "A_r1_success": 2,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "response_format": 3,
+        "diagnostic_correct": 2
+      },
+      "A_r2_success": 2,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "response_format": 3,
+        "diagnostic_correct": 2
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 2,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 4,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "passed": 4,
+        "incorrect_answer": 1
+      },
+      "B_r2_success": 4,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "passed": 4,
+        "incorrect_answer": 1
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 3,
+      "B_same_outcome_category": 3
+    },
+    {
+      "task": "B04",
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "provider_error": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "provider_error": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B04",
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 3,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "passed": 3,
+        "provider_rate_limit": 2
+      },
+      "B_r2_success": 5,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "passed": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 3,
+      "B_same_outcome_category": 3
+    },
+    {
+      "task": "B04",
+      "provider": "groq",
+      "model": "allam-2-7b",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "response_format": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "response_format": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 3,
+        "provider_rate_limit": 2
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 2,
+        "provider_rate_limit": 3
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B04",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B04",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-super-vl:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B04",
+      "provider": "openrouter",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B04",
+      "provider": "openrouter",
+      "model": "liquid/lfm-3-1.7b:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B04",
+      "provider": "lm_studio",
+      "model": "llama-2-7b-chat",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "response_format": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "response_format": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "timeout": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "timeout": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B04",
+      "provider": "lm_studio",
+      "model": "qwen2.5-coder-7b-instruct",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incorrect_answer": 2,
+        "response_format": 3
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "incorrect_answer": 1,
+        "response_format": 4
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B04",
+      "provider": "lm_studio",
+      "model": "dolphin3.0-llama3.1-8b-abliterated@q4_k_m",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incomplete_execution": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "incomplete_execution": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B04",
+      "provider": "lm_studio",
+      "model": "gemma-2-9b-it-abliterated",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B05",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 1,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "execution_error": 1,
+        "provider_error": 1,
+        "incorrect_answer": 2,
+        "passed": 1
+      },
+      "B_r2_success": 3,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "execution_error": 1,
+        "passed": 3,
+        "provider_error": 1
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 1
+    },
+    {
+      "task": "B05",
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "A_r1_success": 5,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 5,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "provider_error": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "provider_error": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B05",
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "A_r1_success": 4,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "diagnostic_correct": 4,
+        "provider_rate_limit": 1
+      },
+      "A_r2_success": 5,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "diagnostic_correct": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 4,
+      "A_same_outcome_category": 4,
+      "B_r1_success": 4,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "passed": 4,
+        "provider_rate_limit": 1
+      },
+      "B_r2_success": 5,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "passed": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 4,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B05",
+      "provider": "groq",
+      "model": "allam-2-7b",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 4,
+        "provider_rate_limit": 1
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 4,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 4,
+        "provider_rate_limit": 1
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 4
+    },
+    {
+      "task": "B05",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B05",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-super-vl:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B05",
+      "provider": "openrouter",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B05",
+      "provider": "openrouter",
+      "model": "liquid/lfm-3-1.7b:free",
+      "A_r1_success": 0,
+      "A_r1_attempted": 0,
+      "A_r1_quota_skipped": 5,
+      "A_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 0,
+      "A_r2_quota_skipped": 5,
+      "A_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 0,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 0,
+      "B_r1_quota_skipped": 5,
+      "B_r1_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 0,
+      "B_r2_quota_skipped": 5,
+      "B_r2_outcomes": {
+        "provider_quota_unavailable": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 0,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B05",
+      "provider": "lm_studio",
+      "model": "llama-2-7b-chat",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "timeout": 2,
+        "response_format": 3
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "timeout": 2,
+        "response_format": 3
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "timeout": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "timeout": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B05",
+      "provider": "lm_studio",
+      "model": "qwen2.5-coder-7b-instruct",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 5
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 5
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B05",
+      "provider": "lm_studio",
+      "model": "dolphin3.0-llama3.1-8b-abliterated@q4_k_m",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 2,
+        "incorrect_answer": 3
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 2,
+        "incorrect_answer": 3
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    },
+    {
+      "task": "B05",
+      "provider": "lm_studio",
+      "model": "gemma-2-9b-it-abliterated",
+      "A_r1_success": 0,
+      "A_r1_attempted": 5,
+      "A_r1_quota_skipped": 0,
+      "A_r1_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_r2_success": 0,
+      "A_r2_attempted": 5,
+      "A_r2_quota_skipped": 0,
+      "A_r2_outcomes": {
+        "incorrect_answer": 5
+      },
+      "A_matched_pairs": 5,
+      "A_both_attempted": 5,
+      "A_success_both_rounds": 0,
+      "A_same_outcome_category": 5,
+      "B_r1_success": 0,
+      "B_r1_attempted": 5,
+      "B_r1_quota_skipped": 0,
+      "B_r1_outcomes": {
+        "response_format": 3,
+        "incorrect_answer": 2
+      },
+      "B_r2_success": 0,
+      "B_r2_attempted": 5,
+      "B_r2_quota_skipped": 0,
+      "B_r2_outcomes": {
+        "response_format": 3,
+        "incorrect_answer": 2
+      },
+      "B_matched_pairs": 5,
+      "B_both_attempted": 5,
+      "B_success_both_rounds": 0,
+      "B_same_outcome_category": 5
+    }
+  ],
+  "B02_rubric_observations": {
+    "valid_json_cases": 96,
+    "day_normalization_issues": 26,
+    "B_correct_answers_with_normalized_day_and_all_cited_sources_read": 12,
+    "official_scores_unchanged": true
+  },
+  "B05_reason_rubric_observations": {
+    "otherwise_correct_answer_cases_rejected_by_numeric_reason_text_check": 26,
+    "case_ids": [
+      "r1-m10-s1-A-B05",
+      "r1-m10-s2-A-B05",
+      "r1-m10-s3-A-B05",
+      "r1-m10-s4-A-B05",
+      "r1-m10-s5-A-B05",
+      "r1-m11-s3-B-B05",
+      "r1-m11-s4-B-B05",
+      "r1-m11-s5-B-B05",
+      "r1-m12-s1-A-B05",
+      "r1-m12-s2-A-B05",
+      "r1-m12-s3-A-B05",
+      "r1-m12-s4-A-B05",
+      "r1-m12-s5-A-B05",
+      "r2-m10-s1-A-B05",
+      "r2-m10-s2-A-B05",
+      "r2-m10-s3-A-B05",
+      "r2-m10-s4-A-B05",
+      "r2-m10-s5-A-B05",
+      "r2-m11-s3-B-B05",
+      "r2-m11-s4-B-B05",
+      "r2-m11-s5-B-B05",
+      "r2-m12-s1-A-B05",
+      "r2-m12-s2-A-B05",
+      "r2-m12-s3-A-B05",
+      "r2-m12-s4-A-B05",
+      "r2-m12-s5-A-B05"
+    ],
+    "official_scores_unchanged": true
+  },
+  "storage_incident": {
+    "cause": "C: reported no space left on device while writing checkpoint",
+    "completed_cases_preserved": 22,
+    "verified_copied_files": 34,
+    "resume": "Completed cases not repeated; identical plan and source fingerprint required"
+  },
+  "restored_model": "qwen3.5-9b-uncensored-hauhaucs-aggressive@q6_k",
+  "diagnostic_files": 801,
+  "validation": {
+    "python_tests_passed": 461,
+    "controlled_UI_DOM_check": "passed",
+    "ruff": "passed",
+    "source_and_wheel_build": "passed",
+    "unique_cases": 1200,
+    "A_cases_counted_as_strict_pass": 0
+  }
+}

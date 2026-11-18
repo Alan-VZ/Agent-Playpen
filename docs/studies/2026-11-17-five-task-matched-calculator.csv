@@ -1,0 +1,10 @@
+﻿provider,calculator_requested,attempted_cases,strict_passes,valid_json_cases,usage_incomplete_cases,calculator_operations,calculator_invalid_arguments
+groq,False,40,19,20,0,0,0
+groq,True,0,0,0,0,0,0
+groq,unknown,0,0,0,0,0,0
+openrouter,False,0,0,0,0,0,0
+openrouter,True,0,0,0,0,0,0
+openrouter,unknown,0,0,0,0,0,0
+lm_studio,False,14,0,0,0,0,0
+lm_studio,True,21,0,4,0,58,48
+lm_studio,unknown,5,0,0,5,0,0
