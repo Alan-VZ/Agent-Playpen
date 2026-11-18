@@ -321,10 +321,11 @@ def test_model_slots_preserve_independent_settings(monkeypatch, tmp_path):
 
     monkeypatch.setattr(server, "_execute_single_run", execute)
     config = server.AgentConfig(task="Identical task", temperature=0.7, max_tokens=2048, model_slots=[
-        {"backend": "openrouter", "model": "first", "temperature": 0, "max_tokens": 4096, "max_iterations": 5, "planner": "cot", "tools": [], "allowed_dirs": "fixtures"},
+        {"backend": "openrouter", "model": "first", "timeout_seconds": 600, "temperature": 0, "max_tokens": 4096, "max_iterations": 5, "planner": "cot", "tools": [], "allowed_dirs": "fixtures"},
         {"backend": "groq", "model": "second", "temperature": 0.4, "max_tokens": 8192, "max_iterations": 12, "planner": "react", "tool_calling_mode": "native", "tools": ["calculator"]},
     ])
     server._execute_run(config)
+    assert seen["first"].timeout_seconds == 600
     assert seen["first"].temperature == 0
     assert seen["first"].max_tokens == 4096
     assert seen["first"].max_iterations == 5

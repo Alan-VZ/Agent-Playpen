@@ -302,6 +302,7 @@ class ModelSlot(BaseModel):
     model: str = Field(max_length=500)
     base_url: str = ""
     role: str = Field(default="Independent researcher", max_length=500)
+    timeout_seconds: float | None = Field(default=None, ge=1, le=1800)
     temperature: float | None = Field(default=None, ge=0, le=2)
     max_tokens: int | None = Field(default=None, ge=64, le=32768)
     max_iterations: int | None = Field(default=None, ge=1, le=50)
@@ -318,6 +319,7 @@ class AgentConfig(BaseModel):
     model: str = "local-model"
     base_url: str = "http://localhost:1234/v1"
     api_key: str = ""
+    timeout_seconds: float = Field(default=210, ge=1, le=1800)
     temperature: float = 0.7
     max_tokens: int = Field(default=2048, ge=1)
     tool_calling_mode: str = Field(default=os.getenv("TOOL_CALLING_MODE", "auto"), pattern="^(auto|native|prompt)$")

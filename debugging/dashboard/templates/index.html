@@ -392,12 +392,12 @@
       </div>
 
       <div id="quickstart" class="hint">
-        <p><strong>Quick start â€” running a local model</strong></p>
+        <p><strong>Quick start — running a local model</strong></p>
         <ol>
           <li>Open LM Studio and start its local server.</li>
           <li>Set <strong>Backend</strong> to <code>lm_studio</code> and <strong>Base URL</strong> to <code>http://localhost:1234/v1</code>.</li>
-          <li>The <strong>Model</strong> field shows the active model. Click <strong>Choose model</strong> to select another; Playpen unloads the previous text model and loads your choice.</li>
-          <li>Leave <strong>Planner</strong> on <code>react</code> â€” it is the right default when tools are enabled.</li>
+          <li>The <strong>Model</strong> field shows the active model. Click <strong>Choose model</strong> to queue another; Playpen loads it when its run begins.</li>
+          <li>Leave <strong>Planner</strong> on <code>ReAct</code> — it is the right default when tools are enabled.</li>
           <li>Tick the <strong>Tools</strong> the agent is allowed to use.</li>
           <li>Write a <strong>Task</strong>, then press <strong>Run Agent</strong>.</li>
         </ol>
@@ -516,6 +516,7 @@
               <div id="cse-note" class="field-note"></div>
             </div>
 
+            <div class="field"><label for="timeout_seconds">Baseline time limit per task (seconds)</label><input id="timeout_seconds" type="text" inputmode="numeric" data-min="1" data-max="1800" required value="210" /><p class="field-note">Applies separately to each baseline task. Custom Run Agent uses its iteration limit and provider request timeouts.</p></div>
             <div class="field">
               <label for="max_iterations">Max iterations</label>
               <input id="max_iterations" name="max_iterations" type="text" inputmode="numeric" pattern="[0-9]+" required data-min="1" data-max="50" value="10" />
@@ -582,6 +583,7 @@
       planner: 'react',
       tools: ['web_search', 'fetch', 'calculator'],
       task: '',
+      timeout_seconds: 210,
       max_iterations: 10,
       temperature: 0.7,
       max_tokens: 2048,
@@ -650,7 +652,7 @@
       ['react', 'cot', 'tree'].forEach((planner) => {
         const option = document.createElement('option');
         option.value = planner;
-        option.textContent = planner;
+        option.textContent = {react:'ReAct',cot:'Chain of Thought',tree:'Tree of Thought'}[planner];
         if (planner === values.planner) option.selected = true;
         plannerSelect.appendChild(option);
       });
@@ -663,6 +665,7 @@
       document.getElementById('allowed_dirs').value = values.allowed_dirs || defaultState.allowed_dirs;
       document.getElementById('search_provider').value = values.search_provider || defaultState.search_provider;
       document.getElementById('search_cse_id').value = values.search_cse_id || defaultState.search_cse_id;
+      document.getElementById('timeout_seconds').value = values.timeout_seconds ?? 210;
       document.getElementById('max_iterations').value = values.max_iterations ?? defaultState.max_iterations;
       document.getElementById('temperature').value = values.temperature ?? defaultState.temperature;
       document.getElementById('max_tokens').value = values.max_tokens ?? defaultState.max_tokens;
@@ -688,7 +691,7 @@
     }
 
     // Validate after edits; do not rewrite values while the user is typing.
-    for (const id of ['max_iterations', 'temperature', 'max_tokens']) {
+    for (const id of ['max_iterations', 'temperature', 'max_tokens', 'timeout_seconds']) {
       const input = document.getElementById(id);
       const validate = () => {
         const text = input.value.trim(), value = Number(text);
@@ -714,6 +717,7 @@
         task: document.getElementById('task').value,
         allowed_dirs: document.getElementById('allowed_dirs').value,
         search_provider: document.getElementById('search_provider').value,
+        timeout_seconds: Number(document.getElementById('timeout_seconds').value || 210),
         max_iterations: Number(document.getElementById('max_iterations').value || 10),
         temperature: Number(document.getElementById('temperature').value || 0.7),
         max_tokens: Number(document.getElementById('max_tokens').value || 2048)
@@ -921,10 +925,10 @@
       backend: `
         <p>Which LLM provider runs your model. The connection is health-checked before the agent starts, so a wrong URL or missing key fails immediately with a clear message.</p>
         <ul>
-          <li><code>lm_studio</code> â€” local. Uses <strong>Base URL</strong>. No API key.</li>
-          <li><code>ollama</code> â€” local. Uses <strong>Base URL</strong>. No API key, but you must have a model pulled and running via <code>ollama serve</code> and <code>ollama pull &lt;model&gt;</code>.</li>
-          <li><code>openai</code>, <code>openrouter</code>, <code>anthropic</code>, <code>groq</code>, <code>together</code> â€” cloud. Need an <strong>API Key</strong>. Cloud endpoints are pinned to the official provider so credentials cannot be redirected through this field.</li>
-          <li><code>azure_openai</code> â€” cloud. Needs the key plus <code>AZURE_OPENAI_ENDPOINT</code>, <code>AZURE_OPENAI_DEPLOYMENT</code> and <code>AZURE_OPENAI_API_VERSION</code> set as environment variables. Those three cannot be set from this form.</li>
+          <li><code>lm_studio</code> — local. Uses <strong>Base URL</strong>. No API key.</li>
+          <li><code>ollama</code> — local. Uses <strong>Base URL</strong>. No API key, but you must have a model pulled and running via <code>ollama serve</code> and <code>ollama pull &lt;model&gt;</code>.</li>
+          <li><code>openai</code>, <code>openrouter</code>, <code>anthropic</code>, <code>groq</code>, <code>together</code> — cloud. Need an <strong>API Key</strong>. Cloud endpoints are pinned to the official provider so credentials cannot be redirected through this field.</li>
+          <li><code>azure_openai</code> — cloud. Needs the key plus <code>AZURE_OPENAI_ENDPOINT</code>, <code>AZURE_OPENAI_DEPLOYMENT</code> and <code>AZURE_OPENAI_API_VERSION</code> set as environment variables. Those three cannot be set from this form.</li>
         </ul>
         <p><strong>Start here:</strong> <code>lm_studio</code> keeps everything on your machine and costs nothing.</p>`,
 
@@ -945,31 +949,31 @@
 
       api_key: `
         <p>Credential for cloud providers. Not needed for <code>lm_studio</code> or <code>ollama</code>.</p>
-        <p><strong>Keys are stored, so you only enter them once.</strong> Type the key and press <strong>Save</strong> â€” it is written to encrypted OS credential storage outside the project and reused automatically from then on. The box then stays empty on purpose, and the note underneath confirms which key is saved.</p>
+        <p><strong>Keys are stored, so you only enter them once.</strong> Type the key and press <strong>Save</strong> — it is written to encrypted OS credential storage outside the project and reused automatically from then on. The box then stays empty on purpose, and the note underneath confirms which key is saved.</p>
         <p>The saved key is <strong>never sent back to your browser</strong>. Only presence and encrypted/legacy status are shown; no part of the key is returned. <strong>Clear</strong> deletes it.</p>
-        <p>Which entry is written depends on context: the backend's own variable (<code>OPENROUTER_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>GROQ_API_KEY</code>, <code>TOGETHER_API_KEY</code>, <code>AZURE_OPENAI_KEY</code>), or â€” when a specific search provider is selected â€” the search key for <code>tavily</code>, <code>serpapi</code>, or <code>google</code>.</p>
+        <p>Which entry is written depends on context: the backend's own variable (<code>OPENROUTER_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>GROQ_API_KEY</code>, <code>TOGETHER_API_KEY</code>, <code>AZURE_OPENAI_KEY</code>), or — when a specific search provider is selected — the search key for <code>tavily</code>, <code>serpapi</code>, or <code>google</code>.</p>
         <p>Save a newly entered key before running. Keys are never included in general run/configuration payloads.</p>
         <p class="warn">Use Migrate Legacy Keys to remove old plaintext entries. Encryption does not protect against malicious code running as your user; unrestricted Python tools are disabled here.</p>`,
 
       planner: `
         <p>The reasoning strategy that decides how the agent thinks between steps.</p>
         <ul>
-          <li><code>react</code> â€” Reason, Act, Observe in a loop. <strong>The right choice whenever tools are enabled</strong>, because it can call a tool, read the result, then decide the next move. Best default.</li>
-          <li><code>cot</code> â€” Chain of Thought. Reasons step by step in one pass. Cheapest and fastest. Good for pure reasoning, writing and explanation where no tool is needed.</li>
-          <li><code>tree</code> â€” Tree of Thought. Explores several competing lines of reasoning and picks the strongest. Noticeably slower and uses far more tokens. Save it for genuinely hard problems.</li>
+          <li><code>ReAct</code> — Reason, Act, Observe in a loop. <strong>The right choice whenever tools are enabled</strong>, because it can call a tool, read the result, then decide the next move. Best default.</li>
+          <li><code>cot</code> — Chain of Thought. Reasons step by step in one pass. Cheapest and fastest. Good for pure reasoning, writing and explanation where no tool is needed.</li>
+          <li><code>tree</code> — Tree of Thought. Explores several competing lines of reasoning and picks the strongest. Noticeably slower and uses far more tokens. Save it for genuinely hard problems.</li>
         </ul>
-        <p><span class="ex"><strong>Rule of thumb:</strong> tools enabled â†’ <code>react</code>. Plain writing or analysis â†’ <code>cot</code>.</span></p>`,
+        <p><span class="ex"><strong>Rule of thumb:</strong> tools enabled → <code>ReAct</code>. Plain writing or analysis → <code>cot</code>.</span></p>`,
 
       tools: `
-        <p>Capabilities the agent may call during a run. Tick only what the task truly needs â€” every extra tool adds tokens and more ways to go wrong.</p>
+        <p>Capabilities the agent may call during a run. Tick only what the task truly needs — every extra tool adds tokens and more ways to go wrong.</p>
         <ul>
-          <li><code>web_search</code> â€” searches the web using the provider chosen below.</li>
-          <li><code>fetch</code> â€” downloads the contents of a specific URL.</li>
-          <li><code>read_file</code> â€” reads files, limited to <strong>Allowed directories</strong>.</li>
-          <li><code>write_file</code> â€” creates and overwrites files, limited to <strong>Allowed directories</strong>. <span class="warn">Can overwrite existing files.</span></li>
+          <li><code>web_search</code> — searches the web using the provider chosen below.</li>
+          <li><code>fetch</code> — downloads the contents of a specific URL.</li>
+          <li><code>read_file</code> — reads files, limited to <strong>Allowed directories</strong>.</li>
+          <li><code>write_file</code> — creates and overwrites files, limited to <strong>Allowed directories</strong>. <span class="warn">Can overwrite existing files.</span></li>
           <li>Unrestricted Python execution is disabled in this credential-enabled dashboard.</li>
-          <li><code>calculator</code> â€” reliable arithmetic. Worth enabling for anything numeric, since models do mental maths badly.</li>
-          <li><code>datetime</code> â€” current date and time. Enable when the task involves "today", "now" or date maths.</li>
+          <li><code>calculator</code> — reliable arithmetic. Worth enabling for anything numeric, since models do mental maths badly.</li>
+          <li><code>datetime</code> — current date and time. Enable when the task involves "today", "now" or date maths.</li>
         </ul>
         <p><span class="ex"><strong>Research task:</strong> web_search + fetch</span>
         <span class="ex"><strong>Data or maths task:</strong> calculator</span>
@@ -983,15 +987,15 @@
           <li><code>Read README.md and produce a bullet list of every supported backend.</code></li>
           <li><code>Calculate the monthly repayment on a 25-year loan of 250000 at 5.5% annual interest, and show your working.</code></li>
         </ul>
-        <p class="warn">Weak prompt: <code>tell me about AI</code> â€” no goal, no finish line, so the agent burns iterations without converging.</p>
+        <p class="warn">Weak prompt: <code>tell me about AI</code> — no goal, no finish line, so the agent burns iterations without converging.</p>
         <p>State the output you want ("a bullet list", "a table", "two sentences") and the agent will hit it more reliably.</p>`,
 
       allowed_dirs: `
         <p>A safety sandbox: a comma-separated list of folders that <code>read_file</code> and <code>write_file</code> are confined to. Anything outside is refused. It has no effect on the other tools.</p>
         <ul>
-          <li><code>.</code> â€” the Agent Playpen project folder only. This is the default and the safest option.</li>
-          <li><code>.,C:\\Users\\alanv\\Documents\\notes</code> â€” project folder plus one extra folder.</li>
-          <li><code>C:\\Temp\\agent-output</code> â€” restrict writes to a scratch folder.</li>
+          <li><code>.</code> — the Agent Playpen project folder only. This is the default and the safest option.</li>
+          <li><code>.,C:\\Users\\alanv\\Documents\\notes</code> — project folder plus one extra folder.</li>
+          <li><code>C:\\Temp\\agent-output</code> — restrict writes to a scratch folder.</li>
         </ul>
         <p class="warn">Avoid <code>C:\\</code> or a whole user profile. A broad path lets the agent overwrite files you care about.</p>
         <p>If left empty it falls back to <code>.</code>.</p>`,
@@ -1013,39 +1017,40 @@
         <p>Choose a provider, click <strong>Set search API key</strong>, and save its key separately from the model key. These integrations use direct APIs.</p>
         <p class="warn">Auto can consume credits from multiple configured services. Select one provider to control which account is used. Missing keys, exhausted quotas, and provider errors appear in the live activity feed.</p>`,
 
+      timeout_seconds: `<p>Maximum time allowed for each baseline task, in seconds (1–1800). The same limit applies separately to every repetition. This is not a token limit. Custom agent runs use their iteration limit and provider request timeouts.</p>`,
       max_iterations: `
         <p>The hard ceiling on reasoning cycles. One iteration is roughly: think once, optionally call one tool, look at the result. It is the brake that stops a confused agent looping forever.</p>
         <ul>
-          <li><code>3</code>â€“<code>5</code> â€” simple single-step questions</li>
-          <li><code>10</code> â€” sensible default for most work</li>
-          <li><code>15</code>â€“<code>25</code> â€” multi-step research needing several searches</li>
+          <li><code>3</code>–<code>5</code> — simple single-step questions</li>
+          <li><code>10</code> — sensible default for most work</li>
+          <li><code>15</code>–<code>25</code> — multi-step research needing several searches</li>
         </ul>
-        <p>Too low and the agent stops before it finishes. Too high and a stuck agent wastes time and tokens. Range 1â€“50.</p>`,
+        <p>Too low and the agent stops before it finishes. Too high and a stuck agent wastes time and tokens. Range 1–50.</p>`,
 
       temperature: `
         <p>Controls randomness. Low values make the model consistent and literal; high values make it varied and inventive.</p>
         <ul>
-          <li><code>0.0</code>â€“<code>0.3</code> â€” factual answers, data extraction, and <strong>anything using tools</strong>, where reliable formatting matters</li>
-          <li><code>0.7</code> â€” balanced general-purpose default</li>
-          <li><code>1.0</code>â€“<code>2.0</code> â€” brainstorming and creative writing</li>
+          <li><code>0.0</code>–<code>0.3</code> — factual answers, data extraction, and <strong>anything using tools</strong>, where reliable formatting matters</li>
+          <li><code>0.7</code> — balanced general-purpose default</li>
+          <li><code>1.0</code>–<code>2.0</code> — brainstorming and creative writing</li>
         </ul>
         <p class="warn">High temperature with tools enabled is a common cause of failed runs: the model garbles the tool call format. Keep it at or below 0.3 for tool-heavy tasks.</p>`,
 
       max_tokens: `
-        <p>The longest reply the model may produce in a single step. This is the <strong>output</strong> limit â€” it is not the context window and not a budget for the whole run.</p>
+        <p>The longest reply the model may produce in a single step. This is the <strong>output</strong> limit — it is not the context window and not a budget for the whole run.</p>
         <ul>
-          <li><code>512</code> â€” short answers</li>
-          <li><code>2048</code> â€” default, fine for most tasks</li>
-          <li><code>4096</code>+ â€” long reports, or generating substantial code</li>
+          <li><code>512</code> — short answers</li>
+          <li><code>2048</code> — default, fine for most tasks</li>
+          <li><code>4096</code>+ — long reports, or generating substantial code</li>
         </ul>
         <p class="warn">An output limit can truncate an answer or leave no text at all if reasoning consumes the allowance. Check the live model-response metadata. Increase the limit deliberately or choose another model; the app does not silently increase it.</p>
         <p>On paid backends this is the main lever on cost per step.</p>`,
 
       actions: `
-        <p><strong>Run Agent</strong> â€” executes the task with the settings above. Requires a <strong>Task</strong>. The answer appears on the right, along with a session id and the path to a saved trace file recording every step.</p>
+        <p><strong>Run Agent</strong> — executes the task with the settings above. Requires a <strong>Task</strong>. The answer appears on the right, along with a session id and the path to a saved trace file recording every step.</p>
         <p><strong>Stop Run</strong> requests no further steps. An in-flight model or tool call may still finish. Live activity shows status, tool requests/results, and responses while a run executes.</p>
-        <p><strong>Save Config</strong> â€” writes the current form to <code>config/web_agent_config.json</code> so you can reuse it later. Credentials are excluded and remain in encrypted OS storage.</p>
-        <p><strong>Save Settings</strong> â€” writes backend settings to <code>.env</code> for the CLI to pick up. Existing entries are merged, so non-secret settings and comments are preserved. Save credentials separately.</p>
+        <p><strong>Save Config</strong> — writes the current form to <code>config/web_agent_config.json</code> so you can reuse it later. Credentials are excluded and remain in encrypted OS storage.</p>
+        <p><strong>Save Settings</strong> — writes backend settings to <code>.env</code> for the CLI to pick up. Existing entries are merged, so non-secret settings and comments are preserved. Save credentials separately.</p>
         <p>To store an API key, use the <strong>Save</strong> button beside the API Key field rather than this one.</p>`
     };
 
@@ -1213,7 +1218,7 @@
       const info = keyState[name];
       if (info && info.set) {
         apiKeyInput.placeholder = 'Using saved key - leave blank';
-        setNote(keyNote, 'ok', `${name}: ${info.encrypted ? "encrypted OS storage" : "legacy plaintext â€” migrate it"}. Leave blank to reuse it.`);
+        setNote(keyNote, 'ok', `${name}: ${info.encrypted ? "encrypted OS storage" : "legacy plaintext — migrate it"}. Leave blank to reuse it.`);
       } else {
         apiKeyInput.placeholder = 'Enter key, then press Save';
         setNote(keyNote, 'warn', `${name} is not saved yet. Press Save to store it in encrypted OS storage.`);
@@ -1360,7 +1365,7 @@
       backend: () => backendSelect.value, model: () => modelInput.value,
       baseUrl: () => document.getElementById('base_url').value,
       followActive: () => !window.playpenModelSlots || window.playpenModelSlots.get().length === 1,
-      selected: name => { modelInput.value = name; renderSelectedModelPrice(); },
+      selected: name => { modelInput.value = name; renderSelectedModelPrice(); document.dispatchEvent(new Event('model-settings-changed')); },
       catalog: data => { modelPriceLookup = new Map((data.model_details || []).map(item => [item.id,item])); modelDefaultPricing = data.pricing_default || null; renderSelectedModelPrice(); }
     });
     document.getElementById('base_url').addEventListener('change', () => workspacePicker?.refresh());

@@ -51,6 +51,13 @@ async function check(page){
    assert.equal(picker.runLoaded(),true);
    const count=d.getElementById('workspace-model-count');count.value=3;count.dispatchEvent(new dom.window.Event('change'));await waitFor(()=>dom.window.playpenModelSlots.get().every(m=>m.model==='chosen-model'));
    assert.equal(d.querySelectorAll('.workspace-model-card').length,3);
+   assert.equal(d.querySelectorAll('#model-summary-body tr').length,3);
+   assert.equal(d.getElementById('planner').selectedOptions[0].textContent,'ReAct');
+   assert.ok(!d.body.textContent.includes('â€'));assert.ok(!d.body.textContent.includes('â†'));
+   const defaultSeconds=d.querySelector('#model-defaults [data-setting="timeout_seconds"]');defaultSeconds.value='600';defaultSeconds.dispatchEvent(new dom.window.Event('input'));defaultSeconds.dispatchEvent(new dom.window.Event('change'));
+   d.getElementById('apply-model-defaults').click();assert.ok(dom.window.playpenModelSlots.get().every(slot=>slot.timeout_seconds===600));assert.equal(JSON.parse(dom.window.localStorage.getItem('playpen-model-defaults')).timeout_seconds,600);
+   const thirdSeconds=d.querySelector('#model-summary-body tr[data-model="3"] [data-setting="timeout_seconds"]');thirdSeconds.value='450';thirdSeconds.dispatchEvent(new dom.window.Event('input'));thirdSeconds.dispatchEvent(new dom.window.Event('change'));assert.equal(dom.window.playpenModelSlots.get()[2].timeout_seconds,450);
+
    const second=d.querySelector('[data-slot="2"] [data-parameter="temperature"]');second.value='0.4';second.dispatchEvent(new dom.window.Event('input'));
    const tokens=d.querySelector('[data-slot="2"] [data-parameter="max_tokens"]');tokens.value='8192';tokens.dispatchEvent(new dom.window.Event('input'));
    count.value=2;count.dispatchEvent(new dom.window.Event('change'));count.value=3;count.dispatchEvent(new dom.window.Event('change'));
@@ -58,7 +65,7 @@ async function check(page){
    const destination=new URL(picker.destination(),url);
    assert.equal(JSON.parse(destination.searchParams.get('models')).length,3);
    assert.equal(destination.searchParams.get('tasks'),'B01,B05');assert.equal(destination.searchParams.get('model'),'chosen-model');assert.equal(destination.searchParams.has('api_key'),false);
-   d.getElementById('workspace-baseline-repeats').value='5';const started=await picker.launch();assert.equal(started.id,'b'.repeat(32));assert.equal(launches.length,1);assert.equal(launches[0].repeats,5);assert.equal(launches[0].configs.length,3);assert.equal(launches[0].configs[0].agents.length,1);assert.deepEqual(launches[0].tasks,['B01','B05']);assert.deepEqual(launches[0].configs[0].agents[0].tools,['read_fixture','calculator']);assert.equal(launches[0].configs[0].agents[0].tool_calling_mode,'auto');assert.equal(launches[0].configs[0].timeout_seconds,210);assert.equal(launches[0].configs[1].agents[0].temperature,0.4);assert.equal(launches[0].configs[1].max_output_tokens,8192);
+   d.getElementById('workspace-baseline-repeats').value='5';const started=await picker.launch();assert.equal(started.id,'b'.repeat(32));assert.equal(launches.length,1);assert.equal(launches[0].repeats,5);assert.equal(launches[0].configs.length,3);assert.equal(launches[0].configs[0].agents.length,1);assert.deepEqual(launches[0].tasks,['B01','B05']);assert.deepEqual(launches[0].configs[0].agents[0].tools,['read_fixture','calculator']);assert.equal(launches[0].configs[0].agents[0].tool_calling_mode,'auto');assert.equal(launches[0].configs[0].timeout_seconds,600);assert.equal(launches[0].configs[2].timeout_seconds,450);assert.equal(launches[0].configs[1].agents[0].temperature,0.4);assert.equal(launches[0].configs[1].max_output_tokens,8192);
    d.getElementById('task').value='An edited custom task';assert.equal(picker.runLoaded(),false);
    d.getElementById('baseline-clear-selection').click();assert.equal(d.getElementById('baseline-load-tasks').disabled,true);
   }else{
