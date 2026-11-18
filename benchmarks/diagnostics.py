@@ -6,6 +6,8 @@ import html
 import json
 from pathlib import Path
 import threading
+import time
+import hashlib
 import uuid
 from datetime import datetime, timezone
 
@@ -201,8 +203,27 @@ def run(configs, output, stopped=None, resume=False):
     output.mkdir(parents=True, exist_ok=True)
     path = output / "experiment.json"
     settings = [c.model_dump() for c in configs]
+    source_root = Path(__file__).resolve().parents[1]
+    fingerprints = {
+        name: hashlib.sha256((source_root / name).read_bytes()).hexdigest()
+        for name in (
+            "benchmarks/diagnostics.py",
+            "benchmarks/runner.py",
+            "core/agent.py",
+            "backends/base_backend.py",
+            "backends/tool_protocol.py",
+            "planner/react_planner.py",
+        )
+    }
+    fixture_hashes = {task: digest(fixture(task, 1)) for task in TASKS}
     identity = digest(
-        {"configs": settings, "tasks": TASKS, "contract": "diagnostic-v3-json-call"}
+        {
+            "configs": settings,
+            "tasks": TASKS,
+            "contract": "diagnostic-v3-json-call",
+            "source_hashes": fingerprints,
+            "fixture_hashes": fixture_hashes,
+        }
     )
     if resume:
         record = json.loads(path.read_text(encoding="utf-8"))
@@ -222,10 +243,13 @@ def run(configs, output, stopped=None, resume=False):
             "attempts": [],
             "status": "running",
             "scheduling": "configuration_first",
+            "source_hashes": fingerprints,
+            "fixture_hashes": fixture_hashes,
         }
     stop = stopped or threading.Event()
     done = {(a["config_index"], a["task"]) for a in record["attempts"]}
     atomic_json(path, record)
+    last_case_finished = None
     try:
         for index, original in enumerate(configs):
             if len(original.agents) != 1:
@@ -247,7 +271,28 @@ def run(configs, output, stopped=None, resume=False):
                     "task": task,
                     "model": config.agents[0].model,
                 }
-                atomic_json(output / "progress.json", progress)
+                delay = (
+                    max(
+                        0,
+                        config.model_min_interval_seconds
+                        - (time.monotonic() - last_case_finished),
+                    )
+                    if last_case_finished is not None
+                    else 0
+                )
+                if delay:
+                    atomic_json(
+                        output / "progress.json",
+                        {
+                            **progress,
+                            "phase": "provider pacing",
+                            "wait_seconds": round(delay, 1),
+                        },
+                    )
+                    if stop.wait(delay):
+                        record["status"] = "cancelled"
+                        return record
+                atomic_json(output / "progress.json", {**progress, "phase": "running"})
 
                 def event(value):
                     if value.get("type") in {
@@ -262,6 +307,7 @@ def run(configs, output, stopped=None, resume=False):
                             stream.write(json.dumps(value, ensure_ascii=False) + "\n")
 
                 result = isolated_attempt(config, task, 1, stopped=stop, on_event=event)
+                last_case_finished = time.monotonic()
                 result.update(config_index=index, repetition=0)
                 record["attempts"].append(result)
                 atomic_json(output / (result["id"] + ".json"), result)

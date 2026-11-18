@@ -181,3 +181,37 @@ def test_b02_pre_final_requires_observed_sources_and_quotes():
     assert "quote exact" in runner.validate_final_report(
         "B02", json.dumps(answer), data["documents"], set(data["documents"])
     )
+
+
+def test_diagnostic_resume_fingerprints_and_pacing_cancel(monkeypatch, tmp_path):
+    from benchmarks import diagnostics
+
+    stop = threading.Event()
+    seen = []
+
+    def finish_one(config, task, seed, **kwargs):
+        seen.append(task)
+        stop.set()
+        return fake_attempt(config, task, seed)
+
+    monkeypatch.setattr(runner, "isolated_attempt", finish_one)
+    config = runner.ExperimentConfig(
+        name="paced", agents=[runner.Member(model="one")], model_min_interval_seconds=60
+    )
+    record = diagnostics.run([config], tmp_path, stop)
+    assert record["status"] == "cancelled" and seen == ["D01"]
+    assert record["source_hashes"] and record["fixture_hashes"]
+
+    def finish_rest(config, task, seed, **kwargs):
+        return fake_attempt(config, task, seed)
+
+    monkeypatch.setattr(runner, "isolated_attempt", finish_rest)
+    # A changed fixture must never be silently pooled into the saved study.
+    original = diagnostics.fixture
+    monkeypatch.setattr(
+        diagnostics,
+        "fixture",
+        lambda task, seed: {**original(task, seed), "prompt": "changed"},
+    )
+    with pytest.raises(ValueError, match="resume"):
+        diagnostics.run([config], tmp_path, resume=True)

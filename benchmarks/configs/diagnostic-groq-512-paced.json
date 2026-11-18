@@ -1,0 +1,23 @@
+[
+  {
+    "name": "groq-512-token-paced-followup",
+    "agents": [
+      {
+        "backend": "groq",
+        "model": "qwen/qwen3.8-27b",
+        "base_url": null,
+        "planner": "react",
+        "tool_calling_mode": "auto",
+        "temperature": 0,
+        "tools": []
+      }
+    ],
+    "max_concurrency": 1,
+    "max_iterations": 10,
+    "max_output_tokens": 512,
+    "timeout_seconds": 400,
+    "capture_diagnostics": true,
+    "auto_baseline_setup": false,
+    "model_min_interval_seconds": 60
+  }
+]
