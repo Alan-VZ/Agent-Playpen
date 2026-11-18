@@ -24,6 +24,7 @@ window.installBaselineBuilder=function(input){
     select(row,'Model provider',member.backend,backends,v=>{member.backend=v;member.model='';member.base_url=v==='lm_studio'?'http://localhost:1234/v1':v==='ollama'?'http://localhost:11434/v1':null;save();render();});
     const model=field(row,'Model',member.model,v=>member.model=v);model.readOnly=true;model.className='model-input';
     select(row,'Planner',member.planner||'react',['react','cot','tree'],v=>member.planner=v).disabled=automatic;
+    select(row,'Tool calling',member.tool_calling_mode||'prompt',['auto','native','prompt'],v=>member.tool_calling_mode=v);
     const toolNames={read_fixture:'Read baseline inputs',calculator:'Calculator',write_artifact:'Write baseline report'};for(const [id,title] of Object.entries(toolNames)){const label=element('label'),checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=(member.tools||Object.keys(toolNames)).includes(id);checkbox.disabled=automatic;checkbox.addEventListener('change',()=>{const selected=new Set(member.tools||Object.keys(toolNames));if(checkbox.checked)selected.add(id);else selected.delete(id);member.tools=Array.from(selected);save();});label.append(checkbox,document.createTextNode(title));row.append(label);}
     field(panel,'Role',member.role||'Independent researcher',v=>member.role=v);
     if(['lm_studio','ollama','azure_openai'].includes(member.backend))field(panel,member.backend==='azure_openai'?'Azure resource endpoint':'Local server URL (optional)',member.base_url||'',v=>member.base_url=v||null,'url');

@@ -39,6 +39,7 @@ class Member(BaseModel):
     model: str = "local-model"
     role: str = Field(default="Independent researcher", max_length=2000)
     planner: str = "react"
+    tool_calling_mode: Literal["prompt", "auto", "native"] = "prompt"
     temperature: float = Field(default=0, ge=0, le=2)
     base_url: str | None = Field(default=None, max_length=500)
     tools: list[Literal["read_fixture", "write_artifact", "calculator"]] = Field(default_factory=lambda: ["read_fixture", "write_artifact", "calculator"])
@@ -217,12 +218,33 @@ class MeteredBackend:
         if self.budget.config.capture_diagnostics:
             self.budget.publish({"type":kind, "agent_id":self.agent_id, "timestamp":datetime.now(timezone.utc).isoformat(), **redact(payload)})
 
+    def reset_tool_session(self):
+        if getattr(type(self.backend), "reset_tool_session", None):
+            self.backend.reset_tool_session()
+
+    def accept_tool_result(self, text):
+        if getattr(type(self.backend), "accept_tool_result", None):
+            self.backend.accept_tool_result(text)
+
     def chat(self, messages):
+        return self._request(messages)
+
+    def chat_with_tools(self, messages, schemas):
+        return self._request(messages, schemas)
+
+    def _request(self, messages, schemas=None):
         interval = self.budget.config.model_min_interval_seconds
         while self.budget.last_request_at is not None and time.monotonic() - self.budget.last_request_at < interval:
             self.budget.active()
             time.sleep(min(.1, interval))
-        call = self.budget.reserve_model(messages, self.agent_id)
+        reservation = messages
+        mode = getattr(self.backend, "tool_calling_mode", "prompt")
+        if not isinstance(mode, str):
+            mode = "prompt"
+        if schemas and mode != "prompt":
+            reservation = [*messages, {"role":"system", "content":json.dumps(schemas)}, *getattr(self.backend, "_native_history", [])]
+        call = self.budget.reserve_model(reservation, self.agent_id)
+        call["tool_calling_mode"] = mode
         call_index = len(self.budget.model_calls) - 1
         try:
             with self.budget.lock:
@@ -235,7 +257,8 @@ class MeteredBackend:
                 self.budget.last_request_at = time.monotonic()
             bounded = [{"role":str(m.get("role", ""))[:30], "content":str(m.get("content", ""))[:16000]} for m in messages]
             self.diagnostic("request_diagnostic", {"call_index":call_index, "messages":bounded, "reservation":dict(call)})
-            value = self.backend.chat(messages)
+            native = getattr(type(self.backend), "chat_with_tools", None)
+            value = self.backend.chat_with_tools(messages, schemas) if schemas and native else self.backend.chat(messages)
             text = value if isinstance(value, str) else ""
             self.diagnostic("response_diagnostic", {"call_index":call_index, "content":text[:12000], "content_truncated":len(text)>12000,
                 "characters":len(text), "trailing_whitespace":len(text)-len(text.rstrip()), "stats":self.last_response_stats,
@@ -298,6 +321,7 @@ def run_member(member, config, data, budget, agent_id, peers=None, backend_facto
             lease = context
             member = member.model_copy(update={"model":actual})
         backend = backend_factory(member, config)
+        backend.tool_calling_mode = member.tool_calling_mode
         metered = MeteredBackend(backend, budget, agent_id)
         registry = ToolRegistry()
         for tool in (ReadFixture(data, budget, agent_id), WriteArtifact(budget, agent_id), BoundedCalculator(budget, agent_id)):
@@ -416,6 +440,7 @@ def isolated_attempt(config, task, seed, stopped=None, on_event=None):
     process.start()
     result = None
     cancel_deadline = None
+    partial_events = []
     try:
         while time.monotonic() - started < config.timeout_seconds + 10:
             if stopped and stopped.is_set():
@@ -431,6 +456,8 @@ def isolated_attempt(config, task, seed, stopped=None, on_event=None):
             while True:
                 try:
                     event = events.get_nowait()
+                    partial_events.append(redact(event))
+                    partial_events = partial_events[-500:]
                     if on_event:
                         on_event(event)
                 except queue.Empty:
@@ -445,8 +472,10 @@ def isolated_attempt(config, task, seed, stopped=None, on_event=None):
         return {"id": uuid.uuid4().hex, "task": task, "seed": seed, "status": status,
                 "elapsed_seconds": round(time.monotonic() - started, 3),
                 "evaluation": {"score": 0, "passed": False, "checks": {"worker_completed": False}},
+                "message": "The worker did not finish within the task deadline; partial activity is preserved below. Usage is incomplete, not zero.",
+                "partial_events": partial_events,
                 "agents": [], "tool_events": [], "artifacts": {}, "fixture_hash": digest(data), "artifact_hashes": {},
-                "usage": {"model_calls": [], "tool_requests": 0, "reserved_tokens": 0, "actual_tokens": None,
+                "usage": {"model_calls": [], "tool_requests": None, "reserved_tokens": None, "actual_tokens": None,
                           "estimated_reserved_usd": None, "actual_cost": None, "usage_incomplete": True}}
     finally:
         stop.set()
@@ -514,6 +543,12 @@ def run_experiment(configs, output, repeats=5, stopped=None, on_progress=None, b
     output.mkdir(parents=True, exist_ok=True)
     path = output / "experiment.json"
     serialized = [c.model_dump() for c in configs]
+    # Preserve legacy prompt-run hashes/resume identities. Native/auto routes
+    # remain explicit and produce distinct experiment identities.
+    for item in serialized:
+        for member in item["agents"]:
+            if member.get("tool_calling_mode") == "prompt":
+                member.pop("tool_calling_mode", None)
     fixture_hashes = {f"{task}:{seed}": digest(fixture(task, seed)) for task in task_ids for seed in range(1, repeats + 1)}
     contract_hash = hashlib.sha256((Path(__file__).parent / "tasks.py").read_bytes()).hexdigest()
     identity = digest({"configs": serialized, "suite": SUITE, "repeats": repeats, "fixtures": fixture_hashes, "contract": contract_hash})
@@ -612,8 +647,8 @@ def summaries(record):
                      "median_seconds": ((times[(n-1)//2] + times[n//2])/2) if n else None,
                      "p95_seconds": times[math.ceil(.95*n)-1] if n else None,
                      "actual_tokens": sum(actuals) if actuals and all(v is not None for v in actuals) else None,
-                     "reserved_tokens": sum(r["usage"]["reserved_tokens"] for r in attempts),
-                     "tool_requests": sum(r["usage"]["tool_requests"] for r in attempts),
+                     "reserved_tokens": None if any(r["usage"].get("usage_incomplete") for r in attempts) else sum(r["usage"]["reserved_tokens"] for r in attempts),
+                     "tool_requests": None if any(r["usage"].get("usage_incomplete") for r in attempts) else sum(r["usage"]["tool_requests"] for r in attempts),
                      "estimated_reserved_usd": sum(costs) if costs and all(v is not None for v in costs) else None,
                      "violations": sum(e.get("status") == "denied" for r in attempts for e in r["tool_events"]),
                      "qualified": len(task_ids) == len(TASKS) and record["repeats"] >= 5 and all(t["passed"] == record["repeats"] for t in tasks.values()),

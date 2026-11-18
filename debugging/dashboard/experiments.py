@@ -291,8 +291,16 @@ def install(server):
             state = job["status"] if job else record["status"]
             if not job and state == "running":
                 state = "interrupted"
+            activity = list(job["events"]) if job else []
+            if not activity:
+                try:
+                    activity = json.loads((path / "activity.json").read_text(encoding="utf-8"))["events"]
+                except (OSError, ValueError, KeyError, TypeError):
+                    activity = []
+            if not activity and record:
+                activity = [event for attempt in record.get("attempts", []) for event in attempt.get("partial_events", [])][-200:]
             return {"id": job_id, "status": state, "progress": job["progress"] if job else {"completed": len(record["attempts"]), "scheduled": record["scheduled"]},
-                    "summaries": summaries(record) if record else [], "configs": record["configs"] if record else [], "repeats": record["repeats"] if record else 5, "selected_tasks": record.get("selected_tasks", list(TASKS)) if record else list(TASKS), "attempts": record["attempts"] if record else [], "events": list(job["events"]) if job else []}
+                    "summaries": summaries(record) if record else [], "configs": record["configs"] if record else [], "repeats": record["repeats"] if record else 5, "selected_tasks": record.get("selected_tasks", list(TASKS)) if record else list(TASKS), "attempts": record["attempts"] if record else [], "events": activity}
 
     @app.post("/api/benchmarks/{job_id}/stop")
     def stop(job_id: str):

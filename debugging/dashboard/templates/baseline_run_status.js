@@ -14,7 +14,11 @@ function showTable(result){
  document.getElementById('baseline-table').replaceChildren(...((result.summaries||[]).length?[table]:[el('p','Comparison results will appear here after the first attempt finishes.')]));
 }
 function failureReason(attempt){
- if(attempt.status==='timeout')return 'The task reached its time limit before finishing.';
+ if(attempt.status==='timeout'){
+  const events=attempt.partial_events||[], rejected=events.filter(e=>e.type==='warning'&&(e.content||'').includes('Model response rejected')).length;
+  const succeeded=events.filter(e=>e.type==='tool_succeeded').length,last=events.at(-1);
+  return 'The task reached its time limit before finishing.'+(rejected?' '+rejected+' model responses were rejected for action format.':'')+(succeeded?' '+succeeded+' tool call(s) succeeded.':'')+(last?' Last activity: '+(last.content||last.type):' Partial usage/evidence is unavailable; empty counters do not prove no work occurred.');
+ }
  const agent=(attempt.agents||[]).find(a=>a.error_type||a.status==='error'||(a.status==='incomplete'&&a.message));
  if(agent){
   const messages={APITimeoutError:'The model request timed out before a response arrived. Check the model server and its response time.',TimeoutError:'Execution reached its time limit.',APIConnectionError:'Playpen could not connect to the model server. Check that it is running and reachable.'};
@@ -45,12 +49,12 @@ async function poll(){
  const id=job,requestVersion=version;if(!id)return;clearTimeout(timer);
  try{
   const result=await api('/api/benchmarks/'+id);if(id!==job||requestVersion!==version)return;
-  const attempts=result.attempts||[],done=result.progress?.completed??attempts.length,total=result.progress?.scheduled??0;
+  const attempts=result.attempts||[];for(const a of attempts){if(a.status==='timeout'&&!a.partial_events?.length)a.partial_events=(result.events||[]).filter(e=>e.task===a.task&&(e.config_index===undefined||e.config_index===a.config_index)&&(e.repetition===undefined||e.repetition===a.repetition));}const done=result.progress?.completed??attempts.length,total=result.progress?.scheduled??0;
   const passed=attempts.filter(a=>a.evaluation?.passed).length,failed=attempts.length-passed;
   progress.max=Math.max(1,total);progress.value=done;
-  const events=result.events?.length?result.events:attempts.flatMap(a=>(a.agents||[]).flatMap(agent=>(agent.trace||[]).map(e=>({...e,task:a.task,agent_id:agent.agent_id})))).slice(-200);
+  const events=result.events?.length?result.events:attempts.flatMap(a=>[...(a.partial_events||[]),...(a.agents||[]).flatMap(agent=>(agent.trace||[]).map(e=>({...e,task:a.task,agent_id:agent.agent_id})))]).slice(-200);
   document.getElementById('baseline-activity').textContent=events.length?events.map(e=>(e.task||'')+' '+(e.agent_id||'')+' '+e.type+': '+(e.content||'')).join('\n'):'Waiting for the model server to prepare a model or return its first response…';
-  const latest=events.at(-1);detail.textContent='Viewing run '+id+' · '+(result.configs||[]).map(c=>c.name+': '+(c.agents||[]).map(a=>a.backend+' / '+a.model).join(', ')).join('; ')+(latest?' · Latest activity: '+(latest.content||latest.type):'')+(startedAt?' · '+Math.max(0,Math.floor((Date.now()-startedAt)/1000))+' seconds since launch':'');
+  const latest=events.at(-1);detail.textContent='Viewing run '+id+' · '+(result.configs||[]).map(c=>c.name+': '+(c.agents||[]).map(a=>a.backend+' / '+a.model+' · tool calling: '+(a.tool_calling_mode||'prompt (legacy)')).join(', ')).join('; ')+(latest?' · Latest activity: '+(latest.content||latest.type):'')+(startedAt?' · '+Math.max(0,Math.floor((Date.now()-startedAt)/1000))+' seconds since launch':'');
   outcome.textContent=attempts.length?passed+' passed · '+failed+' failed / incomplete · '+Math.max(0,total-done)+' remaining. A finished attempt counts as a pass only when all required checks succeed.':'No attempts have finished yet. This does not mean the run is idle.';
   const lastFailure=attempts.filter(a=>!a.evaluation?.passed).at(-1);if(lastFailure)outcome.textContent+=' Latest failure: '+failureReason(lastFailure);
   showTable(result);showEvidence(result);

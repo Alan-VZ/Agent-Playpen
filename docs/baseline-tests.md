@@ -235,3 +235,16 @@ Final JSON reports belong in FINISH. No fixture answers or scoring checks change
 ## November 17 integration update
 
 All selected agent tools now execute through the shared Universal Agent Control Plane gateway. The [universal tool guide](universal-tools.md) documents typed contracts, readiness, the direct console, native/prompt model adapters, MCP exposure/connections, execution records, replay and timeout limits. The [issue register](issues-and-resolutions.md) distinguishes observed problems, implemented resolutions and remaining limits; [credits and sources](credits-and-sources.md) acknowledges the upstream creators. Historical study outputs and baseline-v1 scoring remain unchanged. A successful tool operation does not establish final-answer faithfulness or general model reliability.
+
+
+## November 18 baseline-route correction
+
+Run 711a02bdf768405c9db294920cf56a3f reached its 180-second task deadline plus about 10 seconds of worker supervision. Live evidence showed two rejected multi-action/invented-observation responses, then a successful read_fixture call through uacp-tools-v1, followed by waiting for a fourth model response. The original result retained only worker_completed=false and incomplete usage. This is an instruction/protocol-and-time-budget failure, not evidence of a wrong final arithmetic answer. Recovered live activity is retained in a local additive activity.json sidecar; original experiment/scoring files are unchanged.
+
+A baseline-specific MeteredBackend wrapper bypassed the newly added native model adapter. It now forwards native requests and actual tool observations while preserving token reservations, deadlines and usage accounting. New browser baseline presets use tool_calling_mode=auto; the builder exposes Auto/Native/Prompt per agent and workspace transfers preserve the selection. Older configurations without a mode remain prompt for reproducibility; choose Auto explicitly when copying an older run. Controlled A/B study definitions retain their existing prompt route unless explicitly configured otherwise. The fixture/scorer and original historical scores are unchanged.
+
+New forced-timeout results retain redacted partial activity. Incomplete usage totals display Unknown rather than misleading zero tool calls/reservations. The baseline view uses partial activity to explain rejected responses, successful tools and the last operation. Native calling improves the interface path; it does not guarantee a model will finish within its budget or solve the task correctly.
+
+For a local smoke run use B01, one repeat, Tool calling Auto, temperature 0, and an explicit 180–300 second task budget appropriate to local inference speed. More time does not fix invented observations or incorrect reasoning. LM Studio's server origin is http://127.0.0.1:1234; the OpenAI-compatible base URL in Playpen is http://127.0.0.1:1234/v1 (localhost is also valid). No repeated model inventory or model switching is needed to correct the calling route.
+
+Validation for the November 18 correction: 522 application tests passed, including native metering/result pairing, forced-timeout partial evidence, durable recovered activity and unknown usage accounting. Baseline task-transfer and feedback DOM checks passed. No new live-model pass is inferred from these application tests.

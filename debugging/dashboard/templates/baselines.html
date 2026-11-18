@@ -16,7 +16,7 @@
 (() => {
  const token={{ session_token | tojson }}, configInput=document.getElementById('baseline-config'), message=document.getElementById('baseline-message');
  let job=null,timer=null,version=0,launching=false,startedAt=null;
- const base=()=>({name:'single-local',agents:[{backend:'lm_studio',model:'local-model',role:'Independent researcher',planner:'react',temperature:0}],max_concurrency:1,timeout_seconds:180,token_reservation_limit:300000,tool_request_limit:120});
+ const base=()=>({name:'single-local',agents:[{backend:'lm_studio',model:'local-model',role:'Independent researcher',planner:'react',tool_calling_mode:'auto',temperature:0}],max_concurrency:1,timeout_seconds:180,token_reservation_limit:300000,tool_request_limit:120});
  const rebuild=window.installBaselineBuilder(configInput);
  const presets=team=>{const single=base(),configs=[single];if(team){const group=base();group.name='team-local';group.max_concurrency=2;group.agents=[{...single.agents[0]},{...single.agents[0],role:'Independent verifier: check contradictions and missing facts.'},{...single.agents[0],role:'Critic and synthesizer: preserve evidence-backed dissent.'}];configs.push(group);}configInput.value=JSON.stringify(configs,null,2);rebuild();};presets(false);
  try {
@@ -25,10 +25,10 @@
    if(params.has('tasks'))window.playpenBaselineTasks.select(params.get('tasks').split(','));
    if(params.has('backend')){
      const config=base(),member=config.agents[0];config.name='workspace-agent';
-     for(const key of ['backend','model','planner','base_url'])if(params.has(key))member[key]=params.get(key);
+     for(const key of ['backend','model','planner','base_url','tool_calling_mode'])if(params.has(key))member[key]=params.get(key);
      if(params.has('temperature'))member.temperature=Number(params.get('temperature'));
      for(const key of ['max_iterations','max_output_tokens'])if(params.has(key))config[key]=Number(params.get(key));
-     if(params.has('models')){const slots=JSON.parse(params.get('models'));if(!Array.isArray(slots)||!slots.length||slots.length>10)throw new Error('Choose between 1 and 10 models.');config.agents=slots.map(slot=>({backend:slot.backend,model:slot.model,base_url:slot.base_url||null,role:slot.role||'Independent researcher',planner:member.planner,temperature:member.temperature}));config.name='workspace-models';config.max_concurrency=3;}
+     if(params.has('models')){const slots=JSON.parse(params.get('models'));if(!Array.isArray(slots)||!slots.length||slots.length>10)throw new Error('Choose between 1 and 10 models.');config.agents=slots.map(slot=>({backend:slot.backend,model:slot.model,base_url:slot.base_url||null,role:slot.role||'Independent researcher',planner:member.planner,tool_calling_mode:member.tool_calling_mode,temperature:member.temperature}));config.name='workspace-models';config.max_concurrency=3;}
      configInput.value=JSON.stringify([config],null,2);rebuild();
      message.textContent='Selected tasks and current agent settings loaded. Review the choices, add comparison agents if desired, then run.';
    }
