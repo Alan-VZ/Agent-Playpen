@@ -24,7 +24,19 @@ class ToolRegistry:
 
     def to_openai_schemas(self) -> list[dict]:
         """Return OpenAI function schemas for all registered tools."""
-        return [t.to_openai_schema() for t in self._tools.values()]
+        from tools.gateway import tool_spec
+
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": spec.name,
+                    "description": spec.description,
+                    "parameters": spec.input_schema,
+                },
+            }
+            for spec in (tool_spec(tool) for tool in self._tools.values())
+        ]
 
     @classmethod
     def from_yaml_config(cls, path: str) -> "ToolRegistry":
@@ -39,10 +51,16 @@ class ToolRegistry:
         from tools.packs.filesystem.write_file import WriteFileTool
         from tools.packs.code.python_repl import PythonReplTool
 
-        from tools.packs.utils.scientific_calculator_tool import ScientificCalculatorTool
+        from tools.packs.utils.scientific_calculator_tool import (
+            ScientificCalculatorTool,
+        )
+        from tools.packs.utils.calculator_tool import CalculatorTool
+        from tools.packs.utils.datetime_tool import DatetimeTool
 
         TOOL_CLASSES = {
             "scientific_calculator": ScientificCalculatorTool,
+            "calculator": CalculatorTool,
+            "datetime": DatetimeTool,
             "web_search": WebSearchTool,
             "fetch": FetchTool,
             "nimble_extract": NimbleExtractTool,
@@ -61,4 +79,3 @@ class ToolRegistry:
                     registry.register(TOOL_CLASSES[tool_name]())
 
         return registry
-    

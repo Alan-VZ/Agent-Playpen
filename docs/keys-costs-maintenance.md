@@ -217,3 +217,8 @@ Use the [Maintenance screen](maintenance-screen.md) for provider onboarding, enc
 For input/output model token rates across backends, see [model pricing](model-pricing.md) and the dashboard's comparison screen.
 
 Maintainers: edit `debugging/dashboard/setup_guide.py`, recheck primary sources, and run `python -m debugging.dashboard.setup_guide --write-docs` to refresh this document. The dashboard uses the same snapshot.
+
+
+## November 17 integration update
+
+All selected agent tools now execute through the shared Universal Agent Control Plane gateway. The [universal tool guide](universal-tools.md) documents typed contracts, readiness, the direct console, native/prompt model adapters, MCP exposure/connections, execution records, replay and timeout limits. The [issue register](issues-and-resolutions.md) distinguishes observed problems, implemented resolutions and remaining limits; [credits and sources](credits-and-sources.md) acknowledges the upstream creators. Historical study outputs and baseline-v1 scoring remain unchanged. A successful tool operation does not establish final-answer faithfulness or general model reliability.

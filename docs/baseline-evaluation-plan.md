@@ -173,3 +173,8 @@ Gate: publish a dated comparison artifact with all scheduled attempts, failures,
 Deliver credential readiness and the API setup window, the five frozen tasks, deterministic scorers, single-agent CLI, and an HTML/CSV comparison report. Demonstrate missing-key recovery with mocked providers and one real local-model configuration for five repeats per task. This provides useful evidence before the larger dashboard/team work and establishes the common contract every future agent combination must satisfy.
 
 Later extensions: opt-in live web/provider comparisons, account-wide usage controls, bounded MCP integration, read-only Home Assistant export review, calibrated multi-agent aggregation, and longer-running stability tests. These do not block the first milestone.
+
+
+## November 17 integration update
+
+All selected agent tools now execute through the shared Universal Agent Control Plane gateway. The [universal tool guide](universal-tools.md) documents typed contracts, readiness, the direct console, native/prompt model adapters, MCP exposure/connections, execution records, replay and timeout limits. The [issue register](issues-and-resolutions.md) distinguishes observed problems, implemented resolutions and remaining limits; [credits and sources](credits-and-sources.md) acknowledges the upstream creators. Historical study outputs and baseline-v1 scoring remain unchanged. A successful tool operation does not establish final-answer faithfulness or general model reliability.

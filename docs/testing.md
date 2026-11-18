@@ -92,3 +92,10 @@ and mocked HTTP: provider-specific request/response contracts, bounded output,
 missing keys, quota/authentication failures, disabled redirects, and fallback.
 The dashboard DOM smoke also checks selecting and saving each search key.
 These tests make no paid API calls and do not measure live retrieval quality.
+
+
+## November 17 integration update
+
+All selected agent tools now execute through the shared Universal Agent Control Plane gateway. The [universal tool guide](universal-tools.md) documents typed contracts, readiness, the direct console, native/prompt model adapters, MCP exposure/connections, execution records, replay and timeout limits. The [issue register](issues-and-resolutions.md) distinguishes observed problems, implemented resolutions and remaining limits; [credits and sources](credits-and-sources.md) acknowledges the upstream creators. Historical study outputs and baseline-v1 scoring remain unchanged. A successful tool operation does not establish final-answer faithfulness or general model reliability.
+
+Universal-tool browser regression: `python tests/render_baseline_ui.py` then `node tests/universal_tools_ui.cjs`. The existing `.test-tmp/ui-test` jsdom installation is required, as for the other DOM checks. Native transport tests stub provider responses; a native production-agent test checks the actual assistant tool-call / tool-result message pairing. Real MCP stdio tests start the local server and make successive calls through one connection.

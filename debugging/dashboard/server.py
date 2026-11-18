@@ -44,6 +44,7 @@ from tools.packs.web.fetch_tool import FetchTool
 from tools.packs.web.nimble_extract import NimbleExtractTool
 from tools.packs.web.search_tool import WebSearchTool
 from tools.tool_registry import ToolRegistry
+from tools.external_mcp import connected_tools
 
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_DIR = ROOT / "debugging" / "dashboard" / "templates"
@@ -310,6 +311,7 @@ class AgentConfig(BaseModel):
     api_key: str = ""
     temperature: float = 0.7
     max_tokens: int = Field(default=2048, ge=1)
+    tool_calling_mode: str = Field(default=os.getenv("TOOL_CALLING_MODE", "auto"), pattern="^(auto|native|prompt)$")
     planner: str = "react"
     tools: list[str] = Field(default_factory=lambda: ["web_search", "fetch", "calculator"])
     task: str = ""
@@ -348,6 +350,9 @@ def _tool_factory(name: str, config: AgentConfig):
         return CalculatorTool()
     if name == "datetime":
         return DatetimeTool()
+    from tools.external_mcp import connected_tools
+    if name in connected_tools():
+        return connected_tools()[name]
     raise ValueError(f"Unsupported tool: {name}")
 
 
@@ -421,7 +426,7 @@ def home(request: Request):
             "session_token": API_TOKEN,
             "backends": list(BackendFactory.REGISTRY.keys()),
             "planners": list(PLANNER_MAP.keys()),
-            "tools": TOOL_CHOICES,
+            "tools": TOOL_CHOICES + list(connected_tools()),
         },
     )
 
@@ -528,11 +533,11 @@ def _execute_single_run(config: AgentConfig, on_event=None, cancel_event=None):
     try:
         tracer.on_status(f"Connecting to {config.backend} / {config.model}.")
         backend = _build_backend(config)
+        backend.tool_calling_mode = config.tool_calling_mode
         planner = PLANNER_MAP[config.planner](backend=backend)
         registry = ToolRegistry()
         for tool_name in config.tools:
-            if tool_name in TOOL_CHOICES:
-                registry.register(_tool_factory(tool_name, config))
+            registry.register(_tool_factory(tool_name, config))
         tracer.on_status("Tools ready: " + (", ".join(registry.list_all()) or "none"))
         agent = Agent(
             backend=backend, planner=planner, tool_registry=registry,
@@ -559,6 +564,7 @@ def _execute_single_run(config: AgentConfig, on_event=None, cancel_event=None):
                 pass
             payload["api_setup_required"] = code == 401
     finally:
+        payload["tool_results"] = [json.loads(event.content) for event in tracer.events if event.type == "tool_result"]
         payload["warning_count"] = sum(event.type == "warning" for event in tracer.events)
         try:
             payload["trace_path"] = tracer.save()
@@ -1011,6 +1017,7 @@ async def save_env(request: Request):
         "LM_STUDIO_TEMPERATURE": str(payload.get("temperature", 0.7)),
         "LM_STUDIO_MAX_TOKENS": str(payload.get("max_tokens", 2048)),
         "TOOLS_ENABLED": ",".join(payload.get("tools", ["web_search", "fetch", "calculator"])),
+        "TOOL_CALLING_MODE": str(payload.get("tool_calling_mode", "auto")),
         "WEB_SEARCH_PROVIDER": str(payload.get("search_provider", "auto")),
         "ALLOWED_DIRS": str(payload.get("allowed_dirs", ".")),
         "MAX_ITERATIONS": str(payload.get("max_iterations", 10)),
@@ -1032,6 +1039,8 @@ import sys  # noqa: E402
 experiments.install(sys.modules[__name__])
 from debugging.dashboard import scientific  # noqa: E402
 scientific.install(sys.modules[__name__])
+from debugging.dashboard import tool_gateway  # noqa: E402
+tool_gateway.install(sys.modules[__name__])
 
 
 if __name__ == "__main__":

@@ -144,3 +144,8 @@ provider requests from using a key. Stronger isolation requires a separate
 restricted worker account/container and a narrowly scoped credential broker.
 Use provider-side spend limits and rotate keys as appropriate. No live key is
 needed for the automated suite; its keyring is an in-memory test double.
+
+
+## November 17 integration update
+
+All selected agent tools now execute through the shared Universal Agent Control Plane gateway. The [universal tool guide](universal-tools.md) documents typed contracts, readiness, the direct console, native/prompt model adapters, MCP exposure/connections, execution records, replay and timeout limits. The [issue register](issues-and-resolutions.md) distinguishes observed problems, implemented resolutions and remaining limits; [credits and sources](credits-and-sources.md) acknowledges the upstream creators. Historical study outputs and baseline-v1 scoring remain unchanged. A successful tool operation does not establish final-answer faithfulness or general model reliability.

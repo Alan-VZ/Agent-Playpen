@@ -34,3 +34,5 @@ save-and-commit.ps1
 # Local Qalculate runtime configuration and generated plots
 config/qalculate.json
 qalculate-output/
+
+config/mcp_servers.json

@@ -84,3 +84,8 @@ After changing dependencies, install `.[dashboard,web-tools,dev]` in the active
 environment. Restart the server and hard-refresh the page to load new routes,
 UI behavior, and search-provider choices. The local working environment may
 already have been updated by the repair; these are reproducible setup steps.
+
+
+## November 17 integration update
+
+All selected agent tools now execute through the shared Universal Agent Control Plane gateway. The [universal tool guide](universal-tools.md) documents typed contracts, readiness, the direct console, native/prompt model adapters, MCP exposure/connections, execution records, replay and timeout limits. The [issue register](issues-and-resolutions.md) distinguishes observed problems, implemented resolutions and remaining limits; [credits and sources](credits-and-sources.md) acknowledges the upstream creators. Historical study outputs and baseline-v1 scoring remain unchanged. A successful tool operation does not establish final-answer faithfulness or general model reliability.

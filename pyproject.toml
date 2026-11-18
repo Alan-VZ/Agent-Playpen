@@ -9,6 +9,7 @@ description = "Modular AI agent scaffold for local and cloud LLMs"
 requires-python = ">=3.11"
 
 dependencies = [
+    "universal-agent-control-plane @ git+https://github.com/Alan-VZ/universal-agent-control-plane.git@c770b262154c32d7e1d6056f1fe15d1159c9a6de",
     "keyring>=25.0.0",
     "httpx>=0.27.0",
     "python-dotenv>=1.0.0",
@@ -20,6 +21,9 @@ dependencies = [
     "structlog>=24.1.0",
     "rich>=13.7.0",
 ]
+
+[project.scripts]
+agent-playpen-tools = "tools.mcp_server:main"
 
 [project.optional-dependencies]
 web-tools = [
@@ -78,11 +82,14 @@ extend-exclude = [".venv-test", ".test-tmp"]
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["playpen_qalculate", "advanced", "backends", "config", "core", "debugging", "memory", "planner", "tools", "examples", "benchmarks"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/playpen_qalculate", "/advanced", "/backends", "/config/*.py", "/config/*.yaml", "/core", "/debugging", "/memory", "/planner", "/tools", "/examples", "/benchmarks", "/tests", "/docs", "/README.md", "/todo.md", "/LICENSE", "/pyproject.toml"]
+include = ["/playpen_qalculate", "/advanced", "/backends", "/config/*.py", "/config/*.yaml", "/config/*.example.json", "/core", "/debugging", "/memory", "/planner", "/tools", "/examples", "/benchmarks", "/tests", "/docs", "/README.md", "/todo.md", "/LICENSE", "/pyproject.toml"]
 exclude = ["/config/web_agent_config.json"]
 
 [tool.pytest.ini_options]

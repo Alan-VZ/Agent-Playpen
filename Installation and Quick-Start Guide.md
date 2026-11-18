@@ -99,13 +99,8 @@ Open your browser to: `http://localhost:8765`
 ### Using the web dashboard
 
 1. **Select Backend** — Choose "lm_studio" (local) or a cloud provider such as "openrouter"; save its key with the credential manager before running
-2. **Refresh model list** — Discover available model IDs; this does not load model weights
-3. **Select a Model** — Pick from the dropdown (filters as you type)
-   For LM Studio, use **Load selected model in LM Studio** and wait for verified
-   loaded status. **Check loaded status** checks memory state without loading.
-   **Unload other loaded text models first** is checked by default to release
-   memory before switching. Uncheck it only when deliberately keeping multiple
-   models loaded. A failed unload prevents the new load from starting.
+2. **Choose model** — Open the model picker to view available models. For LM Studio, selecting a model unloads the previous text model, loads your choice, and verifies the active model. Wait for the displayed active status. Discovery/loading is separate from running an agent.
+3. **Select tools and calling mode** — Auto uses native tool calls for supported OpenAI-compatible clients; Prompt retains legacy ReAct. All selected tools use the universal gateway. Open **Menu → Universal tools & MCP** to check local readiness and test a tool without an LLM.
 4. **Configure Tools** — Check which tools to enable (web_search, fetch, read_file, etc.)
 5. **Enter Your Task** — Describe what you want the agent to do
 6. **Run Agent** — Click the button and watch model/tool activity
@@ -217,3 +212,8 @@ See [testing](docs/testing.md) and [credential security](docs/credentials-and-op
 - **Check the tool packs** — Understand what tools are available and how to add custom ones
 - **Review debugging/** — Learn about tracing, cost tracking, and the dashboard
 - **Study the planner strategies** — Read `planner/ReAct vs. Chain-of-Thought — Comparison.md`
+
+
+## Universal tool setup and findings
+
+See [universal tool setup](docs/universal-tools.md), [observed issues/resolutions](docs/issues-and-resolutions.md), and [creator acknowledgements](docs/credits-and-sources.md). `python -m tools.mcp_server` exposes the same tool contracts over local MCP stdio; writes require an explicit flag. The scientific calculator needs the separate Qalculate CLI. MCP server connections come only from trusted local configuration, with no command or secret fields accepted through the agent API.

@@ -1,0 +1,24 @@
+# Creators, dependencies and research sources
+
+Agent Playpen and Universal Agent Control Plane are Alan Van Zandt's projects. Their integration combines a shared execution contract with Playpen's tools, model adapters, UI and evaluations. The following creators supplied essential software or published ideas. Acknowledgement does not imply endorsement or that their benchmark scores transfer to this application.
+
+## Software used
+
+- **Qalculate! contributors:** [qalculate-gtk](https://github.com/Qalculate/qalculate-gtk), [libqalculate/qalc](https://github.com/Qalculate/libqalculate), [CLI manual](https://qalculate.github.io/manual/qalc.html). The external qalc engine performs actual high-precision scientific calculations and unit/symbolic operations. The Python bridge and sampled SVG rendering are Playpen code; no GTK UI or binary is vendored. Qalculate's GPL licensing is separate from the MIT bridge.
+- **Model Context Protocol maintainers and contributors:** [specification](https://modelcontextprotocol.io/specification/latest/server/tools), [official Python SDK](https://github.com/modelcontextprotocol/python-sdk), [Inspector](https://github.com/modelcontextprotocol/inspector). The integration uses the official Python SDK for typed tool discovery/calls, structured results and stdio connections. Inspector is an optional independent diagnostic tool, not a runtime dependency.
+- **Python jsonschema contributors:** [validator](https://github.com/python-jsonschema/jsonschema). Draft 2020-12 validates input/output contracts; external schema references are disabled by our gateway.
+- **Pydantic contributors:** [Pydantic](https://github.com/pydantic/pydantic) supplies application/API models. **FastAPI, Starlette, Uvicorn, Jinja, HTTPX, Requests, keyring, and Python contributors** supply the existing application, transport, templates and credential/runtime foundations. Python Decimal provides the bounded basic calculator's 50-digit decimal arithmetic. See pyproject.toml for declared dependencies and each upstream project's license.
+- **Universal Agent Control Plane, Alan Van Zandt and contributors:** [repository](https://github.com/Alan-VZ/universal-agent-control-plane). Its registry, explicit adapter, allowlist and audit design is extended with the reusable tool_gateway, tool_mcp and tool_client modules. The projects stay separate repositories with an explicit dependency.
+
+## Research and design inspiration
+
+- **PAL, Gao et al., ICML 2023:** [Program-aided Language Models](https://proceedings.mlr.press/v202/gao23f.html). Inspired separating language-based interpretation from executable computation. Playpen uses bounded Qalculate expressions, not arbitrary generated Python; this is not a reproduction of PAL's evaluation.
+- **Pydantic AI contributors:** [tool validation/retries](https://pydantic.dev/docs/ai/tools-toolsets/tools-advanced/). Informs precise validation feedback and bounded recovery. Pydantic AI is not a new framework dependency; Playpen retains its agent loop and does not automatically retry tool execution.
+- **Anthropic engineering:** [Writing effective tools for agents](https://www.anthropic.com/research/writing-tools-for-agents). Informs clear names/descriptions, useful bounded responses and evaluation-driven tool design. MCP exposure alone does not guarantee successful use.
+- **Berkeley/Gorilla BFCL authors and contributors:** [Function Calling Leaderboard](https://gorilla.cs.berkeley.edu/leaderboard.html). Informs separating function selection, arguments, calling format and multi-turn success. Playpen's synthetic B01–B05 are its own tasks, not BFCL scores.
+- **Apple ToolSandbox authors and contributors:** [stateful tool-use benchmark](https://github.com/apple-aiml-research/ToolSandbox). Informs intermediate milestones and state/dependency testing instead of judging only final prose.
+- **Sierra Research tau-bench authors and contributors:** [paper](https://arxiv.org/abs/2406.12045), [repository](https://github.com/sierra-research/tau-bench). Informs repeated-success reliability: pass^k asks about success across k trials, distinct from pass@k's at-least-one success.
+
+Our five-task findings come from the project's own saved experiment, not these upstream evaluations. Source links were reviewed November 17, 2026; SDK behavior is validated against the installed version and tests rather than assumed from a blog post. No upstream code beyond declared packages was copied into the tool gateway.
+
+The project owner also supplied a private November 12 review and subsequent VS Code diagnostic notes. Their concerns about evidence of useful agents, timeout semantics, filesystem/credential boundaries, protocol parsing and failure categorization informed the issue register. They are paraphrased without publishing private correspondence or contact details; they are feedback, not execution instructions or reliability certification.

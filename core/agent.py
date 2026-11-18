@@ -34,6 +34,7 @@ class Agent:
         self.executor = ToolExecutor(tool_registry)
         self.memory = memory_manager
         self.tracer = tracer
+        self.executor.on_event = lambda event: self.tracer.on_status(f"Tool {event['tool']}: {event['status']} · execution {event['execution_id']}", "tool_" + event["status"])
         self.max_iterations = max_iterations
         self.cancel_event = cancel_event
         self.completion_status = "running"
@@ -48,6 +49,8 @@ class Agent:
         """Execute a task end-to-end and return the final answer."""
         self.completion_status = "running"
         self.stop_reason = "The iteration budget or planned steps ended."
+        if getattr(type(self.backend), "reset_tool_session", None):
+            self.backend.reset_tool_session()
         cached_reads = {}
         read_attempts = {}
         format_errors = 0
@@ -84,6 +87,8 @@ class Agent:
             except AgentResponseFormatError as exc:
                 format_errors += 1
                 feedback = redact(str(exc))
+                if getattr(type(self.backend), "accept_tool_result", None):
+                    self.backend.accept_tool_result("Error: " + feedback)
                 self.tracer.on_status("Model response rejected: " + feedback, "warning")
                 if format_errors >= 3:
                     self.completion_status = "incomplete"
@@ -127,6 +132,8 @@ class Agent:
                 if read_key is not None:
                     cached_reads[read_key] = action_result
             self._check_cancelled()
+            if getattr(type(self.backend), "accept_tool_result", None):
+                self.backend.accept_tool_result(action_result)
             if isinstance(action_result, str) and action_result.lower().startswith(("no results", "fetch error", "error:", "[error]")):
                 self.tracer.on_status("The tool returned no usable result or an error. Try another query/source; this is not evidence that the requested document does not exist.", "warning")
             ctx.action_history.append(action_result)
@@ -160,7 +167,8 @@ class Agent:
         """Call the backend to produce a Thought."""
         prompt = self.planner.format_thought_prompt(step, ctx)
         self.tracer.on_status(f"Step {ctx.iteration + 1}: waiting for the model response.", "model_request")
-        raw = self.backend.chat(prompt)
+        native = getattr(type(self.backend), "chat_with_tools", None)
+        raw = self.backend.chat_with_tools(prompt, self.executor.registry.to_openai_schemas()) if native else self.backend.chat(prompt)
         self._check_cancelled()
         stats = getattr(self.backend, "last_response_stats", None)
         summary = f"Step {ctx.iteration + 1}: model response received ({len(raw) if isinstance(raw, str) else 0} text characters)."
@@ -187,8 +195,13 @@ class Agent:
         to retry if the model made a typo in tool arguments.
         """
         try:
-            return self.executor.run(thought.tool_name, thought.tool_args)
+            value = self.executor.run(thought.tool_name, thought.tool_args)
+            if isinstance(self.executor.last_result, dict):
+                self.tracer.on_tool_result(self.executor.last_result)
+            return value
         except Exception as exc:
+            if isinstance(self.executor.last_result, dict):
+                self.tracer.on_tool_result(self.executor.last_result)
             self.tracer.on_error(exc)
             # Return error as a recoverable observation, not a crash
             return redact(f"Error: {thought.tool_name} failed: {exc}")

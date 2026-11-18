@@ -12,6 +12,7 @@ def check_sensitive_path(path: Path) -> None:
         if (name.startswith(".env") and name != ".env.example") or name in {
             ".ssh", ".aws", ".azure", ".gnupg", ".codex", ".git", ".venv", ".venv-test",
             "credentials", "vault", "keyrings", "secrets",
+            "mcp_servers.json", "qalculate.json",
         }:
             raise PermissionError("Agent file tools cannot access credential or private configuration paths.")
         if Path(name).stem in {"credentials", "secrets", "vault", "keyring"} or Path(name).suffix in {".key", ".pem", ".pfx", ".p12"}:

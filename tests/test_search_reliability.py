@@ -68,7 +68,8 @@ def test_duplicate_search_uses_cache_and_stops_loop(tmp_path):
     tool = Mock()
     tool.name = "web_search"
     tool.run.return_value = "No results found."
-    tool.to_openai_schema.return_value = {"function": {"name": "web_search"}}
+    tool.description = "Synthetic search"
+    tool.to_openai_schema.return_value = {"function": {"name": "web_search", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}}
     registry = ToolRegistry()
     registry.register(tool)
     agent = Agent(backend, ReActPlanner(backend), registry, MemoryManager(), Tracer(str(tmp_path)), max_iterations=10)

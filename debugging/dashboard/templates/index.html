@@ -467,8 +467,9 @@
             </div>
 
             <div class="field">
+              <label for="tool_calling_mode">Tool calling</label><select id="tool_calling_mode"><option value="auto">Auto · native calls where supported</option><option value="native">Require native calls</option><option value="prompt">Prompt / legacy ReAct</option></select><p class="hint">All routes use the universal tool gateway. Provider/model support still varies.</p>
               <label data-help="tools">Tools</label>
-              <div id="tool-list" class="tools"></div>
+              <div id="tool-list" class="tools"></div><p><a href="/tools">Universal tool catalog &amp; direct tests</a></p>
             </div>
 
             <div class="field">
@@ -657,6 +658,7 @@
       document.getElementById('model').value = values.model || defaultState.model;
       document.getElementById('base_url').value = values.base_url || defaultState.base_url;
       document.getElementById('planner').value = values.planner || defaultState.planner;
+      document.getElementById('tool_calling_mode').value = values.tool_calling_mode || 'auto';
       document.getElementById('allowed_dirs').value = values.allowed_dirs || defaultState.allowed_dirs;
       document.getElementById('search_provider').value = values.search_provider || defaultState.search_provider;
       document.getElementById('search_cse_id').value = values.search_cse_id || defaultState.search_cse_id;
@@ -664,7 +666,7 @@
       document.getElementById('temperature').value = values.temperature || defaultState.temperature;
       document.getElementById('max_tokens').value = values.max_tokens || defaultState.max_tokens;
 
-      const toolNames = ['web_search', 'fetch', 'nimble_extract', 'read_file', 'write_file', 'calculator', 'scientific_calculator', 'datetime'];
+      const toolNames = {{ tools | tojson }};
       toolList.innerHTML = '';
       toolNames.forEach((name) => {
         const wrapper = document.createElement('label');
@@ -691,6 +693,7 @@
         model: document.getElementById('model').value,
         base_url: document.getElementById('base_url').value,
         planner: document.getElementById('planner').value,
+        tool_calling_mode: document.getElementById('tool_calling_mode').value,
         tools: selected,
         model_slots: window.playpenModelSlots?.get() || [],
         task: document.getElementById('task').value,
@@ -749,10 +752,10 @@
       const item = document.createElement('details');
       item.className = 'activity-event';
       item.dataset.type = event.type;
-      item.open = ['act', 'observe', 'response', 'error', 'warning'].includes(event.type);
+      item.open = ['act', 'observe', 'response', 'error', 'warning', 'tool_result'].includes(event.type);
       const summary = document.createElement('summary');
       const step = Number.isInteger(event.iteration) ? ' · step ' + (event.iteration + 1) : '';
-      summary.textContent = new Date().toLocaleTimeString() + ' · ' + (event.agent_id || 'agent-1') + step + ' · ' + (labels[event.type] || event.type) + (event.tool_name ? ': ' + event.tool_name : '');
+      summary.textContent = new Date().toLocaleTimeString() + ' · ' + (event.agent_id || 'agent-1') + step + ' · ' + (event.type === 'tool_result' ? 'Verified tool output' : labels[event.type] || event.type) + (event.tool_name ? ': ' + event.tool_name : '');
       const content = document.createElement('pre');
       content.textContent = event.content || (event.type === 'session' ? event.backend + ' / ' + event.model : '');
       item.append(summary, content);

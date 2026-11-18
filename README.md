@@ -772,3 +772,10 @@ repeatable tasks. See [baseline instructions](docs/baseline-tests.md).
 ### Scientific calculator and graphs
 
 Select `scientific_calculator` in the workspace Tools list or open **Menu → Scientific calculator & graphs**. The optional local Qalculate engine provides high-precision calculations, units, symbolic math and scalar 2D SVG plots with precise CSV/JSON downloads. See [setup and usage](docs/scientific-calculator.md) and the [independently installable bridge](playpen_qalculate/README.md).
+
+
+### Universal tools and MCP
+
+Every selected agent tool now uses the reusable [Universal Agent Control Plane](https://github.com/Alan-VZ/universal-agent-control-plane) execution layer: typed request validation, readiness, consistent status/errors, bounded output, verified records and conservative replay. Open **Menu → Universal tools & MCP** for the common catalog and direct execution console. Export the same tools to other hosts with `python -m tools.mcp_server`; explicitly connect allow-listed external MCP servers from local configuration. Native OpenAI-compatible calls and legacy prompt calls converge on this shared layer.
+
+Read [setup, architecture and limits](docs/universal-tools.md), [all observed issues and resolutions](docs/issues-and-resolutions.md), and [creators/research acknowledgements](docs/credits-and-sources.md). The original B01–B05 fixtures/scorer and study results remain preserved; interface improvements require new labeled model measurements. No MCP layer guarantees identical model decisions or halts every remote/in-process side effect on timeout.

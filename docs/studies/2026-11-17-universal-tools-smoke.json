@@ -1,0 +1,103 @@
+{
+  "date": "2026-11-17",
+  "gateway_version": "uacp-tools-v1",
+  "uacp_revision": "1a17b9f2ec8c72f3b99fd615c89b4ba9ebcd6191",
+  "scope": "Two single-case integration smoke observations, not repeated model qualification. No model switching, no paid tool requests, no provider fallback.",
+  "application_tests": 511,
+  "control_plane_tests": 57,
+  "observations": [
+    {
+      "model": "qwen3.5-9b-uncensored-hauhaucs-aggressive@q6_k",
+      "mode": "native",
+      "task": "Calculate speed for 120 km travelled in 2 hours. You must call scientific_calculator with units and report its observed result.",
+      "status": "error",
+      "error": "APITimeoutError",
+      "message": "Request timed out.",
+      "tool_records": []
+    },
+    {
+      "model": "qwen/qwen3.8-27b",
+      "mode": "native",
+      "task": "Use scientific_calculator to calculate the speed for distance 120 km and duration 2 h. Report the exact observed result with units.",
+      "answer": "The speed is 60 km/h (distance 120 km \u00f7 duration 2 h).",
+      "status": "success",
+      "tool_records": [
+        {
+          "execution_id": "1c9226d9a75949f0ad504e5fe62f916e",
+          "gateway_version": "uacp-tools-v1",
+          "tool": "scientific_calculator",
+          "tool_version": "543bda61a14d5de2",
+          "status": "succeeded",
+          "ok": true,
+          "started_at": "2026-11-18T02:58:42.218655+00:00",
+          "duration_ms": 558.865,
+          "arguments": {
+            "expression": "distance/duration",
+            "variables": {
+              "distance": "120 km",
+              "duration": "2 h"
+            }
+          },
+          "result": {
+            "ok": true,
+            "operation": "evaluate",
+            "calculation_id": "f3afcf1113e84e30a122c186494f04ce",
+            "engine": "Qalculate/qalc",
+            "engine_version": "5.13.0",
+            "expression": "distance/duration",
+            "variables": {
+              "distance": "120 km",
+              "duration": "2 h"
+            },
+            "submitted_expression": "(distance/duration) where distance=(120 km) and duration=(2 h)",
+            "precision_digits": 50,
+            "mode": "approximate",
+            "angle_unit": "radians",
+            "result": "60 km/h",
+            "result_format": "qalculate_text",
+            "numeric": false,
+            "warnings": []
+          },
+          "error": null,
+          "replay_of": null,
+          "result_sha256": "b8928154080852e05b033876522ac324234d991d4be5119189789550611c1db2",
+          "arguments_redacted": false
+        },
+        {
+          "execution_id": "7efab7488da2455089c51fd6ed7602d0",
+          "gateway_version": "uacp-tools-v1",
+          "tool": "scientific_calculator",
+          "tool_version": "543bda61a14d5de2",
+          "status": "succeeded",
+          "ok": true,
+          "started_at": "2026-11-18T02:58:43.631199+00:00",
+          "duration_ms": 564.805,
+          "arguments": {
+            "expression": "120 km"
+          },
+          "result": {
+            "ok": true,
+            "operation": "evaluate",
+            "calculation_id": "f417d3b947f14b32a113570e97e90dac",
+            "engine": "Qalculate/qalc",
+            "engine_version": "5.13.0",
+            "expression": "120 km",
+            "variables": {},
+            "submitted_expression": "120 km",
+            "precision_digits": 50,
+            "mode": "approximate",
+            "angle_unit": "radians",
+            "result": "120 km",
+            "result_format": "qalculate_text",
+            "numeric": false,
+            "warnings": []
+          },
+          "error": null,
+          "replay_of": null,
+          "result_sha256": "657bf6fbd7486d84cc5c9147e498b567f332dbacb1241fb7d2a64486134645fc",
+          "arguments_redacted": false
+        }
+      ]
+    }
+  ]
+}

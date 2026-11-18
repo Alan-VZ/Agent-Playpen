@@ -1,0 +1,1 @@
+{"servers": {"example": {"command": "ABSOLUTE_PATH_TO_TRUSTED_PYTHON", "args": ["-m", "your_mcp_server"], "allowed_tools": ["your_tool_name"], "secret_env": []}}}

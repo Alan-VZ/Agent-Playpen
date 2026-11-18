@@ -97,9 +97,13 @@ def main():
     registry = ToolRegistry()
     for tool_name in args.tools:
         if tool_name not in TOOL_MAP:
-            print(f"[WARN] Unknown tool: {tool_name} — skipping")
-            continue
-        registry.register(TOOL_MAP[tool_name]())
+            from tools.external_mcp import connected_tools, connect_configured
+            connect_configured()
+            if tool_name not in connected_tools():
+                raise ValueError(f"Unknown or unavailable tool: {tool_name}")
+            registry.register(connected_tools()[tool_name])
+        else:
+            registry.register(TOOL_MAP[tool_name]())
 
     # --- Memory ---
     memory = MemoryManager()

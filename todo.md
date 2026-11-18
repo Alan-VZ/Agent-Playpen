@@ -1,3 +1,17 @@
+# November 17: universal tools follow-through
+
+- [x] Portable Qalculate scientific engine and sampled 2D graph artifacts.
+- [x] Shared UACP tool gateway for all selected tools; typed validation, status, records and restricted replay.
+- [x] Official SDK MCP tool server and persistent connections to explicit external allowlists.
+- [x] Native OpenAI-compatible provider normalization and explicit prompt/native modes.
+- [x] Universal tool console, preserved verified outputs and regression/contract tests.
+- [x] Issue register, architecture/setup updates and upstream creator acknowledgements.
+- [ ] New matched live-model study of gateway/native calling, separate from historical runtime results.
+- [ ] Versioned semantic evaluator pilot for documented B02/B05 grading limitations.
+- [ ] Authenticated HTTP/OAuth MCP onboarding and stronger isolation of arbitrary third-party handlers.
+
+See [implemented behavior and limits](docs/universal-tools.md).
+
 # Upgrade roadmap
 
 ## November 15: baseline evaluation and credential inventory
@@ -9,7 +23,7 @@
   concurrency control, shared reservations, attributed evidence, and worker supervision.
 - [x] Dashboard configuration builder, comparison/evidence views, CLI resume, and
   HTML/CSV/JSON exports. See [usage and boundaries](docs/baseline-tests.md).
-- [ ] Real-model five-repeat qualification and matched-budget model/team comparison.
+- [x] Completed matched five-seed/two-round studies and published results/limitations; this does not qualify every model.
 - [ ] Real-user credential-vault persistence and opt-in live provider/billing checks.
 
 The older sections below remain the broader roadmap. Benchmark-only team support

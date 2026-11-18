@@ -9,7 +9,7 @@ from tools.tool_registry import ToolRegistry
 
 @pytest.mark.parametrize("expression,expected", [
     ("6*7", "42"), ("-(3+2)", "-5"), ("2**3", "8"), ("7%3", "1"),
-    ("4/2", "2.0"), ("3-1", "2"),
+    ("4/2", "2"), ("3-1", "2"),
 ])
 def test_calculator(expression, expected):
     assert CalculatorTool().run(expression=expression) == expected
@@ -61,3 +61,11 @@ def test_search_falls_back_after_provider_error(monkeypatch):
     monkeypatch.setattr(tool, "_google", fail)
     monkeypatch.setattr(tool, "_ddgs", lambda *args: "- Result: example")
     assert tool.run(query="test") == "- Result: example"
+
+
+@pytest.mark.parametrize("expression,expected", [
+    ("0.1+0.2", "0.3"),
+    ("0.1000000000000000000000000000000000000001+0.2", "0.3000000000000000000000000000000000000001"),
+])
+def test_basic_calculator_preserves_decimal_literals(expression, expected):
+    assert CalculatorTool().run(expression=expression) == expected

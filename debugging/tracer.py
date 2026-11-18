@@ -72,6 +72,10 @@ class Tracer:
             tool_name=tool_name,
         ))
 
+    def on_tool_result(self, record: dict) -> None:
+        """Preserve verified output separately from the shortened LLM observation."""
+        self._record(TraceEvent(type="tool_result", content=json.dumps(redact(record), ensure_ascii=False), iteration=self._iteration, tool_name=record["tool"]))
+
     def on_observe(self, observation: str) -> None:
         self._record(TraceEvent(
             type="observe",

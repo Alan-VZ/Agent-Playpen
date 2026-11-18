@@ -137,9 +137,10 @@ async def test_message_bus_fanout_and_cleanup():
 def test_executor_timeout_returns_without_waiting():
     release = threading.Event()
     registry = ToolRegistry()
-    registry.register(Mock(name="unused", **{}))
     tool = Mock()
     tool.name = "slow"
+    tool.description = "Test a bounded wait"
+    tool.to_openai_schema.return_value = {"function": {"parameters": {"type": "object", "properties": {}}}}
     tool.run.side_effect = lambda **kwargs: release.wait(2)
     registry.register(tool)
     try:

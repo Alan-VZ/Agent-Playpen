@@ -121,3 +121,8 @@ individual account has credit or that live search quality meets a task's needs.
 ## Nimble Search Lite and basic extraction
 
 Select `nimble` explicitly and save `NIMBLE_API_KEY` through Maintenance. Nimble is excluded from `auto`; Search Lite disables full-content search. Optional `nimble_extract` is basic extraction without rendering. Both tools permit five attempts per instance and cache repeated results. See [Nimble setup](nimble.md) and [the roadmap](../todo.md). You.com remains deferred.
+
+
+## November 17 integration update
+
+All selected agent tools now execute through the shared Universal Agent Control Plane gateway. The [universal tool guide](universal-tools.md) documents typed contracts, readiness, the direct console, native/prompt model adapters, MCP exposure/connections, execution records, replay and timeout limits. The [issue register](issues-and-resolutions.md) distinguishes observed problems, implemented resolutions and remaining limits; [credits and sources](credits-and-sources.md) acknowledges the upstream creators. Historical study outputs and baseline-v1 scoring remain unchanged. A successful tool operation does not establish final-answer faithfulness or general model reliability.
