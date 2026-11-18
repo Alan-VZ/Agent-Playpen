@@ -112,3 +112,15 @@ and bounded source/cache access. Agent count and concurrency must be separate se
 - [ ] Revisit native credential-store availability and limitations on Windows/macOS/Linux; encryption does not protect against arbitrary same-user malware.
 
 Diagnostic-v2 implementation complete; model effectiveness is established only by the new live study, not by checked implementation tasks. The historical instruction to defer scheduler changes applied until run 6ec7f70828b648568b85133fdba48faa completed.
+
+# Completed diagnostic study and next isolated questions
+
+- [x] Four-model matched D01–D06 study (24 cases), separately preserved.
+- [x] Evidence-led JSON-call compatibility fix and matched Qwen2.5 follow-up (six cases; 1/6 to 3/6 observed).
+- [x] User-approved 512-token paced Groq follow-up (six cases; 6/6 observed, separate from matched settings).
+- [x] Align Groq native parallel-tool request policy with the one-action loop; one-request probe changed only the flag and returned one call rather than two.
+- [ ] Advertise exact fixture identifiers as a schema enum in a separately measured follow-up; do not guess/rename model arguments.
+- [ ] Add a bare-provider JSON control to distinguish small-model/template behavior from Agent prompting.
+- [ ] Evaluate an explicitly labeled finalization policy for repeated successful operations; do not silently replace autonomous baselines with guided solutions.
+
+See [completed results and limits](docs/studies/2026-11-18-capability-diagnostics.md). No baseline qualification or broad reliability improvement is inferred from these single-case diagnostics.

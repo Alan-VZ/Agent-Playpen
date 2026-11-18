@@ -18,3 +18,5 @@ Historical studies are evidence snapshots. New gateway/model calling routes requ
 - [Five models / two tasks with recovery-v1](studies/2026-11-18-five-model-two-task-recovery.md): 0/10 strict passes; transport, loop, evidence and final-report failures distinguished.
 
 - [Capability diagnostics, evidence and replay](diagnostics.md): six focused cases, actual wire capture, source checks, and configuration-first/per-model scheduling.
+
+- [Completed capability diagnostics and protocol follow-ups](studies/2026-11-18-capability-diagnostics.md): 36 cases plus a one-request serialization probe, separate settings/provenance and machine-readable evidence.
