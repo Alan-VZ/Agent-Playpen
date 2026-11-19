@@ -483,7 +483,7 @@ def maintenance_callback(request: Request):
 
 @app.get("/api/defaults")
 def api_defaults():
-    return {
+    defaults = {
         "backend": "lm_studio",
         "model": "local-model",
         "base_url": "http://localhost:1234/v1",
@@ -495,7 +495,22 @@ def api_defaults():
         "allowed_dirs": ".",
         "search_provider": "auto",
         "search_cse_id": "",
+        "model_slots": [],
     }
+    config_path = ROOT / "config" / "web_agent_config.json"
+    try:
+        saved = json.loads(config_path.read_text(encoding="utf-8"))
+        if not isinstance(saved, dict):
+            return defaults
+        validated = AgentConfig.model_validate(saved).model_dump(
+            exclude={"api_key", "search_cse_id", "task"}
+        )
+        for key, value in validated.items():
+            if key not in {"model_slots"} or isinstance(value, list):
+                defaults[key] = value
+    except (OSError, json.JSONDecodeError, ValidationError):
+        pass
+    return defaults
 
 
 def _validate_run(config: AgentConfig):

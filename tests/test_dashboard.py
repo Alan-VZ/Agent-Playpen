@@ -72,6 +72,21 @@ def test_config_does_not_save_credentials(client):
     assert "api_key" not in saved and "search_cse_id" not in saved
 
 
+def test_saved_model_slots_restore_from_defaults(client):
+    response = client.post("/api/save-config", json={
+        "backend": "lm_studio",
+        "model": "qwen2.5-coder-7b-instruct",
+        "model_slots": [
+            {"backend": "lm_studio", "model": "qwen2.5-coder-7b-instruct", "temperature": 0},
+            {"backend": "lm_studio", "model": "qwen3.5-9b-uncensored-hauhaucs-aggressive@q6_k", "temperature": 0.2},
+        ],
+    })
+    assert response.status_code == 200
+    defaults = client.get("/api/defaults").json()
+    assert len(defaults["model_slots"]) == 2
+    assert defaults["model_slots"][1]["temperature"] == 0.2
+
+
 @pytest.mark.parametrize("route", ["/api/save-config", "/api/save-env"])
 @pytest.mark.parametrize("payload", [[], None, "text"])
 def test_save_routes_reject_non_objects(client, route, payload):

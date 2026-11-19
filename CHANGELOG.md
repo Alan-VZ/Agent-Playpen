@@ -35,6 +35,8 @@
   terminal reports cannot bypass readiness, B02/B05 require observed report
   evidence, native error-only paths do not count as working tool calls, and
   whitespace-preserving repetition keys distinguish invalid and valid expressions.
+- Fixed saved model-slot restoration: `/api/defaults` now loads
+  `config/web_agent_config.json` model_slots after **Save Config**.
 
 - Let model requests use the remaining shared task deadline instead of an
   unconditional 60-second cap; record each request’s timeout in its ledger.

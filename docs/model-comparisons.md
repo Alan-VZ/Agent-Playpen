@@ -25,6 +25,11 @@ capability is recorded separately: untested, advertised by the provider, observe
 working, or observed failing. `Auto` is an execution policy and does not by itself
 prove native model support.
 
+Use **Save Config** to persist model slots and their explicit per-slot settings
+to `config/web_agent_config.json`. Refresh restores those saved slots through
+the dashboard defaults endpoint. Clearing or reducing slots is saved by an
+explicit configuration save.
+
 ## Compact settings and defaults
 
 The workspace starts with a compact summary table of all models. Each row has a chooser and editable ReAct/other planner, tool-calling mode, temperature, iterations, tokens and baseline seconds. Detailed cards remain available below. The **Apply defaults to all models** button applies those common settings to current slots without changing identities, endpoints or tools. Defaults are saved in this browser, not in the credential vault. Applying them is explicit; restoring the defaults editor does not overwrite individual model settings. New slots inherit Model 1 settings.

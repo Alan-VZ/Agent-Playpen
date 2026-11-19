@@ -14,6 +14,7 @@ the original review:
 | Task-state proxies | Improved: B01 derives required fixture values and requires matching successful calculator results; B02/B05 require exact observed report evidence |
 | Native capability promotion | Fixed: successful native handoff marks working only after an acknowledged successful execution; error-only and missing-argument paths mark failing |
 | Whitespace repetition canonicalization | Fixed: calculator repetition keys preserve internal whitespace and only successful, valid calls advance state |
+| Saved model-slot refresh persistence | Fixed: `/api/defaults` now restores saved `model_slots` from `config/web_agent_config.json`; real-browser refresh verification follows |
 
 Current verification:
 
