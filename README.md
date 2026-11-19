@@ -1,5 +1,7 @@
 # Agent Playpen
 
+**Project overview:** [The story so far](docs/executive-summary.md) follows the original concept, findings, changes and decisions, with links to the detailed documentation.
+
 Before buying API access, open the dashboard's **Keys, costs & maintenance guide**
 or read [the setup and budget plan](docs/keys-costs-maintenance.md). It explains
 key counts, account URLs, free allowances, upfront payments, recurring charges,

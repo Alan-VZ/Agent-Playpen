@@ -26,6 +26,16 @@
 
 ## Unreleased
 
+- Added the MTT source/catalog/persistent model-pool MVP: SQLite storage,
+  source refresh APIs, standing-policy entities, bounded D01-D06 campaign
+  execution, qualification records, database-first recommendations and `/mtt`
+  dashboard. Normal task selection remains database-only and does not repeat
+  discovery or pre-testing. This MVP is not yet a calibrated model ranking.
+
+- Added the MTT source/database MVP foundation: source and catalog snapshots,
+  bounded diagnostic screening campaigns, persistent qualification records,
+  standing-policy entities, database-first recommendations and a dashboard page.
+
 - Added baseline fixture-name JSON-Schema enums with executable unknown-name
   denial, separately labeled autonomous/guided settlement modes, conservative
   exact-expression repetition guards, native-tool capability states, and

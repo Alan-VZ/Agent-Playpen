@@ -38,3 +38,5 @@ qalculate-output/
 config/mcp_servers.json
 
 diagnostic-results/
+mtt-results/
+model_testing.sqlite3

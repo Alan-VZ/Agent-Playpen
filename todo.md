@@ -1,3 +1,36 @@
+# Deferred follow-up — MTT independent verification, November 19
+
+Deferred at the user's request; no new model campaign is requested by this list. See [executive summary](docs/executive-summary.md) and [latest evidence and acceptance findings](docs/verification-mtt-reservations-and-navigation-2026-11-19.md).
+
+- [ ] Make durable campaign reservations cover every request/token authorized to a worker; reconcile completed consumption without understating campaign usage.
+- [ ] Handle unresolved in-flight attempts after restart without redispatching them under the same allowance; account explicitly for uncertain consumption and any bounded retry.
+- [ ] Reconcile wall-time reservations after conclusive completion so fast cases can finish a six-case screen within policy.
+- [ ] Add the multi-attempt and recovery regression cases, then verify a complete bounded local positive/negative-control screen before approving unattended operation.
+- [ ] Keep the executive summary current when a milestone changes, linking detailed evidence rather than expanding the overview into a log.
+
+# MTT MVP implementation status
+
+- [x] Persistent SQLite source/catalog/campaign/qualification storage
+- [x] Authenticated MTT source/catalog/campaign/recommendation API
+- [x] D01-D06 bounded campaign runner backed by the existing diagnostics system
+- [x] `/mtt` dashboard with source, catalog, campaign and recommendation views
+- [x] Database-first task selection and standing-policy entities
+- [ ] Live standing-policy campaign worker with a service-lifetime UI
+- [ ] Broader controlled qualification packs and calibrated R
+- [ ] External framework adapter trial
+- [ ] Full real-provider repeated live qualification
+
+# MTT MVP
+
+- [x] Persistent SQLite source/catalog/campaign/qualification storage
+- [x] Source refresh and database-first recommendation APIs
+- [x] Bounded D01-D06 screening campaign runner
+- [x] `/mtt` source/catalog/campaign/recommendation dashboard
+- [ ] Autonomous standing-policy campaign worker and service-lifetime UI
+- [ ] Broader qualification packs and reference R
+- [ ] Pydantic Evals / DeepEval adapter trial
+- [ ] Real repeated live multi-model qualification
+
 # November 18: follow-up from completed recovery-v1 experiment
 
 Run 6ec7f70828b648568b85133fdba48faa finished: 0/10 strict passes. See [evidence and limits](docs/studies/2026-11-18-five-model-two-task-recovery.md).

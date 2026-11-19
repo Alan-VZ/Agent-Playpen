@@ -86,10 +86,10 @@ select = ["E4", "E7", "E9", "F"]
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["playpen_qalculate", "advanced", "backends", "config", "core", "debugging", "memory", "planner", "tools", "examples", "benchmarks"]
+packages = ["playpen_qalculate", "advanced", "backends", "config", "core", "debugging", "memory", "planner", "tools", "examples", "benchmarks", "model_testing"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/playpen_qalculate", "/advanced", "/backends", "/config/*.py", "/config/*.yaml", "/config/*.example.json", "/core", "/debugging", "/memory", "/planner", "/tools", "/examples", "/benchmarks", "/tests", "/docs", "/README.md", "/todo.md", "/LICENSE", "/pyproject.toml"]
+include = ["/playpen_qalculate", "/advanced", "/backends", "/config/*.py", "/config/*.yaml", "/config/*.example.json", "/core", "/debugging", "/memory", "/planner", "/tools", "/examples", "/benchmarks", "/model_testing", "/tests", "/docs", "/README.md", "/todo.md", "/LICENSE", "/pyproject.toml"]
 exclude = ["/config/web_agent_config.json"]
 
 [tool.pytest.ini_options]
