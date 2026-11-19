@@ -35,6 +35,7 @@ async function waitFor(fn){for(let n=0;n<150;n++){if(fn())return;await sleep(15)
   assert.equal(mutations[1].backend,'openrouter');assert.equal(dom.window.playpenModelSlots.get()[1].backend,'openrouter');assert.equal(d.getElementById('model').value,'replacement-model');
   count.value=20;count.dispatchEvent(new dom.window.Event('change'));assert.equal(count.value,'10');
   const parameter=d.querySelector('[data-slot="2"] [data-parameter="max_iterations"]');parameter.value='7';parameter.dispatchEvent(new dom.window.Event('input'));assert.equal(dom.window.playpenModelSlots.get()[1].max_iterations,7);
+  const persisted=JSON.parse(dom.window.localStorage.getItem('playpen-model-slots'));assert.equal(persisted.length,10);assert.equal(persisted[1].max_iterations,7);
   const remove=Array.from(d.querySelectorAll('[data-slot="3"] button')).find(b=>b.textContent==='Remove model 3');remove.click();assert.equal(count.value,'9');assert.equal(dom.window.playpenModelSlots.get()[1].max_iterations,7);
   Array.from(d.querySelectorAll('button')).find(b=>b.textContent==='Add model').click();assert.equal(count.value,'10');assert.equal(d.querySelectorAll('.workspace-model-card').length,10);
 

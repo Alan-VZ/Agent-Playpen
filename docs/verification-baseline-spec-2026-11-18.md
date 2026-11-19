@@ -14,14 +14,15 @@ the original review:
 | Task-state proxies | Improved: B01 derives required fixture values and requires matching successful calculator results; B02/B05 require exact observed report evidence |
 | Native capability promotion | Fixed: successful native handoff marks working only after an acknowledged successful execution; error-only and missing-argument paths mark failing |
 | Whitespace repetition canonicalization | Fixed: calculator repetition keys preserve internal whitespace and only successful, valid calls advance state |
-| Saved model-slot refresh persistence | Fixed: `/api/defaults` now restores saved `model_slots` from `config/web_agent_config.json`; real-browser refresh verification follows |
+| Saved model-slot refresh persistence | Fixed: `/api/defaults` restores saved `model_slots` from `config/web_agent_config.json`; real-browser refresh smoke passes |
+| Real-browser model-slot smoke | Passed: Save Config/reload retained ten cards and slot temperature `0` at 1024px and 1920px |
 
 Current verification:
 
-- Full Python suite: **558 passed, 9 skipped** after the follow-up fixes.
+- Full Python suite: **559 passed, 9 skipped** after the persistence follow-up.
 - Focused settlement/native regressions: **101 passed**.
-- Remaining verification gaps: real-browser layout/keyboard/persistence checks,
-  complete supported reasoning/load-profile functionality, and repeated live
+- Remaining verification gaps: complete supported reasoning/load-profile
+  functionality, additional keyboard/layout edge checks, and repeated live
   autonomous/guided positive-control qualification.
 
 ## Checks performed
@@ -31,6 +32,7 @@ Current verification:
 - baseline-v1 tasks.py is unchanged from d83f954.
 - Targeted scripted reproductions below exercise actual controller/Agent code; they are not live-model performance results.
 - Live loopback OpenAPI inspection: ExperimentConfig does **not** expose settlement_mode, indicating the running dashboard has not loaded the reviewed backend version.
+- Follow-up live reload: the dashboard was restarted and the live OpenAPI now exposes settlement_mode as autonomous/guided. Save Config/reload retained ten model slots and slot temperature 0 in real-browser smoke at 1024px and 1920px.
 - No implementation files changed during this review; no new live model generations, merge, or deployment performed.
 
 ## Blocking findings
