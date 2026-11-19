@@ -1,0 +1,9 @@
+{
+  "type": "string",
+  "enum": [
+    "autonomous",
+    "guided"
+  ],
+  "title": "Settlement Mode",
+  "default": "autonomous"
+}

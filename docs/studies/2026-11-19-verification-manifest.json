@@ -1,0 +1,23 @@
+[
+  {
+    "stage": "diagnostics",
+    "route": "/api/diagnostics",
+    "id": "4d07847036c34e52becf91e5c23e2f4e"
+  },
+  {
+    "stage": "invalid-setup-pilot",
+    "route": "/api/benchmarks",
+    "id": "90aa6a0888514810bd723ccea0b8196d",
+    "excluded_reason": "Launcher inherited diagnostic tools=[] with auto_baseline_setup=false; cancelled and replaced."
+  },
+  {
+    "stage": "pilot",
+    "route": "/api/benchmarks",
+    "id": "87a21b5c9502488abd42efca54d5eee5"
+  },
+  {
+    "stage": "positive-control",
+    "route": "/api/benchmarks",
+    "id": "592a2a1cbdc54983a4fcfb5a687d2d13"
+  }
+]

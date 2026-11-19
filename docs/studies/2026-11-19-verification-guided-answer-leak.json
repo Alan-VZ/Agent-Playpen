@@ -1,0 +1,16 @@
+{
+  "task": "B01",
+  "seed": 1,
+  "feedback_after_read": [
+    "verified calculation result 12",
+    "verified calculation result 32",
+    "verified calculation result 44"
+  ],
+  "literal_value_calculations": [
+    "12",
+    "32",
+    "44"
+  ],
+  "ready_after_literal_calculations": true,
+  "finding": "Guided feedback exposes target totals and accepts constant calculations as evidence."
+}

@@ -1,0 +1,1604 @@
+[
+  {
+    "attempt": "fc65782303594973b41ca448fd47e4b3",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"status\":\"ready\",\"count\":3}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "9167f8546900489484fac13b2bb3696d",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "record"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"code\":\"amber-47\"}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "caf90b336df342e0ada5df1af8746367",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "7 * 9"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"result\":63}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "076669365450457eacfbbdf143df4150",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "invoice"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "3 * 14 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"total\":37}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "b60dd0e4769144cd9d2130f6197544ad",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "archive"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "notice"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "The current notice supersedes the archive.\n\n{\"opens\":\"11:00\",\"source\":\"notice\",\"quote\":\"Current notice supersedes archive. Opening is 11:00.\"}",
+        "route": "text"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"opens\":\"11:00\",\"source\":\"notice\",\"quote\":\"Current notice supersedes archive. Opening is 11:00.\"}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "35dbf3d74a3c4c1f95426afdcee2cbfa",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"release\":\"3.2\",\"source\":\"backup\",\"recovered\":true}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "011bc591fa824232ad8dacb371e65fc0",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"status\":\"ready\",\"count\":3}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "874534bd76054668aa8debc3350e7d35",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "record"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "record"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "record"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "record"
+        },
+        "route": "native"
+      }
+    ]
+  },
+  {
+    "attempt": "7f5e02455fdb45c78cfc51f40dd28224",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "7 * 9"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "{\"result\":63}"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "7 * 9"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "7 * 9"
+        },
+        "route": "native"
+      }
+    ]
+  },
+  {
+    "attempt": "8fdd316409944a9d933e619df8b1f833",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "invoice"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "(3 * 14) - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "```json\n{\"total\": 37}\n```",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "b934f1b0a5f84f878ffe53c1ad690f73",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": false,
+        "category": "multiple_native_calls"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "archive"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "notice"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"opens\":\"11:00\",\"source\":\"notice\",\"quote\":\"Opening is 11:00.\"}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "61d04eab35094289a7dd38199088884c",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"release\":\"3.2\",\"source\":\"backup\",\"recovered\":true}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "4041b7c28bb8432bbf4a6fb3e152b67f",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"status\":\"ready\",\"count\":3}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "603afecbfbd84279949e5aa88084731c",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "record"
+        },
+        "answer": null,
+        "route": "json_call_v1"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"code\":\"amber-47\"}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "becd1ced7f0142d49eb83cf933b79fae",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "7 * 9"
+        },
+        "answer": null,
+        "route": "json_call_v1"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"result\": 63}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "78371ce7620f4bdca8dc0de9fa488b4a",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "invoice"
+        },
+        "answer": null,
+        "route": "json_call_v1"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "(3 * 14) - 5"
+        },
+        "answer": null,
+        "route": "json_call_v1"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"total\": 37}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "1446e316af1649a799c48f53bc4f6e22",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"name\": \"read_fixture\", \"arguments\": {\"name\": \"archive\"}}\n{\"name\": \"read_fixture\", \"arguments\": {\"name\": \"notice\"}}",
+        "route": "text"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"opens\":\"14:30\",\"source\":\"archive\",\"quote\":\"The meeting is scheduled to open at 2:30 PM.\"}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "3b6fd195e33542a6a160cd100ed06b65",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "answer": null,
+        "route": "json_call_v1"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "answer": null,
+        "route": "json_call_v1"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"release\":\"3.2\",\"source\":\"backup\",\"recovered\":true}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "385d5a6e47d84ea6bed48b9021e06132",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "orders.csv"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "37 + 12 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "37 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "37 + 12 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "37 + 12 - 5"
+        },
+        "route": "native"
+      }
+    ]
+  },
+  {
+    "attempt": "dd6d2cc47ba5424ba2a61bfe772b612b",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "empty"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "1.7"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"release\":\"1.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "3028726663514644a3e69df38de80f4d",
+    "offline_replay": []
+  },
+  {
+    "attempt": "2015c437ad714c86b04f67c55c1e4562",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "empty"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "```json\n{\"release\":\"1.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}\n```",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "c00f9a20f20945d1bfb0b41ed2bfc9a9",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "```json\n{\n  \"name\": \"read_fixture\",\n  \"arguments\": {\n    \"name\": \"orders.csv\"\n  }\n}\n```\n\nAfter reading the `orders.csv` file, I will proceed with deduplicating by `id`, keeping the first row, and then count paid/refund orders while subtracting positive refunds, excluding cancelled ones. The final JSON output will be structured as requested.",
+        "route": "text"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "```json\n{\n  \"name\": \"read_fixture\",\n  \"arguments\": {\n    \"name\": \"orders.csv\"\n  }\n}\n```\n\nAfter reading the `orders.csv` file, I will proceed with deduplicating by `id`, keeping the first row, and then count paid/refund orders while subtracting positive refunds, excluding cancelled ones. The final JSON output will be structured as requested, including `category_totals`, `duplicate_ids`, `net_total`, and `valid_orders`.",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "ef64aa4b7a804e96aabefbac5fa6617c",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"name\": \"read_fixture\", \"arguments\": {\"name\": \"primary\"}}\n{\"name\": \"read_fixture\", \"arguments\": {\"name\": \"empty\"}}\n{\"name\": \"read_fixture\", \"arguments\": {\"name\": \"backup\"}}\n\n{\n  \"release\": \"version\",\n  \"source\": \"backup\",\n  \"empty_is_evidence\": false,\n  \"recovered\": true\n}",
+        "route": "text"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\n  \"release\": \"version\",\n  \"source\": \"backup\",\n  \"empty_is_evidence\": false,\n  \"recovered\": true\n}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "5e16c92af04a4c23a1ede0ef30061ba5",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "orders.csv"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "37 + 12 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "37 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "37 + 12 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "37 + 12 - 5"
+        },
+        "route": "native"
+      }
+    ]
+  },
+  {
+    "attempt": "be6d97b2493c46c38128ffc5f347193f",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "empty"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "1.7"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"release\":\"1.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "196c5ddb6326478184429638486aa335",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "orders.csv"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "27 + 12 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "27"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "12 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "27"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 5,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "27"
+        },
+        "route": "native"
+      }
+    ]
+  },
+  {
+    "attempt": "92616cd57c6547dd8206edfd46b95db1",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "empty"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "Primary failed (no retry per its message), empty returned nothing, and backup confirms the release.\n\n- **primary**: error \u2014 \"Temporary source failure. Alternative source: backup. No automatic retry.\"\n- **empty**: no content (not evidence of absence)\n- **backup**: \"Release 2.7 is approved. Source: backup.\"\n\nRecovering from the primary error via the backup source (no retry loop).\n\n```json\n{\"release\":\"2.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}\n```",
+        "route": "text"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"release\":\"2.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "9ebf351f269f423190dbb661068a1717",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "orders.csv"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "50 + 12 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "50 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "45"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "12"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 5,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "45"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 6,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "45"
+        },
+        "route": "native"
+      }
+    ]
+  },
+  {
+    "attempt": "a7dceee4ffd04ff295bf4b23a33a3946",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "empty"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "Primary failed (no retry per its message), so I recovered from backup, which reports \"Release 3.7 is approved. Source: backup.\" The empty fixture returned no content \u2014 I treat that as absence of data, not evidence of absence.\n\n{\"release\":\"3.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}",
+        "route": "text"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"release\":\"3.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "29b315b2088544be9662a4554f3bb0b1",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "orders.csv"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "50 + 12 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "50"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "12 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "50"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 5,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "50"
+        },
+        "route": "native"
+      }
+    ]
+  },
+  {
+    "attempt": "11518f88c8e24d418276b123f78deb17",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "empty"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "The primary source failed with a temporary error (no automatic retry), so I recovered from the backup, which reports \"Release 4.7 is approved.\" The empty fixture returned no content \u2014 an empty response is not evidence of absence, so I'm not treating it as proof of anything.\n\n{\"release\":\"4.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}",
+        "route": "text"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"release\":\"4.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}",
+        "route": "text"
+      }
+    ]
+  },
+  {
+    "attempt": "5fc57e74f7944407afe0908fe46ec5d1",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "orders.csv"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "52 - 5 + 12"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "52 - 5"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "47 + 12"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "52"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 5,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "52"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 6,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "52"
+        },
+        "route": "native"
+      }
+    ]
+  },
+  {
+    "attempt": "712c6498b67e40b496dcc2d87fb61d2f",
+    "offline_replay": [
+      {
+        "call_index": 0,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "primary"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 1,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "empty"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 2,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "read_fixture",
+        "arguments": {
+          "name": "backup"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 3,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": false,
+        "tool": "calculator",
+        "arguments": {
+          "expression": "5.7"
+        },
+        "route": "native"
+      },
+      {
+        "call_index": 4,
+        "replay_version": "json-call-v1",
+        "replay_available": true,
+        "accepted": true,
+        "terminal": true,
+        "tool": null,
+        "arguments": {},
+        "answer": "{\"release\":\"5.7\",\"source\":\"backup\",\"empty_is_evidence\":false,\"recovered\":true}",
+        "route": "text"
+      }
+    ]
+  }
+]

@@ -1,0 +1,61 @@
+{
+  "commit": "80c701716e54bb624f3dbdf11326264f75c303ed",
+  "valid_live_cases": 34,
+  "python_default_suite": {
+    "passed": 559,
+    "skipped": 9
+  },
+  "real_qalculate_checks_passed": 9,
+  "ui_scripts_passed": 11,
+  "candidate_positive_control": {
+    "B01": {
+      "passed": 0,
+      "attempted": 5
+    },
+    "B04": {
+      "passed": 5,
+      "attempted": 5
+    }
+  },
+  "outcomes_by_stage": {
+    "diagnostics": {
+      "passed": 15,
+      "repeated_action": 2,
+      "final_report_validation": 1
+    },
+    "pilot": {
+      "repeated_action": 1,
+      "passed": 2,
+      "timeout": 1,
+      "final_report_validation": 1,
+      "missing_or_unsupported_evidence": 1
+    },
+    "positive-control": {
+      "repeated_action": 5,
+      "passed": 5
+    }
+  },
+  "excluded_runs": [
+    {
+      "stage": "invalid-setup-pilot",
+      "route": "/api/benchmarks",
+      "id": "90aa6a0888514810bd723ccea0b8196d",
+      "excluded_reason": "Launcher inherited diagnostic tools=[] with auto_baseline_setup=false; cancelled and replaced."
+    }
+  ],
+  "completed_at": "2026-11-19T16:33:05.724232+00:00",
+  "evidence_audit": {
+    "captured_transport_requests": 127,
+    "captured_transport_responses": 126,
+    "unfinished_request_in_forced_timeout": 1,
+    "groq_native_requests_with_serial_policy_verified": 80,
+    "requested_temperatures_verified": 0,
+    "groq_max_output_tokens_verified": 512,
+    "local_max_output_tokens_verified": 2048,
+    "diagnostic_source_hashes_verified": 16,
+    "baseline_records_use_commit_provenance_without_diagnostic_source_hash_map": true,
+    "dashboard_http_status": 200,
+    "active_benchmark_jobs": 0,
+    "active_diagnostic_jobs": 0
+  }
+}

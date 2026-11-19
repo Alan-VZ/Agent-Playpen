@@ -1,0 +1,57 @@
+{
+  "attempt": "3028726663514644a3e69df38de80f4d",
+  "status": "timeout",
+  "partial_event_count": 57,
+  "raw_transport_responses": 4,
+  "standard_replay": [],
+  "normalized_partial_replay": [
+    {
+      "call_index": 0,
+      "replay_version": "json-call-v1",
+      "replay_available": true,
+      "accepted": true,
+      "terminal": false,
+      "tool": "read_fixture",
+      "arguments": {
+        "name": "orders.csv"
+      },
+      "route": "native"
+    },
+    {
+      "call_index": 1,
+      "replay_version": "json-call-v1",
+      "replay_available": true,
+      "accepted": true,
+      "terminal": false,
+      "tool": "calculator",
+      "arguments": {
+        "expression": "(37 + 5) - 5"
+      },
+      "route": "native"
+    },
+    {
+      "call_index": 2,
+      "replay_version": "json-call-v1",
+      "replay_available": true,
+      "accepted": true,
+      "terminal": false,
+      "tool": "calculator",
+      "arguments": {
+        "expression": "(37 - 5) + 12"
+      },
+      "route": "native"
+    },
+    {
+      "call_index": 3,
+      "replay_version": "json-call-v1",
+      "replay_available": true,
+      "accepted": true,
+      "terminal": false,
+      "tool": "calculator",
+      "arguments": {
+        "expression": "(37 - 5) + 12"
+      },
+      "route": "native"
+    }
+  ]
+}
