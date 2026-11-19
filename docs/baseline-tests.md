@@ -44,6 +44,13 @@ Baseline configurations record two settlement modes:
 
 Guided settlement does not use scorer expected answers or fixture answers to decide what the model must report. It records actual source reads, calculation operations, and artifact state only.
 
+Failed reads, calculations and writes do not advance settlement evidence.
+B01 guided readiness requires successful fixture reading and calculator results
+matching the values derived from the observed fixture; B02/B05 additionally
+require exact observed quotations or decisive constraint evidence in the final
+report. A guided terminal report is withheld until those observed conditions are
+met.
+
 Fixture tools advertise the names that exist for the current task. Unknown names remain executable denials; Playpen does not silently rename a model's argument.
 
 These tasks run against synthetic frozen document collections, not the live web or the user's filesystem. Every attempt records the fixture seed and hash; B01/B04 vary numeric content across repetitions. Source IDs replace live URLs in this frozen track. The evaluator's expected answers are never exposed through the registered tools. Reports reveal expected values after scoring so failures are reviewable.

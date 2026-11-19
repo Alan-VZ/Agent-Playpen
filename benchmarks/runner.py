@@ -267,9 +267,9 @@ class MeteredBackend:
         if getattr(type(self.backend), "reset_tool_session", None):
             self.backend.reset_tool_session()
 
-    def accept_tool_result(self, text):
+    def accept_tool_result(self, text, execution_succeeded=None):
         if getattr(type(self.backend), "accept_tool_result", None):
-            self.backend.accept_tool_result(text)
+            self.backend.accept_tool_result(text, execution_succeeded=execution_succeeded)
 
     def chat(self, messages):
         return self._request(messages)

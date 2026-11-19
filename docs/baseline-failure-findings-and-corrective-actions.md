@@ -80,7 +80,7 @@ B06 and B07 are currently proposals, not implemented baselines. The existing dia
 | Fixture-read caching and repetition guards | Implemented | Identified as exact repeated-read handling, not semantic operation detection |
 | B02/B05 rubric-v2 | Pending | Baseline-v1 remains unchanged; alternative-answer and deliberate-failure tests are not yet a published pilot |
 | Fixture-name JSON-Schema enum | Implemented | ReadFixture advertises only task fixture names and still rejects unknown executable names |
-| Task-state and settlement modes | Partially implemented | Experiment state and guided/autonomous identity exist; task-specific automated settlement conditions are pending full validation |
+| Task-state and settlement modes | Implemented with verification limits | Failed outcomes no longer advance state; guided terminal reports require observed state; live repeated qualification remains pending |
 | Complete inference/load profile | Partially implemented | Playpen request values exist; effective provider/model and LM Studio load state are not one complete profile |
 | Conservative semantic loop detection | Partially implemented | Exact reads/calculations, normalized exact expressions, and consecutive format errors are guarded; semantic equivalence is not established |
 | Cross-browser UI verification | Pending | DOM tests do not prove real-browser keyboard or layout behavior |

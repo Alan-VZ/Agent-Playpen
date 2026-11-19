@@ -98,7 +98,7 @@ class Agent:
                 format_errors += 1
                 feedback = redact(str(exc))
                 if getattr(type(self.backend), "accept_tool_result", None):
-                    self.backend.accept_tool_result("Error: " + feedback)
+                    self.backend.accept_tool_result("Error: " + feedback, execution_succeeded=False)
                 self.tracer.on_status("Model response rejected: " + feedback, "warning")
                 if format_errors >= 3:
                     self.completion_status = "incomplete"
@@ -117,6 +117,31 @@ class Agent:
 
             # If the planner considers this terminal, return the answer
             if thought.is_terminal:
+                if (
+                    self.settlement_mode == "guided"
+                    and self.settlement_state is not None
+                ):
+                    self.settlement_state.record_report(thought.answer or "")
+                if (
+                    self.settlement_mode == "guided"
+                    and self.settlement_state is not None
+                    and not self.settlement_state.ready()
+                ):
+                    final_errors += 1
+                    remaining = self.settlement_state.remaining()
+                    detail = "Missing guided evidence: " + ", ".join(remaining) if remaining else "Guided settlement state is incomplete."
+                    self.tracer.on_status("Guided final report withheld: " + detail, "warning")
+                    if final_errors >= 2:
+                        self.completion_status = "incomplete"
+                        self.stop_reason = "Guided settlement did not reach its required observed state twice."
+                        return ""
+                    observation = "Observation: " + detail + " Continue only with verified tool evidence; do not invent a result."
+                    if getattr(type(self.backend), "accept_tool_result", None):
+                        self.backend.accept_tool_result(observation, execution_succeeded=False)
+                    ctx.observation_history.append(observation)
+                    self.tracer.on_observe(observation)
+                    ctx.iteration += 1
+                    continue
                 problem = self.final_answer_validator(thought.answer or "") if self.final_answer_validator else None
                 if problem:
                     final_errors += 1
@@ -128,7 +153,7 @@ class Agent:
                         return ""
                     observation = "Observation: Final report validation failed. " + problem + " Return a corrected final report; do not repeat unchanged reads."
                     if getattr(type(self.backend), "accept_tool_result", None):
-                        self.backend.accept_tool_result(observation)
+                        self.backend.accept_tool_result(observation, execution_succeeded=False)
                     ctx.observation_history.append(observation)
                     self.tracer.on_observe(observation)
                     ctx.iteration += 1
@@ -149,7 +174,7 @@ class Agent:
                     "using the observed evidence. Do not execute another tool."
                 )
                 if getattr(type(self.backend), "accept_tool_result", None):
-                    self.backend.accept_tool_result(feedback)
+                    self.backend.accept_tool_result(feedback, execution_succeeded=False)
                 ctx.observation_history.append("Observation: " + feedback)
                 self.tracer.on_status(feedback, "settlement_ready")
                 self.tracer.on_observe(feedback)
@@ -158,7 +183,7 @@ class Agent:
             if thought.tool_name == "calculator":
                 expression = thought.tool_args.get("expression")
                 calculation_key = (
-                    "".join(expression.split())
+                    expression.strip()
                     if isinstance(expression, str)
                     else json.dumps(thought.tool_args, sort_keys=True)
                 )
@@ -169,7 +194,7 @@ class Agent:
                         self.stop_reason = "Repeated identical calculator calls after recovery feedback."
                         break
                     if getattr(type(self.backend), "accept_tool_result", None):
-                        self.backend.accept_tool_result(feedback)
+                        self.backend.accept_tool_result(feedback, execution_succeeded=False)
                     ctx.observation_history.append("Observation: " + feedback)
                     self.tracer.on_status(feedback, "warning")
                     self.tracer.on_observe(feedback)
@@ -188,7 +213,7 @@ class Agent:
                         self.stop_reason = "Repeated unchanged fixture reads after recovery feedback."
                         break
                     if getattr(type(self.backend), "accept_tool_result", None):
-                        self.backend.accept_tool_result(feedback)
+                        self.backend.accept_tool_result(feedback, execution_succeeded=False)
                     ctx.observation_history.append("Observation: " + feedback)
                     self.tracer.on_status(feedback, "warning")
                     self.tracer.on_observe(feedback)
@@ -206,10 +231,24 @@ class Agent:
                 if read_key is not None:
                     cached_reads[read_key] = action_result
             if self.settlement_state is not None:
-                self.settlement_state.record(thought.tool_name, thought.tool_args, action_result)
+                self.settlement_state.record(
+                    thought.tool_name,
+                    thought.tool_args,
+                    action_result,
+                    getattr(self.executor, "last_result", None),
+                )
             self._check_cancelled()
             if getattr(type(self.backend), "accept_tool_result", None):
-                self.backend.accept_tool_result(action_result)
+                outcome = getattr(self.executor, "last_result", None)
+                succeeded = isinstance(outcome, dict) and outcome.get("ok") is True
+                if isinstance(action_result, str) and action_result.strip().lower().startswith(
+                    ("error:", "[error]", "fetch error")
+                ):
+                    succeeded = False
+                self.backend.accept_tool_result(
+                    action_result,
+                    execution_succeeded=succeeded,
+                )
             if isinstance(action_result, str) and action_result.lower().startswith(("no results", "fetch error", "error:", "[error]")):
                 self.tracer.on_status("The tool returned no usable result or an error. Try another query/source; this is not evidence that the requested document does not exist.", "warning")
             ctx.action_history.append(action_result)

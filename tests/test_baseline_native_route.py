@@ -97,6 +97,20 @@ def test_metered_backend_forwards_native_calls_results_and_usage(tmp_path):
         backend.client.close()
 
 
+def test_error_only_native_handoff_is_not_marked_working():
+    from backends.lm_studio import LMStudioBackend
+
+    backend = object.__new__(LMStudioBackend)
+    backend._native_history = []
+    backend._pending_native_call = "pending-call"
+    backend.accept_tool_result(
+        "Error: missing required arguments; no tool was executed",
+        execution_succeeded=False,
+    )
+    assert backend.native_tool_capability == "observed failing"
+    assert backend._pending_native_call is None
+
+
 def test_forced_worker_timeout_retains_partial_events(monkeypatch):
     activity = [
         {"type": "model_request", "content": "Step 1: waiting"},

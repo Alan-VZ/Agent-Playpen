@@ -31,6 +31,10 @@
   exact-expression repetition guards, native-tool capability states, and
   requested/effective/default/unknown request-profile evidence. Historical
   baseline-v1 fixtures, scorers, and results remain unchanged.
+- Fixed guided settlement so failed tool operations do not advance evidence,
+  terminal reports cannot bypass readiness, B02/B05 require observed report
+  evidence, native error-only paths do not count as working tool calls, and
+  whitespace-preserving repetition keys distinguish invalid and valid expressions.
 
 - Let model requests use the remaining shared task deadline instead of an
   unconditional 60-second cap; record each request’s timeout in its ledger.

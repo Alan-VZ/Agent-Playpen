@@ -61,13 +61,19 @@ class BaseBackend(ABC):
         self._native_history = []
         self._pending_native_call = None
 
-    def accept_tool_result(self, text):
+    def accept_tool_result(self, text, execution_succeeded=None):
         """Pair a native call with its actual observation, never model prose."""
         from config.credentials import redact
 
         pending = getattr(self, "_pending_native_call", None)
         if pending:
-            self._native_tool_capability = "observed working"
+            is_error = isinstance(text, str) and text.strip().lower().startswith(
+                ("error:", "[error]", "fetch error")
+            )
+            if execution_succeeded is True:
+                self._native_tool_capability = "observed working"
+            elif execution_succeeded is False or is_error:
+                self._native_tool_capability = "observed failing"
             self._native_history.append(
                 {
                     "role": "tool",
