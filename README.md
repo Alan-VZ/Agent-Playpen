@@ -102,6 +102,13 @@ Agent Playpen is an experimental framework intended for learning, prototyping, a
 
 It is not currently positioned as a production-grade agent platform for mission-critical workloads. It is best used when you want to understand how reasoning, tool use, memory, and backend routing fit together in one codebase.
 
+Baseline-v1 remains a qualification target, not a passed model score. Offline tests,
+transport tests, and focused D01-D06 capability diagnostics are implemented and
+separate from repeated live B01-B05 qualification. Baseline configuration supports
+independent model cards, task subsets, autonomous or separately labeled guided
+settlement, fixture-name contracts, and requested/effective/default/unknown
+request provenance. See [baseline findings and corrective actions](docs/baseline-failure-findings-and-corrective-actions.md).
+
 ## High-level architecture
 
 The project is organized around a few core concepts:

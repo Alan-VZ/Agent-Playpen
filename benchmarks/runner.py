@@ -89,6 +89,7 @@ class ExperimentConfig(BaseModel):
     capture_diagnostics: bool = True
     selected_tasks: list[Literal["B01", "B02", "B03", "B04", "B05"]] | None = Field(default=None, min_length=1, max_length=5)
     model_min_interval_seconds: float = Field(default=0, ge=0, le=60)
+    settlement_mode: Literal["autonomous", "guided"] = "autonomous"
 
 
 def prepare_baseline_configs(configs, tasks):
@@ -174,6 +175,16 @@ class ReadFixture(BaseTool):
     def __init__(self, data, budget, agent_id):
         self.data, self.budget, self.agent_id = data, budget, agent_id
         self.counts = {}
+        self.parameters = {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "enum": sorted(self.data["documents"]),
+                }
+            },
+            "required": ["name"],
+        }
 
     def run(self, **kwargs):
         name = kwargs.get("name", "")
@@ -281,6 +292,34 @@ class MeteredBackend:
             reservation = [*messages, {"role":"system", "content":json.dumps(schemas)}, *getattr(self.backend, "_native_history", [])]
         call = self.budget.reserve_model(reservation, self.agent_id)
         call["tool_calling_mode"] = mode
+        def primitive(value):
+            if isinstance(value, (str, int, float, bool)) or value is None:
+                return value
+            return "unknown"
+        temperature = primitive(getattr(self.backend, "temperature", None))
+        max_tokens = primitive(getattr(self.backend, "max_tokens", None))
+        model = primitive(
+            getattr(self.backend, "model", None)
+            or getattr(self.backend, "deployment_name", None)
+        )
+        native_capability = primitive(getattr(self.backend, "native_tool_capability", "untested"))
+        call["request_profile"] = {
+            "temperature": {
+                "requested": temperature,
+                "effective": "unknown",
+                "default": "unknown",
+            },
+            "max_output_tokens": {
+                "requested": max_tokens,
+                "effective": "unknown",
+                "default": "unknown",
+            },
+            "model": model,
+            "tool_calling_mode": mode,
+            "native_tool_capability": native_capability,
+            "settlement_mode": self.budget.config.settlement_mode,
+            "load_profile": "unknown",
+        }
         call_index = len(self.budget.model_calls) - 1
         self._active_call_index = call_index
         try:
@@ -426,10 +465,26 @@ def run_member(member, config, data, budget, agent_id, peers=None, backend_facto
         planners = {"react": ReActPlanner, "cot": CoTPlanner, "tree": TreePlanner}
         if member.planner not in planners:
             raise ValueError("Unsupported planner")
-        agent = Agent(metered, planners[member.planner](metered), registry,
-                      MemoryManager({"enabled_stores": ["working", "conversation"]}), tracer,
-                      config.max_iterations, cancel_event=budget.stopped,
-                      final_answer_validator=lambda answer: validate_final_report(data["task"], answer, data["documents"], ({e["name"] for e in budget.tool_events if e.get("operation")=="read" and e.get("status")=="ok"} | ({"__calculator__"} if any(e.get("operation")=="calculate" and e.get("status")=="ok" for e in budget.tool_events) else set()))))
+        from benchmarks.settlement import BaselineSettlementState
+        settlement_state = BaselineSettlementState(data["task"], data["documents"]) if config.settlement_mode == "guided" else None
+        def validate_answer(answer):
+            reads = {e["name"] for e in budget.tool_events if e.get("operation") == "read" and e.get("status") == "ok"}
+            if any(e.get("operation") == "calculate" and e.get("status") == "ok" for e in budget.tool_events):
+                reads.add("__calculator__")
+            return validate_final_report(data["task"], answer, data["documents"], reads)
+
+        agent = Agent(
+            metered,
+            planners[member.planner](metered),
+            registry,
+            MemoryManager({"enabled_stores": ["working", "conversation"]}),
+            tracer,
+            config.max_iterations,
+            cancel_event=budget.stopped,
+            final_answer_validator=validate_answer,
+            settlement_mode=config.settlement_mode,
+            settlement_state=settlement_state,
+        )
         task = data["prompt"]
         if data["task"] == "B01":
             task += "\nExecution guidance: subtract refunds in each category as well as the grand total. Category totals must sum to the net total. For calculator calls, extract numeric values and send numeric arithmetic such as (8 + 3) - 2, never SQL, sum(column), variables or programs. Read each unchanged fixture once, then use its observation."
@@ -751,7 +806,8 @@ def summaries(record):
             tasks[task] = {"passed": passed, "attempted": len(group), "selected": task in task_ids, "scheduled": record["repeats"] if task in task_ids else 0, "wilson95": wilson(passed, len(group))}
         costs = [r["usage"]["estimated_reserved_usd"] for r in attempts]
         actuals = [r["usage"]["actual_tokens"] for r in attempts]
-        rows.append({"name": config["name"], "agents": len(config["agents"]), "tasks": tasks,
+        rows.append({"name": config["name"], "agents": len(config["agents"]),
+                     "settlement_mode": config.get("settlement_mode", "autonomous"), "tasks": tasks,
                      "passed": sum(r["evaluation"]["passed"] for r in attempts), "attempted": n,
                      "scheduled": record["repeats"] * len(task_ids),
                      "selected_tasks": list(task_ids),

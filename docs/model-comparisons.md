@@ -12,6 +12,19 @@ Verification uses simulated provider catalogs and captures launch payloads: ten 
 
 Model selection only queues the requested ID. Choosing a model does not load, unload, or generate with it. At runtime the existing local-server lease loads the selected model when its turn begins and protects it through the entire run. Explicit selections stay pinned even if another model is active. Selection is safe while another experiment runs; it does not modify that running experiment.
 
+## Reproducibility and model profiles
+
+A Playpen request record distinguishes requested values, effective/confirmed values,
+server defaults, and unknown values. Temperature and max output tokens are sent
+explicitly by supported chat paths. Max iterations belongs to Playpen's agent loop.
+LM Studio load settings, provider reasoning settings, and server presets remain
+separate unless their values are actually sent or confirmed.
+
+Do not describe an unconfirmed LM Studio GUI preset as reproduced. Native tool
+capability is recorded separately: untested, advertised by the provider, observed
+working, or observed failing. `Auto` is an execution policy and does not by itself
+prove native model support.
+
 ## Compact settings and defaults
 
 The workspace starts with a compact summary table of all models. Each row has a chooser and editable ReAct/other planner, tool-calling mode, temperature, iterations, tokens and baseline seconds. Detailed cards remain available below. The **Apply defaults to all models** button applies those common settings to current slots without changing identities, endpoints or tools. Defaults are saved in this browser, not in the credential vault. Applying them is explicit; restoring the defaults editor does not overwrite individual model settings. New slots inherit Model 1 settings.

@@ -27,9 +27,13 @@ class Agent:
         max_iterations: int = 10,
         cancel_event=None,
         final_answer_validator=None,
+        settlement_mode: str = "autonomous",
+        settlement_state=None,
     ):
         if max_iterations < 1:
             raise ValueError("max_iterations must be at least 1")
+        if settlement_mode not in {"autonomous", "guided"}:
+            raise ValueError("Settlement mode must be autonomous or guided")
         self.backend = backend
         self.planner = planner
         self.executor = ToolExecutor(tool_registry)
@@ -39,6 +43,8 @@ class Agent:
         self.max_iterations = max_iterations
         self.cancel_event = cancel_event
         self.final_answer_validator = final_answer_validator
+        self.settlement_mode = settlement_mode
+        self.settlement_state = settlement_state
         self.completion_status = "running"
         self.stop_reason = ""
 
@@ -133,8 +139,29 @@ class Agent:
 
             # ACT: execute the tool named in the Thought
             self._check_cancelled()
+            if (
+                self.settlement_mode == "guided"
+                and self.settlement_state is not None
+                and self.settlement_state.ready()
+            ):
+                feedback = (
+                    "Guided settlement state reached. Return the requested final JSON now "
+                    "using the observed evidence. Do not execute another tool."
+                )
+                if getattr(type(self.backend), "accept_tool_result", None):
+                    self.backend.accept_tool_result(feedback)
+                ctx.observation_history.append("Observation: " + feedback)
+                self.tracer.on_status(feedback, "settlement_ready")
+                self.tracer.on_observe(feedback)
+                ctx.iteration += 1
+                continue
             if thought.tool_name == "calculator":
-                calculation_key = json.dumps(thought.tool_args, sort_keys=True)
+                expression = thought.tool_args.get("expression")
+                calculation_key = (
+                    "".join(expression.split())
+                    if isinstance(expression, str)
+                    else json.dumps(thought.tool_args, sort_keys=True)
+                )
                 calculator_attempts[calculation_key] = calculator_attempts.get(calculation_key, 0) + 1
                 if calculator_attempts[calculation_key] >= 2:
                     feedback = "This exact calculation already has an observation. No calculation was executed. Use that result and return the final report, or choose a different operation only if required."
@@ -178,6 +205,8 @@ class Agent:
                 action_result = self._act(thought, ctx)
                 if read_key is not None:
                     cached_reads[read_key] = action_result
+            if self.settlement_state is not None:
+                self.settlement_state.record(thought.tool_name, thought.tool_args, action_result)
             self._check_cancelled()
             if getattr(type(self.backend), "accept_tool_result", None):
                 self.backend.accept_tool_result(action_result)

@@ -59,6 +59,15 @@ agent-playpen/
 │   ├── context.py
 │   ├── exceptions.py
 │   └── runner.py
+├── benchmarks/
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── controlled.py
+│   ├── diagnostics.py
+│   ├── report.py
+│   ├── runner.py
+│   ├── settlement.py
+│   └── tasks.py
 ├── debugging/
 │   ├── __init__.py
 │   ├── cost_tracker.py

@@ -398,6 +398,25 @@ def test_invalid_task_selections_are_rejected(values):
         selected_tasks(values)
 
 
+def test_read_fixture_schema_advertises_only_task_fixture_names():
+    data = fixture("B02", 1)
+    budget = Budget(ExperimentConfig())
+    reader = ReadFixture(data, budget, "agent-1")
+    assert reader.parameters["properties"]["name"]["enum"] == ["archive", "catalog", "notice"]
+    assert reader.run(name="unknown").startswith("[ERROR]")
+
+
+def test_settlement_mode_is_recorded_in_experiment_and_report(tmp_path):
+    config = ExperimentConfig(name="guided-pilot", settlement_mode="guided")
+    record = run_experiment([config], tmp_path / "guided", repeats=1, tasks=["B01"], backend_factory=scripted)
+    assert record["configs"][0]["settlement_mode"] == "guided"
+    rows = render_report(record, tmp_path / "guided")
+    summary = json.loads((tmp_path / "guided" / "summary.json").read_text(encoding="utf-8"))
+    csv_text = (tmp_path / "guided" / "comparison.csv").read_text(encoding="utf-8")
+    assert summary[0]["settlement_mode"] == "guided"
+    assert "settlement_mode" in csv_text and "guided" in csv_text
+
+
 def test_task_subset_is_shared_recorded_and_reports_unselected_tasks(tmp_path):
     configs = [ExperimentConfig(name="single"), ExperimentConfig(name="team", agents=[Member(), Member(), Member()])]
     record = run_experiment(configs, tmp_path / "subset", repeats=1, tasks=["B04", "B01"], backend_factory=scripted)

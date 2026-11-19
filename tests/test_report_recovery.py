@@ -74,3 +74,59 @@ def test_repeated_invalid_final_report_stops_incomplete(tmp_path):
     assert agent.run('task') == ''
     assert agent.completion_status == 'incomplete'
     assert 'validation failed twice' in agent.stop_reason
+
+
+def test_autonomous_and_guided_settlement_have_distinct_identity(tmp_path):
+    backend = Mock()
+    backend.chat.side_effect = ["done"]
+    backend.last_response_stats = {"finish_reason": "stop"}
+    registry = ToolRegistry()
+    autonomous = Agent(
+        backend, ReActPlanner(backend), registry,
+        MemoryManager({"enabled_stores": []}), Tracer(str(tmp_path)),
+        settlement_mode="autonomous",
+    )
+    guided = Agent(
+        backend, ReActPlanner(backend), registry,
+        MemoryManager({"enabled_stores": []}), Tracer(str(tmp_path)),
+        settlement_mode="guided",
+    )
+    assert autonomous.settlement_mode == "autonomous"
+    assert guided.settlement_mode == "guided"
+
+
+def test_guided_settlement_rejects_extra_tool_after_defined_state(tmp_path):
+    from benchmarks.settlement import BaselineSettlementState
+
+    state = BaselineSettlementState("B01", {"orders.csv"})
+    state.observed.add("fixture_read")
+    state.distinct_calculations.update({"37+12-5", "37-5", "37+5"})
+    assert state.ready()
+
+    backend = Mock()
+    backend.chat.side_effect = [
+        'Thought: read\nAction: read_fixture\nAction Input: {"name":"orders.csv"}',
+        'Thought: complete\nAction: FINISH\nAction Input: ' + json.dumps({
+            "net_total":44,
+            "valid_orders":3,
+            "duplicate_ids":["A"],
+            "category_totals":{"parts":32,"service":12},
+        }),
+    ]
+    backend.last_response_stats = {"finish_reason":"stop"}
+    registry = ToolRegistry()
+    tool = FixtureTool()
+    registry.register(tool)
+    agent = Agent(
+        backend,
+        ReActPlanner(backend),
+        registry,
+        MemoryManager({"enabled_stores": []}),
+        Tracer(str(tmp_path)),
+        max_iterations=4,
+        settlement_mode="guided",
+        settlement_state=state,
+    )
+    assert json.loads(agent.run("task"))["net_total"] == 44
+    assert tool.calls == 0
+    assert agent.completion_status == "success"

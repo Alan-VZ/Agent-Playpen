@@ -16,7 +16,7 @@
 (() => {
  const token={{ session_token | tojson }}, configInput=document.getElementById('baseline-config'), message=document.getElementById('baseline-message');
  let job=null,timer=null,version=0,launching=false,startedAt=null;
- const base=()=>({name:'single-local',agents:[{backend:'lm_studio',model:'local-model',role:'Independent researcher',planner:'react',tool_calling_mode:'auto',temperature:0}],max_concurrency:1,timeout_seconds:210,token_reservation_limit:300000,tool_request_limit:120});
+ const base=()=>({name:'single-local',agents:[{backend:'lm_studio',model:'local-model',role:'Independent researcher',planner:'react',tool_calling_mode:'auto',temperature:0}],max_concurrency:1,timeout_seconds:210,token_reservation_limit:300000,tool_request_limit:120,settlement_mode:'autonomous'});
  const rebuild=window.installBaselineBuilder(configInput);
  const presets=team=>{const single=base(),configs=[single];if(team){const group=base();group.name='team-local';group.max_concurrency=2;group.agents=[{...single.agents[0]},{...single.agents[0],role:'Independent verifier: check contradictions and missing facts.'},{...single.agents[0],role:'Critic and synthesizer: preserve evidence-backed dissent.'}];configs.push(group);}configInput.value=JSON.stringify(configs,null,2);rebuild();};presets(false);
  try {

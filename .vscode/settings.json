@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "abliterated",
         "abstractmethod",
         "asyncio",
         "beautifulsoup",
@@ -14,10 +15,14 @@
         "faiss",
         "findstr",
         "Firecrawl",
+        "hauhaucs",
         "htmlcov",
         "inspectable",
         "markdownify",
+        "mradermacherqwen",
         "mypy",
+        "neuraldaredevil",
+        "Nonterminal",
         "Ollama",
         "OPENWEBNINJA",
         "PKCE",
@@ -29,7 +34,8 @@
         "setlocal",
         "simstudioai",
         "Tavily",
-        "tiktoken"
+        "tiktoken",
+        "tinyllama"
     ],
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
     "python.testing.pytestEnabled": true,

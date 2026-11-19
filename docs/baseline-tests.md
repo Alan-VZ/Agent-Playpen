@@ -35,6 +35,17 @@ Provider portals, account entitlements, and billing can change. Refresh checks w
 | B04 | Recover from an injected first-read failure and recognize an empty response. | Correct backup answer, observed failure, bounded reads, and no false absence claim. |
 | B05 | Resolve a majority-supported wrong choice using authoritative constraints. | Correct constrained choice, decisive citation, rejected-option explanation, and explicit unknown warranty. |
 
+## Execution modes and evidence
+
+Baseline configurations record two settlement modes:
+
+- **Autonomous**: the model chooses when to gather evidence and finish. It remains subject to iteration, time, format, and repetition guards. This is the default.
+- **Guided settlement**: task-state tracking may request a bounded final report after documented observed evidence is complete. It is a separate experiment mode and must not be reported as improved autonomous behavior.
+
+Guided settlement does not use scorer expected answers or fixture answers to decide what the model must report. It records actual source reads, calculation operations, and artifact state only.
+
+Fixture tools advertise the names that exist for the current task. Unknown names remain executable denials; Playpen does not silently rename a model's argument.
+
 These tasks run against synthetic frozen document collections, not the live web or the user's filesystem. Every attempt records the fixture seed and hash; B01/B04 vary numeric content across repetitions. Source IDs replace live URLs in this frozen track. The evaluator's expected answers are never exposed through the registered tools. Reports reveal expected values after scoring so failures are reviewable.
 
 Correctness comes from deterministic validators, not an LLM judge. The rubric is deliberately strict about required JSON fields and citation sentences; a semantically reasonable answer can fail the stated output contract. Quality is the percentage of checks met; a strict pass requires every mandatory check and successful execution. A partial answer, failed model call, timeout, denied tool operation, or missing artifact remains visible.

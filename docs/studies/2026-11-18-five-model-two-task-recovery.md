@@ -30,6 +30,6 @@ The two 66.67% reports are partial evidence of task performance, not passes. Exe
 3. Add a separate deterministic-operation loop guard for the calculator, without extending caching to writes or live/stateful tools.
 4. Add B02 pre-final evidence coverage/quotation checks based on observed sources, with bounded feedback and no expected-answer injection. Keep the original scorer and historical results.
 5. Separate capability checks (instruction following, one fixture read, one calculator call, final JSON) from the full autonomous baseline. A guided deterministic workflow should be labeled separately; passing it does not demonstrate autonomous agent competence.
-6. Implement the deferred configuration-first scheduling/per-configuration task selections to reduce local model switching; record order and compare common tasks fairly.
+6. Configuration-first scheduling and per-configuration task selections are now implemented; keep using them and compare common tasks fairly.
 
 Software regression tests passing did not establish live reliability. More timeout/token increases alone are not supported as a solution by these results. No live improvement is claimed.

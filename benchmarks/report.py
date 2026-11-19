@@ -11,10 +11,12 @@ def render_report(record, output):
     output.mkdir(parents=True, exist_ok=True)
     rows = summaries(record)
     atomic_json(output / "summary.json", rows)
-    fields = ["name", "agents", "selected_tasks", "B01", "B02", "B03", "B04", "B05", "passed", "attempted", "scheduled", "minimum_quality", "mean_quality", "median_seconds", "p95_seconds", "actual_tokens", "reserved_tokens", "tool_requests", "estimated_reserved_usd", "violations", "selection_passed", "qualified"]
+    fields = ["name", "agents", "settlement_mode", "selected_tasks", "B01", "B02", "B03", "B04", "B05", "passed", "attempted", "scheduled", "minimum_quality", "mean_quality", "median_seconds", "p95_seconds", "actual_tokens", "reserved_tokens", "tool_requests", "estimated_reserved_usd", "violations", "selection_passed", "qualified"]
     flat = []
-    for row in rows:
+    for row_index, row in enumerate(rows):
+        config = record["configs"][row_index]
         flat.append({**{k: v for k, v in row.items() if k != "tasks"},
+                     "settlement_mode": config.get("settlement_mode", "autonomous"),
                      "selected_tasks": ", ".join(row["selected_tasks"]),
                      **{key: f'{value["passed"]}/{value["scheduled"]}' if value["selected"] else "Not selected" for key, value in row["tasks"].items()}})
     with (output / "comparison.csv").open("w", encoding="utf-8", newline="") as stream:

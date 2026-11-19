@@ -26,6 +26,12 @@
 
 ## Unreleased
 
+- Added baseline fixture-name JSON-Schema enums with executable unknown-name
+  denial, separately labeled autonomous/guided settlement modes, conservative
+  exact-expression repetition guards, native-tool capability states, and
+  requested/effective/default/unknown request-profile evidence. Historical
+  baseline-v1 fixtures, scorers, and results remain unchanged.
+
 - Let model requests use the remaining shared task deadline instead of an
   unconditional 60-second cap; record each request’s timeout in its ledger.
 - Publish the baseline calculator’s arithmetic-only contract and explain invalid

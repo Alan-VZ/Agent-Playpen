@@ -9,6 +9,10 @@ class BaseBackend(ABC):
         import openai
         return getattr(self, "tool_calling_mode", "prompt") != "prompt" and isinstance(getattr(self, "client", None), (openai.OpenAI, openai.AzureOpenAI))
 
+    @property
+    def native_tool_capability(self):
+        return getattr(self, "_native_tool_capability", "untested")
+
     def record_usage(self, response):
         """Keep only numeric provider usage; missing data is explicitly unknown."""
         identity = getattr(response, "model", None)
@@ -63,6 +67,7 @@ class BaseBackend(ABC):
 
         pending = getattr(self, "_pending_native_call", None)
         if pending:
+            self._native_tool_capability = "observed working"
             self._native_history.append(
                 {
                     "role": "tool",
@@ -113,7 +118,9 @@ class BaseBackend(ABC):
         message = response.choices[0].message
         calls = message.tool_calls or []
         if calls:
+            self._native_tool_capability = "advertised by provider"
             if len(calls) != 1:
+                self._native_tool_capability = "observed failing"
                 raise AgentResponseFormatError(
                     "Return exactly one tool call at a time; none of these calls was executed."
                 )
@@ -121,14 +128,17 @@ class BaseBackend(ABC):
             try:
                 arguments = json.loads(call.arguments)
             except (TypeError, ValueError):
+                self._native_tool_capability = "observed failing"
                 raise AgentResponseFormatError(
                     "Tool arguments must be a valid JSON object; no tool was executed."
                 ) from None
             if not isinstance(arguments, dict):
+                self._native_tool_capability = "observed failing"
                 raise AgentResponseFormatError(
                     "Tool arguments must be an object; no tool was executed."
                 )
             if call.name not in {schema["function"]["name"] for schema in schemas}:
+                self._native_tool_capability = "observed failing"
                 raise AgentResponseFormatError(
                     "Select an advertised tool; no tool was executed."
                 )

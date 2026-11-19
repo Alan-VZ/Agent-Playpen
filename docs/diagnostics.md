@@ -2,6 +2,10 @@
 
 Use **Open capability diagnostics** above the workspace model summary, or open `/diagnostics`. Selected model IDs and non-secret settings transfer into an editable configuration list. Launch the six-test ladder; status, per-case categories and Inspect / replay are shown together. This is a capability study, not B01–B05 qualification. Model providers may consume quota; all ladder tools are local.
 
+The D02-D06 cases provide focused evidence for fixture reads, calculator use,
+word equations, conflicting evidence, and recovery. They do not establish
+repeated B01-B05 reliability.
+
 | Case | Capability | Required operation |
 |---|---|---|
 | D01 | Follow instructions and return JSON | No tools; requested small JSON object |
@@ -34,6 +38,10 @@ flowchart LR
 ```
 
 Native-tool requests now use a dedicated system instruction instead of simultaneously demanding textual Thought/Action/Observation syntax. Native assistant/tool history is included once. If a provider emits textual actions despite advertised schemas, actual observations are returned as runtime user messages rather than dropped. Prompt mode retains its textual protocol. Captured bodies allow this behavior to be audited; Auto is not proof that a response was native.
+
+Native-tool capability records use untested, advertised by provider, observed working,
+and observed failing states. Each record carries the provider, model, route, settings,
+and evidence location; it does not infer capability merely from the `Auto` policy.
 
 Identical calculator operations are blocked on the second request with feedback to use the previous observation; a third identical request ends the loop. Fixture caching remains per-run. Writes/stateful tools are not cached. B02 pre-final validation now requires required sources to have been read, an integer loan period, and exact nonempty quotations from observed source documents. It never supplies the expected answer. The independent scorer remains unchanged and detects wrong but plausible facts.
 

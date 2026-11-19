@@ -91,6 +91,8 @@ def test_metered_backend_forwards_native_calls_results_and_usage(tmp_path):
         assert len(budget.model_calls) == 2
         assert sum(c["actual_tokens"] for c in budget.model_calls) == 30
         assert all(c["tool_calling_mode"] == "native" for c in budget.model_calls)
+        assert all(c["request_profile"]["settlement_mode"] == "autonomous" for c in budget.model_calls)
+        assert all(c["request_profile"]["temperature"]["effective"] == "unknown" for c in budget.model_calls)
     finally:
         backend.client.close()
 

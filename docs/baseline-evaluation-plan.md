@@ -1,9 +1,10 @@
 # Working plan: repeatable agent baselines
 
-Date: 2026-11-15. Status: core implementation delivered; live model/provider qualification remains pending.
+Date: 2026-11-15. Updated: 2026-11-18. Status: core implementation and protocol/scheduling evidence delivered; live model/provider qualification remains pending.
 
 ## Implementation status (November 15, 2026)
 
+- **November 18 update:** fixture-name enums, autonomous/guided settlement identity, requested/effective/default/unknown request-profile fields, and native-capability states are implemented in the code and covered by focused tests. They do not retroactively qualify live baselines.
 - Implemented: five synthetic tasks and deterministic scorers; fresh seeded repetitions; single-agent and bounded 1–10-agent benchmark adapters; independent research and critique/synthesis; shared reservations; process supervision; CLI/resume; comparison reports; dashboard builder and results; provider inventory, accordion setup window, encrypted entry, checks, and review dates.
 - Verified offline: see the current regression suite and `docs/baseline-tests.md`; scripted results measure the harness, not model competence.
 - Pending external validation: five-repeat real-model comparison, optional cloud/team qualification, real-user native-vault persistence, and provider billing reconciliation. No saved provider keys were found in this session and no local model server was reachable. No live model results are claimed.
@@ -60,7 +61,11 @@ python -m benchmarks compare --suite baseline-v1 --configs single-local single-c
 python -m benchmarks report --experiment <id> --format html,csv,json
 ```
 
-These commands do not exist yet. Add a dashboard Baseline Tests page using the same runner and scorer, with configuration selection, preflight, repeat count, aggregate limits, progress, stop, and exports. Default to five repetitions per task: 25 attempts per configuration. Offer a clearly labeled one-repeat smoke run and a 20-repeat extended run. An unsupported team configuration remains disabled with an explanation until its adapter is implemented.
+These commands are implemented through `benchmarks/__main__.py` and the dashboard
+Baseline Tests page uses the same runner and scorer. The interface provides
+configuration selection, preflight, repeat count, aggregate limits, progress,
+stop, and exports. Live model/provider qualification remains separate from the
+offline implementation and scripted harness validation.
 
 Use deterministic validators as the primary scorer. Freeze checks and weights before running comparisons. Each task gets a 0-100 quality score from explicit checks, plus an independent strict pass flag requiring every mandatory check. Workspace violations and missing required artifacts prevent a pass regardless of answer score. An infrastructure failure is a distinct outcome and remains visible in scheduled-attempt completion statistics; never rerun failed attempts silently. Explicit reruns get new IDs and retain the original failures.
 
@@ -173,7 +178,6 @@ Gate: publish a dated comparison artifact with all scheduled attempts, failures,
 Deliver credential readiness and the API setup window, the five frozen tasks, deterministic scorers, single-agent CLI, and an HTML/CSV comparison report. Demonstrate missing-key recovery with mocked providers and one real local-model configuration for five repeats per task. This provides useful evidence before the larger dashboard/team work and establishes the common contract every future agent combination must satisfy.
 
 Later extensions: opt-in live web/provider comparisons, account-wide usage controls, bounded MCP integration, read-only Home Assistant export review, calibrated multi-agent aggregation, and longer-running stability tests. These do not block the first milestone.
-
 
 ## November 17 integration update
 

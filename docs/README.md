@@ -1,6 +1,7 @@
 # Project documentation index
 
 - [Multiple model comparisons](model-comparisons.md): independent model cards, parameter overrides, and matched baseline comparisons.
+- [Baseline findings and corrective actions](baseline-failure-findings-and-corrective-actions.md): implementation status, settlement modes, diagnostic evidence, and live-qualification gates.
 
 - [Issues found and implemented resolutions](issues-and-resolutions.md): complete issue register and evidence boundaries.
 - [Universal tool gateway / MCP](universal-tools.md): architecture, setup, direct console, external servers, native calls, status, records and limitations.
