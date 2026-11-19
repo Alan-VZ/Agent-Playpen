@@ -78,6 +78,7 @@ class ExperimentConfig(BaseModel):
     max_iterations: int = Field(default=15, ge=1, le=100)
     max_output_tokens: int = Field(default=2048, ge=64, le=16384)
     token_reservation_limit: int = Field(default=300000, ge=1000, le=10000000)
+    model_request_limit: int = Field(default=1000, ge=1, le=100000)
     tool_request_limit: int = Field(default=120, ge=1, le=1000)
     timeout_seconds: float = Field(default=180, ge=1, le=1800)
     # Optional declared conservative aggregate rates, not provider invoices.
@@ -138,6 +139,8 @@ class Budget:
         outputs = self.config.max_output_tokens
         with self.lock:
             self.active()
+            if len(self.model_calls) >= self.config.model_request_limit:
+                raise RuntimeError("Aggregate model request limit reached")
             if self.reserved_tokens + inputs + outputs > self.config.token_reservation_limit:
                 raise RuntimeError("Aggregate token reservation limit reached")
             cost = None

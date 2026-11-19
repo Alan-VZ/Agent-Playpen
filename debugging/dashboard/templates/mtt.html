@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Model Testing Tool · Agent Playpen</title>
+  <style>
+    body{font:16px/1.5 system-ui;background:#0c1522;color:#e5edf7;margin:0}
+    main{max-width:1250px;margin:55px auto;padding:24px}
+    a{color:#a7cdfd}
+    section{border:1px solid #526881;border-radius:10px;padding:18px;margin:16px 0;background:#172638}
+    input,select,button,textarea{font:inherit;background:#23384d;color:#eef7ff;border:1px solid #627d9b;border-radius:6px;padding:9px;margin:5px}
+    input,select,textarea{box-sizing:border-box}
+    button{cursor:pointer}
+    button:disabled{opacity:.55}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border:1px solid #4c6179;text-align:left}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+    .note{color:#bfd1e7}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere}
+  </style>
+</head>
+<body>
+  <main>
+    <a href="/">← Agent workspace</a>
+    <h1>MTT · Model Testing Tool</h1>
+    <p class="note">Pre-test models, persist results locally and select candidates for later Playpen jobs. No source refresh or benchmark runs occur from ordinary task selection.</p>
+
+    <section>
+      <h2>1. Model sources</h2>
+      <div class="grid">
+        <label>Provider
+          <select id="source-provider">
+            <option value="lm_studio">LM Studio</option>
+            <option value="ollama">Ollama</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="groq">Groq</option>
+            <option value="together">Together</option>
+            <option value="azure_openai">Azure OpenAI</option>
+          </select>
+        </label>
+        <label>Name<input id="source-name" value="My source"></label>
+        <label>Endpoint<input id="source-endpoint" value="http://localhost:1234/v1"></label>
+        <label>Account alias<input id="source-account" value=""></label>
+      </div>
+      <button id="add-source">Connect source</button>
+      <div id="sources"></div>
+    </section>
+
+    <section>
+      <h2>2. Screened model pool</h2>
+      <div id="catalog"></div>
+      <label>Campaign source<select id="campaign-source"></select></label>
+      <label>Profile<select id="campaign-profile">
+        <option value="diagnostics-v1">D01-D06 capability diagnostics</option>
+        <option value="diagnostics-screen-v1">D01-D06 bounded Quick Screen</option>
+      </select></label>
+      <label>Model IDs (comma separated)<input id="campaign-models" placeholder="model-a, model-b"></label>
+      <button id="start-campaign">Start bounded pre-test</button>
+      <div id="campaigns"></div>
+    </section>
+
+    <section>
+      <h2>3. Find models for a job</h2>
+      <label>Application profile<select id="recommend-profile">
+        <option value="diagnostics-v1">Capability diagnostics</option>
+      </select></label>
+      <label><input id="free-only" type="checkbox"> Free/local only</label>
+      <label>Deadline seconds<input id="deadline" type="number" min="1" value="400"></label>
+      <button id="recommend">Find stored candidates</button>
+      <div id="recommendations"></div>
+    </section>
+
+    <p><a href="/">Agent workspace</a> · <a href="/baselines">Baseline tests</a></p>
+  </main>
+  {% include 'credential_widget.html' %}
+  <script nonce="{{ session_token }}">
+  (() => {
+    const token={{ session_token|tojson }};
+    async function api(path, body) {
+      const response=await fetch(path,{
+        method:body===undefined?'GET':'POST',
+        headers:{'Content-Type':'application/json','X-Playpen-Token':token},
+        body:body===undefined?undefined:JSON.stringify(body)
+      });
+      const data=await response.json();
+      if(!response.ok) throw new Error(typeof data.detail==='string'?data.detail:'MTT request failed');
+      return data;
+    }
+    const sourcesDiv=document.getElementById('sources');
+    const campaignSource=document.getElementById('campaign-source');
+    const catalog=document.getElementById('catalog');
+    async function loadSources(){
+      const data=await api('/api/mtt/sources');
+      sourcesDiv.replaceChildren();campaignSource.replaceChildren();
+      for(const source of data.sources){
+        const row=document.createElement('p');
+        row.textContent=source.name+' · '+source.provider+' · '+source.status;
+        const refresh=document.createElement('button');refresh.textContent='Refresh catalog';
+        refresh.onclick=async()=>{await api('/api/mtt/sources/'+source.id+'/refresh',{});await loadSources();await loadCatalog(source.id);};
+        const standing=document.createElement('button');standing.textContent='Enable standing screen';
+        standing.onclick=async()=>api('/api/mtt/sources/'+source.id+'/standing-policy',{
+          enabled:true,profile_id:'diagnostics-v1',free_only:source.provider==='lm_studio'||source.provider==='ollama',
+          max_models_per_campaign:10,max_model_requests:80,max_wall_seconds:1200,refresh_interval_minutes:1440,campaign_on_discovery:true
+        }).then(loadSources);
+        row.append(refresh,standing);sourcesDiv.append(row);
+        const option=document.createElement('option');option.value=source.id;option.textContent=source.name+' · '+source.provider;campaignSource.append(option);
+      }
+    }
+    async function loadCatalog(sourceId){
+      if(!sourceId)return;
+      const data=await api('/api/mtt/sources/'+sourceId+'/models');
+      const table=document.createElement('table');
+      table.innerHTML='<thead><tr><th>Model</th><th>Listed</th><th>Access</th><th>Loaded</th></tr></thead><tbody></tbody>';
+      const body=table.querySelector('tbody');
+      for(const entry of data.entries){const row=document.createElement('tr');row.innerHTML='<td></td><td></td><td></td><td></td>';row.cells[0].textContent=entry.model_id;row.cells[1].textContent=entry.listed?'yes':'removed';row.cells[2].textContent=entry.access_state;row.cells[3].textContent=entry.loaded?'yes':'no';body.append(row);}
+      catalog.replaceChildren(table);
+    }
+    campaignSource.addEventListener('change',()=>loadCatalog(campaignSource.value));
+    document.getElementById('source-provider').addEventListener('change',()=>{
+      const defaults={lm_studio:'http://localhost:1234/v1',ollama:'http://localhost:11434',openai:'https://api.openai.com/v1',openrouter:'https://openrouter.ai/api/v1',anthropic:'https://api.anthropic.com',azure_openai:'',groq:'https://api.groq.com/openai/v1',together:'https://api.together.ai/v1'};
+      document.getElementById('source-endpoint').value=defaults[document.getElementById('source-provider').value]||'';
+    });
+    document.getElementById('add-source').onclick=async()=>{
+      await api('/api/mtt/sources',{
+        provider:document.getElementById('source-provider').value,
+        name:document.getElementById('source-name').value,
+        endpoint:document.getElementById('source-endpoint').value,
+        account_alias:document.getElementById('source-account').value
+      });
+      await loadSources();
+    };
+    document.getElementById('start-campaign').onclick=async()=>{
+      const campaign=await api('/api/mtt/campaigns',{
+        source_id:campaignSource.value,
+        model_ids:document.getElementById('campaign-models').value.split(',').map(v=>v.trim()).filter(Boolean),
+        profile_id:'diagnostics-v1'
+      });
+      await loadCampaigns();
+      history.replaceState(null,'','/mtt');
+    };
+    async function loadCampaigns(){
+      const data=await api('/api/mtt/campaigns');
+      const div=document.getElementById('campaigns');div.replaceChildren();
+      for(const campaign of data.campaigns){
+        const p=document.createElement('p');p.textContent=campaign.id.slice(0,8)+' · '+campaign.status+' · '+JSON.stringify(campaign.progress);div.append(p);
+      }
+    }
+    document.getElementById('recommend').onclick=async()=>{
+      const data=await api('/api/mtt/recommendations',{
+        profile_id:document.getElementById('recommend-profile').value,
+        free_only:document.getElementById('free-only').checked,
+        deadline_seconds:Number(document.getElementById('deadline').value)
+      });
+      document.getElementById('recommendations').textContent=JSON.stringify(data,null,2);
+    };
+    loadSources().then(loadCampaigns);
+  })();
+  </script>
+</body>
+</html>

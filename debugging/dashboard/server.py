@@ -16,6 +16,7 @@ from pathlib import Path
 import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from starlette.responses import Response
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -158,6 +159,25 @@ async def local_session_boundary(request: Request, call_next):
         if request.url.path.startswith("/api/") and "application/json" in response.headers.get("content-type", ""):
             body = b"".join([part async for part in response.body_iterator])
             response = JSONResponse(content=redact(json.loads(body)), status_code=response.status_code)
+        elif "text/html" in response.headers.get("content-type", ""):
+            body = b"".join([part async for part in response.body_iterator])
+            html = body.decode("utf-8", errors="replace")
+            if 'id="pp-menu-toggle"' not in html:
+                widget = templates.env.get_template("credential_widget.html").render(
+                    session_token=API_TOKEN
+                )
+                if "</body>" in html:
+                    html = html.replace("</body>", widget + "</body>", 1)
+                else:
+                    html += widget
+            headers = dict(response.headers)
+            headers.pop("content-length", None)
+            response = Response(
+                content=html,
+                status_code=response.status_code,
+                headers=headers,
+                media_type="text/html",
+            )
     except Exception:
         response = JSONResponse(status_code=500, content={"status": "error", "message": "Operation failed. Check local configuration and provider availability."})
     response.headers["Cache-Control"] = "no-store"
@@ -1069,6 +1089,8 @@ from debugging.dashboard import scientific  # noqa: E402
 scientific.install(sys.modules[__name__])
 from debugging.dashboard import tool_gateway  # noqa: E402
 tool_gateway.install(sys.modules[__name__])
+from model_testing.dashboard import install as mtt_install  # noqa: E402
+mtt_install(sys.modules[__name__])
 
 
 if __name__ == "__main__":

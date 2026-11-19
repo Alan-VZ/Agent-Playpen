@@ -1,0 +1,81 @@
+{
+  "corrective_status": {
+    "status": "implemented_and_tested",
+    "focused_mtt_tests_passed": 17,
+    "full_suite_passed": 576,
+    "full_suite_skipped": 9,
+    "fixes": [
+      "completed reservations reconcile observed model requests, reserved tokens and elapsed time",
+      "unresolved reserved attempts are quarantined and not reexecuted",
+      "stable reservation rows are included in campaign ledger recovery",
+      "fast completed attempts reconcile elapsed time rather than full timeout reservations"
+    ]
+  },
+  "campaign_caps": {
+    "limits": {
+      "case_timeout_seconds": 10,
+      "max_attempts": 6,
+      "max_model_requests": 4,
+      "max_tokens": 20000,
+      "max_wall_seconds": 1000
+    },
+    "attempts": [
+      {
+        "task": "D01",
+        "requests": 3,
+        "tokens": 9318,
+        "limit": 4
+      },
+      {
+        "task": "D02",
+        "requests": 3,
+        "tokens": 9318,
+        "limit": 3
+      },
+      {
+        "task": "D03",
+        "requests": 2,
+        "tokens": 6212,
+        "limit": 2
+      },
+      {
+        "task": "D04",
+        "requests": 1,
+        "tokens": 3106,
+        "limit": 1
+      }
+    ],
+    "actual_requests": 9,
+    "actual_reserved_tokens": 27954,
+    "ledger": {
+      "estimated_cost": null,
+      "used_attempts": 4,
+      "used_model_requests": 4,
+      "used_reserved_tokens": 12288,
+      "used_tokens": 0,
+      "used_tool_requests": 0,
+      "used_wall_seconds": 40.0
+    }
+  },
+  "inflight_recovery": {
+    "previously_reserved": "D01",
+    "tasks_dispatched_after_recovery": [
+      "D01",
+      "D02",
+      "D03",
+      "D04",
+      "D05",
+      "D06"
+    ],
+    "ledger": {
+      "estimated_cost": null,
+      "used_attempts": 6,
+      "used_model_requests": 6,
+      "used_reserved_tokens": 18432,
+      "used_tokens": 0,
+      "used_tool_requests": 0,
+      "used_wall_seconds": 60.0
+    }
+  },
+  "unknown_profile_rejected": true
+}

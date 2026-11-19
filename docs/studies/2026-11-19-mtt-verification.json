@@ -1,0 +1,38 @@
+{
+  "cancelled_one_of_six": {
+    "eligibility": "qualified",
+    "q_score": 100.0,
+    "coverage": 1.0,
+    "selected": true
+  },
+  "limits": {
+    "declared": {
+      "case_timeout_seconds": 1,
+      "cost_limit": 0,
+      "max_attempts": 1,
+      "max_model_requests": 1,
+      "max_tokens": 1000,
+      "max_wall_seconds": 60
+    },
+    "model_batches_run": 2,
+    "simulated_attempts_run": 12,
+    "effective_token_reservation_limits": [
+      300000,
+      300000
+    ],
+    "effective_dollar_limits": [
+      null,
+      null
+    ]
+  },
+  "quota_only": {
+    "eligibility": "blocked",
+    "q_score": 0.0,
+    "coverage": 0.0
+  },
+  "expired_500s_for_1s_deadline": true,
+  "removed_source_selected": true,
+  "failed_refresh_listed_count": 0,
+  "old_config_still_selected": "old",
+  "backslash_model_path_escapes_campaign": true
+}
